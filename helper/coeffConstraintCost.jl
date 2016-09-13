@@ -121,29 +121,7 @@ function coeffConstraintCost(oldTraj, lapStatus, mpcCoeff, posInfo, mpcParams)
             IndexBezierS = idx_s[i] - (i-1)*N_points        # IndexBezierS is the index specifying the current position
             idx_s_target = find(oldS[1,:,i].>s_target)[1]
             dist_to_s_target = (idx_s_target - IndexBezierS)
-            dist_to_s_target = dist_to_s_target + 30         # set distance to finish line a bit higher
-            # for k=1:N_points
-            #     # Start from the end ---> reverse the index
-            #     indx = N_points-k+1
-
-            #     # Here the if for the cost, minimize the distance to a straight line
-            #     if oldS[1,indx,i] <= s_target
-            #         QMatrix = 0.1
-            #     else
-            #         QMatrix = 0
-            #     end
-
-            #     # Here actually computing the cost
-            #     if (indx >=  IndexBezierS)
-            #         if k == 1
-            #             # If last point --> No Input
-            #             Qfunction[indx] = QMatrix         # [1] to transform 1-element-array to scalar
-            #         else
-            #             Qfunction[indx] = Qfunction[indx + 1] + QMatrix
-            #         end
-            #     end
-            # end
-            # NEEDS TO BE IMPROVED **************************
+            
             bQfunction_Vector = zeros(pLength+1,1)
             # Select the part needed for the interpolation
             #bQfunction_Vector                   = Qfunction[IndexBezierS:IndexBezierS+pLength]

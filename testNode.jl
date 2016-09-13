@@ -24,7 +24,7 @@ println("Run 1: ")
 QderivZ     = 0.0*[1 1 1 1]     # cost matrix for derivative cost of states
 QderivU     = 0.1*[1 1]         # cost matrix for derivative cost of inputs
 mpcParams.R = 0.0*[1 1]        # cost matrix for control inputs
-mpcParams.Q = [0.0 10.0 1.0 1.0]     # put weights on ey, epsi and v
+mpcParams.Q = [0.0 10.0 10.0 1.0]     # put weights on ey, epsi and v
 
 # Simulate System
 t           = collect(0:dt:40)

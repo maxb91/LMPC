@@ -55,7 +55,12 @@ L_b             = modelParams.l_B
 N               = mpcParams.N
 c0              = modelParams.c0
 
-mdl             = Model(solver = IpoptSolver(print_level=0,max_cpu_time=0.01))#,linear_solver="ma57",print_user_options="yes"))
+mdl             = Model(solver = IpoptSolver(print_level=0,max_cpu_time=0.1))
+
+# Further useful options:
+# print_timing_statistics = "yes"
+# linear_solver = "ma97"            # good for large problems and multi-core-use, uses HSL libraries (need to be installed manually)
+# print_user_options = "yes"
 
 #@variable( mdl, modelParams.z_ub[i,j] >= z_Ol[i=1:4,j=1:(N+1)] >= modelParams.z_lb[i,j])      # z = s, ey, epsi, v
 @variable( mdl, z_Ol[1:4,1:(N+1)])      # z = s, ey, epsi, v
