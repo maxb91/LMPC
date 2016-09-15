@@ -12,30 +12,30 @@ end
 # 4th dimension specifies one of the two lap numbers between which are iterated
 
 type MpcCoeff           # coefficients for trajectory approximation
-    coeffCost
-    coeffConst
-    order
-    pLength             # small values here may lead to numerical problems since the functions are only approximated in a short horizon
+    coeffCost::Array{Float64}
+    coeffConst::Array{Float64}
+    order::Int64
+    pLength::Int64      # small values here may lead to numerical problems since the functions are only approximated in a short horizon
                         # "small" values are about 2*N, good values about 4*N
                         # numerical problems occur at the edges (s=0, when v is almost 0 and s does not change fast and at s=s_target)
-    MpcCoeff(coeffCost=0, coeffConst=0, order=4, pLength=0) = new(coeffCost, coeffConst, order, pLength)
+    MpcCoeff(coeffCost=zeros(1), coeffConst=zeros(1), order=4, pLength=0) = new(coeffCost, coeffConst, order, pLength)
 end
 
 type OldTrajectory      # information about previous trajectories
-    oldTraj
-    oldInput
-    oldCost
-    OldTrajectory(oldTraj=0,oldInput=0,oldCost=0) = new(oldTraj,oldInput,oldCost)
+    oldTraj::Array{Float64}
+    oldInput::Array{Float64}
+    oldCost::Array{Float64}
+    OldTrajectory(oldTraj=zeros(1),oldInput=zeros(1),oldCost=zeros(2)) = new(oldTraj,oldInput,oldCost)
 end
 
 type MpcParams          # parameters for MPC solver
     N::Int64
     nz::Int64
     OrderCostCons::Int64
-    Q
-    R
+    Q::Array{Float64}
+    R::Array{Float64}
     vPathFollowing::Float64
-    MpcParams(N=0,nz=0,OrderCostCons=0,Q=0,R=0,vPathFollowing=1.0) = new(N,nz,OrderCostCons,Q,R,vPathFollowing)
+    MpcParams(N=0,nz=0,OrderCostCons=0,Q=zeros(1),R=zeros(1),vPathFollowing=1.0) = new(N,nz,OrderCostCons,Q,R,vPathFollowing)
 end
 
 type PosInfo            # current position information
@@ -57,11 +57,11 @@ type MpcSol             # MPC solution output
 end
 
 type TrackCoeff         # coefficients of track
-    coeffAngle
-    coeffCurvature
-    nPolyCurvature      # order of the interpolation polynom
-    width               # lane width -> is used in cost function as soft constraints (to stay on track)
-    TrackCoeff(coeffAngle=0,coeffCurvature=0,nPolyCurvature=4) = new(coeffAngle,coeffCurvature,nPolyCurvature)
+    coeffAngle::Array{Float64}
+    coeffCurvature::Array{Float64}
+    nPolyCurvature::Int64      # order of the interpolation polynom
+    width::Float64               # lane width -> is used in cost function as soft constraints (to stay on track)
+    TrackCoeff(coeffAngle=zeros(1),coeffCurvature=zeros(1),nPolyCurvature=4,width=0.0) = new(coeffAngle,coeffCurvature,nPolyCurvature,width)
 end
 
 type ModelParams

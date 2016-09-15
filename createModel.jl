@@ -14,8 +14,8 @@ modelParams     = ModelParams()
 # Initialize Parameters
 # ===============================
 buffersize                  = 700
-oldTraj.oldTraj             = zeros(4,buffersize,2)
-oldTraj.oldInput            = zeros(2,buffersize,2)
+oldTraj.oldTraj             = zeros(buffersize,4,2)
+oldTraj.oldInput            = zeros(buffersize,2,2)
 
 posInfo.s_start             = 0
 posInfo.s_target            = 2
@@ -25,8 +25,6 @@ mpcParams.nz                = 4
 mpcParams.Q                 = [0.0 1.0 1.0 1.0]     # put weights on ey, epsi and v
 mpcParams.vPathFollowing    = 0.2
 
-mpcCoeff.coeffCost          = 0
-mpcCoeff.coeffConst         = 0
 mpcCoeff.order              = 5
 mpcCoeff.pLength            = 4*mpcParams.N        # small values here may lead to numerical problems since the functions are only approximated in a short horizon
 
