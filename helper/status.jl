@@ -35,7 +35,9 @@ type MpcParams          # parameters for MPC solver
     Q::Array{Float64}
     R::Array{Float64}
     vPathFollowing::Float64
-    MpcParams(N=0,nz=0,OrderCostCons=0,Q=zeros(1),R=zeros(1),vPathFollowing=1.0) = new(N,nz,OrderCostCons,Q,R,vPathFollowing)
+    QderivZ::Array{Float64}
+    QderivU::Array{Float64}
+    MpcParams(N=0,nz=0,OrderCostCons=0,Q=zeros(1),R=zeros(1),vPathFollowing=1.0,QderivZ=zeros(1),QderivU=zeros(1)) = new(N,nz,OrderCostCons,Q,R,vPathFollowing,QderivZ,QderivU)
 end
 
 type PosInfo            # current position information

@@ -10,6 +10,8 @@
 function solveMpcProblem(mpcCoeff::MpcCoeff,mpcParams::MpcParams,trackCoeff::TrackCoeff,lapStatus::LapStatus,posInfo::PosInfo,modelParams::ModelParams,zCurr,uCurr)
 
     # Load Parameters
+    mpcSol::MpcSol
+    
     coeffCurvature  = trackCoeff.coeffCurvature
     N               = mpcParams.N
     Q               = mpcParams.Q
@@ -20,6 +22,9 @@ function solveMpcProblem(mpcCoeff::MpcCoeff,mpcParams::MpcParams,trackCoeff::Tra
     s_start         = posInfo.s_start
     s_target        = posInfo.s_target
     ey_max          = trackCoeff.width/2
+
+    QderivZ         = mpcParams.QderivZ
+    QderivU         = mpcParams.QderivU
 
     v_ref           = mpcParams.vPathFollowing
     if lapStatus.currentLap > 1

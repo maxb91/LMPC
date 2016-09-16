@@ -1,5 +1,6 @@
-function simModel(z,u,dt,coeff,modelParams)
+function simModel(z::Array{Float64},u::Array{Float64},dt::Float64,coeff::Array{Float64},modelParams::ModelParams)
 
+    zNext::Array{Float64}
     L_a = modelParams.l_A
     L_b = modelParams.l_B
     c0  = modelParams.c0

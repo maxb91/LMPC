@@ -1,32 +1,17 @@
 # Define Variables
-oldTraj         = OldTrajectory()
-lapStatus       = LapStatus(1,1)
-mpcCoeff        = MpcCoeff()
-posInfo         = PosInfo()
-mpcParams       = MpcParams()
-stateIn         = zeros(7,1)        # stateIn: xdot, ydot, psidot, epsi, y, s, a_f
-inputIn         = zeros(2,1)
-mpcSol          = MpcSol()
+const mpcParams       = MpcParams()
 trackCoeff      = TrackCoeff()      # info about track (at current position, approximated)
-modelParams     = ModelParams()
+const modelParams     = ModelParams()
 
 # ===============================
 # Initialize Parameters
 # ===============================
-buffersize                  = 700
-oldTraj.oldTraj             = zeros(buffersize,4,2)
-oldTraj.oldInput            = zeros(buffersize,2,2)
 
-posInfo.s_start             = 0
-posInfo.s_target            = 2
 
 mpcParams.N                 = 5
 mpcParams.nz                = 4
 mpcParams.Q                 = [0.0 1.0 1.0 1.0]     # put weights on ey, epsi and v
 mpcParams.vPathFollowing    = 0.2
-
-mpcCoeff.order              = 5
-mpcCoeff.pLength            = 4*mpcParams.N        # small values here may lead to numerical problems since the functions are only approximated in a short horizon
 
 trackCoeff.coeffCurvature   = [0.0,0.0,0.0,0.0,0.0]         # polynomial coefficients for curvature approximation (zeros for straight line)
 trackCoeff.nPolyCurvature   = 4                   # 4th order polynomial for curvature approximation

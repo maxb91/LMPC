@@ -20,10 +20,31 @@ solve(mdl)
 println("Run 1: ")
 # Find Coefficients
 
-    QderivZ     = 0.0*[1 1 1 1]     # cost matrix for derivative cost of states
-    QderivU     = 0.1*[1 1]         # cost matrix for derivative cost of inputs
-    mpcParams.R = 0.0*[1 1]        # cost matrix for control inputs
-    mpcParams.Q = [0.0 10.0 10.0 1.0]     # put weights on ey, epsi and v
+function run_sim()
+
+    # DEFINE PARAMETERS
+    oldTraj         = OldTrajectory()
+    lapStatus       = LapStatus(1,1)
+    mpcCoeff        = MpcCoeff()
+    posInfo         = PosInfo()
+    mpcSol          = MpcSol()
+
+    buffersize                  = 700
+    oldTraj.oldTraj             = zeros(buffersize,4,2)
+    oldTraj.oldInput            = zeros(buffersize,2,2)
+
+    posInfo.s_start             = 0
+    posInfo.s_target            = 2
+    mpcCoeff.order              = 5
+    mpcCoeff.pLength            = 4*mpcParams.N        # small values here may lead to numerical problems since the functions are only approximated in a short horizon
+
+
+    mpcParams.QderivZ       = 0.0*[1 1 1 1]     # cost matrix for derivative cost of states
+    mpcParams.QderivU       = 0.1*[1 1]         # cost matrix for derivative cost of inputs
+    mpcParams.R             = 0.0*[1 1]        # cost matrix for control inputs
+    mpcParams.Q             = [0.0 10.0 10.0 1.0]     # put weights on ey, epsi and v
+
+    global mdl, trackCoeff
 
     # Simulate System
     t           = collect(0:dt:40)
@@ -136,3 +157,4 @@ println("Run 1: ")
         # readline()
     end
 
+end

@@ -16,6 +16,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, lapStatus::LapStatus, mpcCo
     # Outputs: 
     # coeffConst
     # coeffCost
+    mpcCoeff::MpcCoeff          # preallocate memory for return value
 
     # Read Inputs
     oldTrajectory   = oldTraj.oldTraj           # [:,:,1] = 1st, [:,:,2] = 2nd
@@ -39,13 +40,15 @@ function coeffConstraintCost(oldTraj::OldTrajectory, lapStatus::LapStatus, mpcCo
     coeffCost       = zeros(Order+1,2)            # polynomial coefficients for cost
     coeffConst      = zeros(Order+1,2,3)       # nz-1 beacuse no coeff for s
 
+    N_points        = size(oldTrajectory,1)     # second dimension = length
+
     # Select the old data
+    oldS::Array{Float64}
     oldS            = oldTrajectory[:,1,:]
     oldeY           = oldTrajectory[:,2,:]
     oldePsi         = oldTrajectory[:,3,:]
     oldV            = oldTrajectory[:,4,:]
 
-    N_points        = size(oldTrajectory,1)     # second dimension = length
 
     if lapNumber > 1
         # Compute the total s (current position along track)
@@ -168,5 +171,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, lapStatus::LapStatus, mpcCo
         coeffCost            = zeros(Order+1,1,2)
         coeffConst           = zeros(nz-1,Order+1,1,2) # nz-1 because no coeff for s
     end
-    return MpcCoeff(coeffCost, coeffConst, mpcCoeff.order, mpcCoeff.pLength)
+    mpcCoeff = MpcCoeff(coeffCost, coeffConst, mpcCoeff.order, mpcCoeff.pLength)
+    return mpcCoeff
+    #return MpcCoeff(coeffCost, coeffConst, mpcCoeff.order, mpcCoeff.pLength)
 end
