@@ -6,19 +6,15 @@ include("helper/status.jl")
 include("helper/coeffConstraintCost.jl")
 include("helper/solveMpcProblem.jl")
 include("helper/ComputeCostLap.jl")
-include("simModel.jl")
+include("helper/simModel.jl")
 
 # Load Variables and create Model:
 println("Loading and defining variables...")
-include("createModel.jl")
+include("helper/createModel.jl")
 
 # Initialize model by solving it once
 println("Initial solve...")
 solve(mdl)
-
-# Run Model
-println("Run 1: ")
-# Find Coefficients
 
 function run_sim()
 
@@ -138,23 +134,23 @@ function run_sim()
         end
 
         # Print results
-        # ax1=subplot(311)
-        # plot(t,zCurr[:,1],"y",t,zCurr[:,2],"r",t,zCurr[:,3],"g",t,zCurr[:,4],"b")
-        # grid(1)
-        # legend(["s","eY","ePsi","v"])
-        # title("States")
-        # ax2=subplot(312,sharex=ax1)
-        # plot(t,uCurr[:,1],"r",t,uCurr[:,2],"g")
-        # grid(1)
-        # title("Control input")
-        # legend(["a","d_f"])
-        # ax3=subplot(313,sharex=ax1)
-        # plot(t,cost[:,1],"r",t,cost[:,2],"g",t,cost[:,3],"b",t,cost[:,4],"y",t,cost[:,5],"m",t,cost[:,6],"c")
-        # grid(1)
-        # title("Cost distribution")
-        # legend(["z","z_Term","z_Term_const","deriv","control","lane"])
-        # println("Press Enter to continue")
-        # readline()
+        ax1=subplot(311)
+        plot(t,zCurr[:,1],"y",t,zCurr[:,2],"r",t,zCurr[:,3],"g",t,zCurr[:,4],"b")
+        grid(1)
+        legend(["s","eY","ePsi","v"])
+        title("States")
+        ax2=subplot(312,sharex=ax1)
+        plot(t,uCurr[:,1],"r",t,uCurr[:,2],"g")
+        grid(1)
+        title("Control input")
+        legend(["a","d_f"])
+        ax3=subplot(313,sharex=ax1)
+        plot(t,cost[:,1],"r",t,cost[:,2],"g",t,cost[:,3],"b",t,cost[:,4],"y",t,cost[:,5],"m",t,cost[:,6],"c")
+        grid(1)
+        title("Cost distribution")
+        legend(["z","z_Term","z_Term_const","deriv","control","lane"])
+        println("Press Enter to continue")
+        readline()
     end
 
 end

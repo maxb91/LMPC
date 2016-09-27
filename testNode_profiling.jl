@@ -7,11 +7,11 @@ include("helper/status.jl")
 include("helper/coeffConstraintCost.jl")
 include("helper/solveMpcProblem.jl")
 include("helper/ComputeCostLap.jl")
-include("simModel.jl")
+include("helper/simModel.jl")
 
 # Load Variables and create Model:
 println("Loading and defining variables...")
-include("createModel.jl")
+include("helper/createModel.jl")
 
 # Initialize model by solving it once
 println("Initial solve...")
