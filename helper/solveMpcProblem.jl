@@ -7,11 +7,9 @@
 # i = 3 -> epsi
 # i = 4 -> v
 
-function solveMpcProblem(mpcCoeff::MpcCoeff,mpcParams::MpcParams,trackCoeff::TrackCoeff,lapStatus::LapStatus,posInfo::PosInfo,modelParams::ModelParams,zCurr,uCurr)
+function solveMpcProblem(mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcParams::MpcParams,trackCoeff::TrackCoeff,lapStatus::LapStatus,posInfo::PosInfo,modelParams::ModelParams,zCurr,uCurr)
 
     # Load Parameters
-    mpcSol::MpcSol
-    
     coeffCurvature  = trackCoeff.coeffCurvature
     N               = mpcParams.N
     Q               = mpcParams.Q
@@ -114,8 +112,11 @@ function solveMpcProblem(mpcCoeff::MpcCoeff,mpcParams::MpcParams,trackCoeff::Tra
     # Solve Problem and return solution
     sol_status  = solve(mdl)
     sol_u       = getvalue(u_Ol)
+    cost        = zeros(6)
     #mpcSol      = MpcSol(sol_u[1,1],sol_u[2,1],sol_status,getvalue(u_Ol),getvalue(z_Ol),[getvalue(costZ),getvalue(costZTerm),getvalue(constZTerm),getvalue(derivCost),getvalue(controlCost),getvalue(laneCost)])
-    mpcSol      = MpcSol(sol_u[1,1],sol_u[2,1]) # Fast version without logging
+    mpcSol.cost = cost
+    mpcSol.a_x = sol_u[1,1]
+    mpcSol.d_f = sol_u[2,1]
     #println(getvalue(costZTerm))
     #println(getvalue(z_Ol[1,N+1]))
     #println(getvalue(constZTerm))
@@ -134,5 +135,5 @@ function solveMpcProblem(mpcCoeff::MpcCoeff,mpcParams::MpcParams,trackCoeff::Tra
     # println(getvalue(z_Ol))
     # println("==============")
     # println(getvalue(u_Ol))
-    return mpcSol
+    nothing
 end

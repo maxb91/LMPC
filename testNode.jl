@@ -2,7 +2,7 @@ using JuMP
 using Ipopt
 using PyPlot
 
-include("helper/status.jl")
+include("helper/classes.jl")
 include("helper/coeffConstraintCost.jl")
 include("helper/solveMpcProblem.jl")
 include("helper/simModel.jl")
@@ -30,14 +30,18 @@ function run_sim()
 
     posInfo.s_start             = 0
     posInfo.s_target            = 2
+
     mpcCoeff.order              = 5
+    mpcCoeff.coeffCost          = zeros(mpcCoeff.order+1,2)
+    mpcCoeff.coeffConst         = zeros(mpcCoeff.order+1,2,3) # nz-1 because no coeff for s
     mpcCoeff.pLength            = 4*mpcParams.N        # small values here may lead to numerical problems since the functions are only approximated in a short horizon
 
+    mpcSol.cost             = zeros(6)
 
-    mpcParams.QderivZ       = 0.0*[1 1 1 1]     # cost matrix for derivative cost of states
-    mpcParams.QderivU       = 0.1*[1 1]         # cost matrix for derivative cost of inputs
-    mpcParams.R             = 0.0*[1 1]        # cost matrix for control inputs
-    mpcParams.Q             = [0.0 10.0 0.0 1.0]     # put weights on ey and v (no weight on epsi)
+    mpcParams.QderivZ       = 0.0*[1,1,1,1]     # cost matrix for derivative cost of states
+    mpcParams.QderivU       = 0.1*[1,1]         # cost matrix for derivative cost of inputs
+    mpcParams.R             = 0.0*[1,1]        # cost matrix for control inputs
+    mpcParams.Q             = [0.0,10.0,0.0,1.0]     # put weights on ey and v (no weight on epsi)
 
     global mdl, trackCoeff
 
@@ -82,11 +86,13 @@ function run_sim()
             println("===============")
             tic()
             posInfo.s   = zCurr[i-1,1]
-            mpcCoeff    = coeffConstraintCost(oldTraj,lapStatus,mpcCoeff,posInfo,mpcParams)
+            if j > 1
+                coeffConstraintCost(oldTraj,mpcCoeff,posInfo,mpcParams)
+            end
             tt1 = toc()
             println("coeffConstr: $tt1")
             tic()
-            mpcSol      = solveMpcProblem(mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr[i-1,:]',uCurr[i-1,:]')
+            solveMpcProblem(mpcSol,mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr[i-1,:]',uCurr[i-1,:]')
             tt[i]       = toc()
             cost[i,:]   = mpcSol.cost
             uCurr[i,:]  = [mpcSol.a_x mpcSol.d_f]

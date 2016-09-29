@@ -10,7 +10,7 @@ const modelParams     = ModelParams()
 
 mpcParams.N                 = 5
 mpcParams.nz                = 4
-mpcParams.Q                 = [0.0 1.0 1.0 1.0]     # put weights on ey, epsi and v
+mpcParams.Q                 = [0.0,1.0,1.0,1.0]     # put weights on ey, epsi and v
 mpcParams.vPathFollowing    = 0.2
 
 trackCoeff.coeffCurvature   = [0.0,0.0,0.0,0.0,0.0]         # polynomial coefficients for curvature approximation (zeros for straight line)
