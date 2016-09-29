@@ -121,26 +121,9 @@ function coeffConstraintCost(oldTraj::OldTrajectory, lapStatus::LapStatus, mpcCo
         # The vector bQfunction_Vector contains the cost at each point in the interpolated area to reach the finish line
         # From this vector, polynomial coefficients coeffCost are calculated to approximate this cost
         for i=1:2
-            Qfunction  = zeros(N_points,1)
-            IndexBezierS = idx_s[i] - (i-1)*N_points        # IndexBezierS is the index specifying the current position
-            idx_s_target = find(oldS[:,i].>s_target)[1]
-            dist_to_s_target = (idx_s_target - IndexBezierS)
-
-            bQfunction_Vector = zeros(pLength+1,1)
-            # Select the part needed for the interpolation
-            #bQfunction_Vector                   = Qfunction[IndexBezierS:IndexBezierS+pLength]
-            qLength = min(dist_to_s_target,pLength+1)
-            #println(bQfunction_Vector)
-            bQfunction_Vector                   = zeros(pLength+1,1)
-            bQfunction_Vector[1:qLength]        = (dist_to_s_target:-1:dist_to_s_target-qLength+1)*0.1
-
-            #bQfunction_Vector                   = collect((dist_to_s_target:-1:dist_to_s_target-pLength))*0.1
-            #println("length = $(length(bQfunction_Vector)), $(pLength+1)")
-            #println(bQfunction_Vector)
-            #readline()
-
-            # Compute coefficient for the cost
-            coeffCost[:,i]      = MatrixInterp[:,:,i]\bQfunction_Vector
+            dist_to_s_target = oldTraj.oldCost[i] - (idx_s[i]-N_points*(i-1))
+            bQfunction_Vector = collect(linspace(dist_to_s_target,dist_to_s_target-1,pLength+1))
+            coeffCost[:,i] = MatrixInterp[:,:,i]\bQfunction_Vector
             # if maximum(coeffCost) > 1e4
             #     warn("Large coefficients in cost, might cause numerical problems.")
             #     s = s_forinterpy[:,1,i]
