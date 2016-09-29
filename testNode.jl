@@ -44,7 +44,7 @@ function run_sim()
 
     # Simulate System
     t           = collect(0:dt:40)
-    zCurr       = zeros(length(t),4)
+    zCurr       = zeros(length(t)+1,4)
     uCurr       = zeros(length(t),2)
     cost        = zeros(length(t),6)
     posInfo.s_target            = 6
@@ -58,7 +58,7 @@ function run_sim()
         lapStatus.currentLap = j
 
         tt          = zeros(length(t),1)
-        zCurr       = zeros(length(t),4)
+        zCurr       = zeros(length(t)+1,4)
         zCurr[1,4]  = 0.2
         uCurr       = zeros(length(t),2)
         if j>1                                  # if we are in the second or higher lap
@@ -69,49 +69,56 @@ function run_sim()
         cost        = zeros(length(t),6)
         finished    = false
 
-        i = 2
+        i = 1
         while i<length(t) && !finished
-            if zCurr[i-1,1] <= 1
+            if zCurr[i,1] <= 1 # states from old simulation step
                 trackCoeff.coeffCurvature[5] = 0.0
-            elseif zCurr[i-1,1] <= 2
+            elseif zCurr[i,1] <= 2
                 trackCoeff.coeffCurvature[5] = 0.4
-            elseif zCurr[i-1,1] <= 3
+            elseif zCurr[i,1] <= 3
                 trackCoeff.coeffCurvature[5] = -0.8
-            elseif zCurr[i-1,1] <= 5
+            elseif zCurr[i,1] <= 5
                 trackCoeff.coeffCurvature[5] = 0.4
             else
                 trackCoeff.coeffCurvature[5] = 0.0
             end
 
             tic()
-            posInfo.s   = zCurr[i-1,1]
+            posInfo.s   = zCurr[i,1]
             mpcCoeff    = coeffConstraintCost(oldTraj,lapStatus,mpcCoeff,posInfo,mpcParams)
             tt1 = toc()
             println("coeffConstr: $tt1")
             tic()
-            mpcSol      = solveMpcProblem(mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr[i-1,:]',uCurr[i-1,:]')
+            #todo func z curr oaut of xy 
+            if i > 1
+                mpcSol      = solveMpcProblem(mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr[i,:]',uCurr[i-1,:]')
+            else
+                mpcSol      = solveMpcProblem(mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr[i,:]',u_final')
+            end
             tt[i]       = toc()
             cost[i,:]   = mpcSol.cost
             uCurr[i,:]  = [mpcSol.a_x mpcSol.d_f]
-            zCurr[i,:]  = simModel(zCurr[i-1,:],uCurr[i-1,:],modelParams.dt,trackCoeff.coeffCurvature,modelParams)
+            #todo sim model with xy cur
+            zCurr[i+1,:]  = simModel(zCurr[i,:],uCurr[i,:],modelParams.dt,trackCoeff.coeffCurvature,modelParams)
             println("Solving step $i of $(length(t)) - Status: $(mpcSol.solverStatus), Time: $(tt[i]) s")
             println("s = $(zCurr[i,1])")
-            if zCurr[i,1] >= posInfo.s_target
+            if zCurr[i+1,1] >= posInfo.s_target
                 println("Reached finish line at step $i")
                 finished = true
             end
             i = i + 1
         end
-        z_final = zCurr[i-1,:]
-        u_final = uCurr[i-1,:]
+        i = i-1
+        z_final = zCurr[i,:]
+        u_final = uCurr[i,:]
         println("=================\nFinished Solving. Avg. time = $(mean(tt[1:i-1])) s")
         println("Finished Lap Nr. $j")
 
 
         # Save states in oldTraj:
         # --------------------------------
-        zCurr_export = cat(1,zCurr[1:i-1,:], [zCurr[i-1,1]+collect(1:buffersize-i+1)*dt*zCurr[i-1,4] ones(buffersize-i+1,1)*zCurr[i-1,2:4]])
-        uCurr_export = cat(1,uCurr[1:i-1,:], zeros(buffersize-i+1,2))
+        zCurr_export = cat(1,zCurr[1:i,:], [zCurr[i,1]+collect(1:buffersize-i)*dt*zCurr[i,4] ones(buffersize-i,1)*zCurr[i,2:4]])
+        uCurr_export = cat(1,uCurr[1:i,:], zeros(buffersize-i,2))
         costLap = computeCostLap(zCurr,posInfo.s_target)
         println("costLap = $costLap")
 
@@ -135,7 +142,7 @@ function run_sim()
 
         # Print results
         ax1=subplot(311)
-        plot(t,zCurr[:,1],"y",t,zCurr[:,2],"r",t,zCurr[:,3],"g",t,zCurr[:,4],"b")
+        plot(t,zCurr[1:end-1,1],"y",t,zCurr[1:end-1,2],"r",t,zCurr[1:end-1,3],"g",t,zCurr[1:end-1,4],"b")
         grid(1)
         legend(["s","eY","ePsi","v"])
         title("States")

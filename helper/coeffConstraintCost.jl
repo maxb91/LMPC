@@ -13,7 +13,7 @@
 function coeffConstraintCost(oldTraj::OldTrajectory, lapStatus::LapStatus, mpcCoeff::MpcCoeff, posInfo::PosInfo, mpcParams::MpcParams)
     # this computes the coefficients for the cost and constraints
 
-    # Outputs: 
+    # Outputs:
     # coeffConst
     # coeffCost
     mpcCoeff::MpcCoeff          # preallocate memory for return value
@@ -31,14 +31,14 @@ function coeffConstraintCost(oldTraj::OldTrajectory, lapStatus::LapStatus, mpcCo
 
     # Parameters
     N               = mpcParams.N
-    nz              = mpcParams.nz
+    nz              = mpcParams.nz # number of States
     R               = mpcParams.R
     Order           = mpcCoeff.order                # interpolation order for cost and constraints
 
     pLength         = mpcCoeff.pLength              # interpolation length for polynomials
 
     coeffCost       = zeros(Order+1,2)            # polynomial coefficients for cost
-    coeffConst      = zeros(Order+1,2,3)       # nz-1 beacuse no coeff for s
+    coeffConst      = zeros(Order+1,2,3)
 
     N_points        = size(oldTrajectory,1)     # second dimension = length
 
@@ -80,7 +80,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, lapStatus::LapStatus, mpcCo
         bePsi_Vector    = cat(2, oldePsi[vec_range[1]], oldePsi[vec_range[2]])
         bV_Vector       = cat(2, oldV[vec_range[1]],    oldV[vec_range[2]])
         # These matrices (above) contain two vectors each (for both old trajectories), stored in the 3rd dimension
-        
+
         # The states are parametrized with resprect to the curvilinear abscissa,
         # so we select the point used for the interpolation. Need to subtract an
         # offset to be coherent with the MPC formulation
@@ -91,7 +91,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, lapStatus::LapStatus, mpcCo
         for k = 0:Order
             MatrixInterp[:,Order+1-k,:] = s_forinterpy[:,:].^k
         end
-        
+
         # Compute the coefficients
         CoefficientsFor_ey      = zeros(Order+1,2)
         CoefficientsFor_ePsi    = zeros(Order+1,2)
@@ -101,7 +101,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, lapStatus::LapStatus, mpcCo
             CoefficientsFor_ePsi[:,i]    = MatrixInterp[:,:,i]\bePsi_Vector[:,i]
             CoefficientsFor_V[:,i]       = MatrixInterp[:,:,i]\bV_Vector[:,i]
         end
-        
+
         # Stack the coefficients
         coeffConst = zeros(Order+1,2,3)
         coeffConst[:,:,1]                       = CoefficientsFor_ey
@@ -109,12 +109,11 @@ function coeffConstraintCost(oldTraj::OldTrajectory, lapStatus::LapStatus, mpcCo
         coeffConst[:,:,3]                       = CoefficientsFor_V
         # structure of coeffConst:
         # 1st dimension specifies state
-        # 2nd dimension specifies steps
-        # 3rd dimension not used
-        # 4th dimension specifies lapNumber
+        # 2nd dimension specifies steps0
+        # 3th dimension specifies lapNumber
 
         # Finished with calculating the constraint coefficients
-        
+
         # Now compute the final cost coefficients
 
         # The Q-function contains for every point in the sampled safe set the minimum cost-to-go-value
@@ -126,7 +125,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, lapStatus::LapStatus, mpcCo
             IndexBezierS = idx_s[i] - (i-1)*N_points        # IndexBezierS is the index specifying the current position
             idx_s_target = find(oldS[:,i].>s_target)[1]
             dist_to_s_target = (idx_s_target - IndexBezierS)
-            
+
             bQfunction_Vector = zeros(pLength+1,1)
             # Select the part needed for the interpolation
             #bQfunction_Vector                   = Qfunction[IndexBezierS:IndexBezierS+pLength]
@@ -165,7 +164,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, lapStatus::LapStatus, mpcCo
         #     grid()
         #     readline()
         # end
-        
+
 
     else        # if it is the first lap
         coeffCost            = zeros(Order+1,1,2)
