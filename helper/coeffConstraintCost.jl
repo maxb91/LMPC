@@ -120,11 +120,13 @@ function coeffConstraintCost(oldTraj::OldTrajectory, lapStatus::LapStatus, mpcCo
         # These values are calculated for both old trajectories
         # The vector bQfunction_Vector contains the cost at each point in the interpolated area to reach the finish line
         # From this vector, polynomial coefficients coeffCost are calculated to approximate this cost
-        for i=1:2            
-            bQfunction_Vector = (s_target - oldS[vec_range[i]]) # The Q function is just the distance of old s-values to the target
-                # The bQfunction vector uses only the values of our range for approximation
-
+        for i=1:2
+            dist_to_s_target = oldTraj.oldCost[i] - (idx_s[i]-N_points*(i-1))
+            bQfunction_Vector = collect(linspace(dist_to_s_target,dist_to_s_target-1,pLength+1))
             coeffCost[:,i]      = MatrixInterp[:,:,i]\bQfunction_Vector
+
+            #plot(oldS[vec_range[i]],bQfunction_Vector,"-*",oldS[vec_range[i]],bQfunction_Vector2,"-o")
+            #readline()
             # if maximum(coeffCost) > 1e4
             #     warn("Large coefficients in cost, might cause numerical problems.")
             #     s = s_forinterpy[:,1,i]

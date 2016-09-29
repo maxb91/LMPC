@@ -5,7 +5,6 @@ using PyPlot
 include("helper/status.jl")
 include("helper/coeffConstraintCost.jl")
 include("helper/solveMpcProblem.jl")
-include("helper/ComputeCostLap.jl")
 include("helper/simModel.jl")
 
 # Load Variables and create Model:
@@ -80,7 +79,7 @@ function run_sim()
             else
                 trackCoeff.coeffCurvature[5] = 0.0
             end
-
+            println("===============")
             tic()
             posInfo.s   = zCurr[i-1,1]
             mpcCoeff    = coeffConstraintCost(oldTraj,lapStatus,mpcCoeff,posInfo,mpcParams)
@@ -110,7 +109,7 @@ function run_sim()
         # --------------------------------
         zCurr_export = cat(1,zCurr[1:i-1,:], [zCurr[i-1,1]+collect(1:buffersize-i+1)*dt*zCurr[i-1,4] ones(buffersize-i+1,1)*zCurr[i-1,2:4]])
         uCurr_export = cat(1,uCurr[1:i-1,:], zeros(buffersize-i+1,2))
-        costLap = computeCostLap(zCurr,posInfo.s_target)
+        costLap = i-1
         println("costLap = $costLap")
 
         if lapStatus.currentLap == 1
@@ -132,6 +131,12 @@ function run_sim()
         end
 
         # Print results
+        # figure()
+        # plot(zCurr[:,1],zCurr[:,2],"r",zCurr[:,1],zCurr[:,3],"g",zCurr[:,1],zCurr[:,4],"b")
+        # grid(1)
+        # legend(["eY","ePsi","v"])
+        # title("States over s")
+
         ax1=subplot(311)
         plot(t,zCurr[:,1],"y",t,zCurr[:,2],"r",t,zCurr[:,3],"g",t,zCurr[:,4],"b")
         grid(1)
