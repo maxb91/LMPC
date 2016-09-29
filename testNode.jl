@@ -8,6 +8,10 @@ include("helper/solveMpcProblem.jl")
 include("helper/ComputeCostLap.jl")
 include("helper/simModel.jl")
 
+#just loads one specified track with distances betwwen points =1 m and returnx x and y coordinatates
+include("helper/loadTestMap.jl")
+x_track, y_track = loadTestMap()
+
 # Load Variables and create Model:
 println("Loading and defining variables...")
 include("helper/createModel.jl")
@@ -89,7 +93,8 @@ function run_sim()
             tt1 = toc()
             println("coeffConstr: $tt1")
             tic()
-            #todo func z curr oaut of xy 
+            #todo func z curr oaut of xy
+            localizeVehicleCurvAbs(states,x_track,y_track,mpcParams)
             if i > 1
                 mpcSol      = solveMpcProblem(mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr[i,:]',uCurr[i-1,:]')
             else
