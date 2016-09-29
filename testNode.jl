@@ -2,57 +2,49 @@ using JuMP
 using Ipopt
 using PyPlot
 
-include("helper/status.jl")
+include("helper/classes.jl")
+include("helper/functions.jl")
 include("helper/coeffConstraintCost.jl")
 include("helper/solveMpcProblem.jl")
 include("helper/simModel.jl")
 
 # Load Variables and create Model:
-println("Loading and defining variables...")
-include("helper/createModel.jl")
+#println("Loading and defining variables...")
+#include("helper/createModel.jl")
 
 # Initialize model by solving it once
-println("Initial solve...")
-solve(mdl)
+#println("Initial solve...")
+#solve(mdl)
 
 function run_sim()
-
     # DEFINE PARAMETERS
-    oldTraj         = OldTrajectory()
-    lapStatus       = LapStatus(1,1)
-    mpcCoeff        = MpcCoeff()
-    posInfo         = PosInfo()
-    mpcSol          = MpcSol()
+    # Define and initialize variables
+    oldTraj                     = OldTrajectory()
+    posInfo                     = PosInfo()
+    mpcCoeff                    = MpcCoeff()
+    lapStatus                   = LapStatus(1,1)
+    mpcSol                      = MpcSol()
+    trackCoeff                  = TrackCoeff()      # info about track (at current position, approximated)
+    modelParams                 = ModelParams()
+    mpcParams                   = MpcParams()
+    mdl                         = MpcModel()
 
     buffersize                  = 700
-    oldTraj.oldTraj             = zeros(buffersize,4,2)
-    oldTraj.oldInput            = zeros(buffersize,2,2)
 
-    modelParams.m               = 1
-    modelParams.I_z             = 1
+    z_Init = zeros(4)
+
+    InitializeParameters(mpcParams,trackCoeff,modelParams,posInfo,oldTraj,mpcCoeff,lapStatus,buffersize)
+    InitializeModel(mdl,mpcParams,modelParams,trackCoeff,z_Init)
+
+    # Simulation parameters
+    dt                          = modelParams.dt
+    t                           = collect(0:dt:40)
+    zCurr                       = zeros(length(t),4)
+    uCurr                       = zeros(length(t),2)
+    cost                        = zeros(length(t),6)
 
     posInfo.s_start             = 0
-    posInfo.s_target            = 2
-    mpcCoeff.order              = 5
-    mpcCoeff.pLength            = 4*mpcParams.N        # small values here may lead to numerical problems since the functions are only approximated in a short horizon
-
-
-    mpcParams.QderivZ       = 0.0*[1 1 1 1]     # cost matrix for derivative cost of states
-    mpcParams.QderivU       = 0.1*[1 1]         # cost matrix for derivative cost of inputs
-    mpcParams.R             = 0.0*[1 1]        # cost matrix for control inputs
-    mpcParams.Q             = [0.0 10.0 0.0 1.0]     # put weights on ey and v (no weight on epsi)
-
-    global mdl, trackCoeff
-
-    # Simulate System
-    t::Array{Float64,1}
-    t           = collect(0.0:dt:40.0)
-    zCurr       = zeros(length(t),4)
-    zCurr_dyn   = zeros(length(t),6)
-    uCurr       = zeros(length(t),2)
-    cost        = zeros(length(t),6)
     posInfo.s_target            = 6
-
     trackCoeff.coeffCurvature   = [0.0,0.0,0.0,0.0,0.0]         # polynomial coefficients for curvature approximation (zeros for straight line)
     i = 2
     z_final = zeros(1,4)
@@ -75,6 +67,8 @@ function run_sim()
         cost        = zeros(length(t),6)
         finished    = false
 
+        # Start one lap
+        # --------------------------------
         i = 2
         while i<length(t) && !finished
             if zCurr[i-1,1] <= 1
@@ -89,12 +83,15 @@ function run_sim()
             println("===============")
             tic()
             posInfo.s   = zCurr[i-1,1]
-            mpcCoeff    = coeffConstraintCost(oldTraj,lapStatus,mpcCoeff,posInfo,mpcParams)
-            tt1 = toc()
-            println("coeffConstr: $tt1")
+            if j > 1
+                coeffConstraintCost(oldTraj,mpcCoeff,posInfo,mpcParams)
+            end
+            tt1 = toq()
+            println("coeffConstr: $tt1 s")
             tic()
-            mpcSol      = solveMpcProblem(mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr[i-1,:]',uCurr[i-1,:]')
-            tt[i]       = toc()
+            solveMpcProblem(mdl,mpcSol,mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr[i-1,:]',uCurr[i-1,:]')
+            
+            tt[i]       = toq()
             cost[i,:]   = mpcSol.cost
 
             uCurr[i,:]  = [mpcSol.a_x mpcSol.d_f]
@@ -108,39 +105,21 @@ function run_sim()
                 finished = true
             end
             i = i + 1
+            lapStatus.currentIt = i
         end
         z_final = zCurr[i-1,:]
         u_final = uCurr[i-1,:]
         println("=================\nFinished Solving. Avg. time = $(mean(tt[1:i-1])) s")
         println("Finished Lap Nr. $j")
 
-
         # Save states in oldTraj:
         # --------------------------------
-        zCurr_export = cat(1,zCurr[1:i-1,:], [zCurr[i-1,1]+collect(1:buffersize-i+1)*dt*zCurr[i-1,4] ones(buffersize-i+1,1)*zCurr[i-1,2:4]])
-        uCurr_export = cat(1,uCurr[1:i-1,:], zeros(buffersize-i+1,2))
-        costLap = i-1
-        println("costLap = $costLap")
+        saveOldTraj(oldTraj,zCurr,uCurr,lapStatus,buffersize,modelParams.dt)
 
-        if lapStatus.currentLap == 1
-            oldTraj.oldTraj[:,:,1]  = zCurr_export
-            oldTraj.oldInput[:,:,1] = uCurr_export
-            oldTraj.oldTraj[:,:,2]  = zCurr_export
-            oldTraj.oldInput[:,:,2] = uCurr_export
-            oldTraj.oldCost = [costLap,costLap]
-        else
-            if oldTraj.oldCost[1] < oldTraj.oldCost[2]      # if the first traj is better than the second
-                oldTraj.oldTraj[:,:,2]  = zCurr_export     # ...write the new traj in the second
-                oldTraj.oldInput[:,:,2] = uCurr_export
-                oldTraj.oldCost[2] = costLap
-            else
-                oldTraj.oldTraj[:,:,1]  = zCurr_export     # if the second traj is better than the first
-                oldTraj.oldInput[:,:,1] = uCurr_export     # ...write the new traj in the first
-                oldTraj.oldCost[1] = costLap
-            end
-        end
 
         # Print results
+        # --------------------------------
+
         # figure()
         # plot(zCurr[:,1],zCurr[:,2],"r",zCurr[:,1],zCurr[:,3],"g",zCurr[:,1],zCurr[:,4],"b")
         # grid(1)
