@@ -75,5 +75,7 @@ type ModelParams
     z_lb
     z_ub
     c0
-    ModelParams(l_A=0.25,l_B=0.25,dt=0.1,u_lb=0,u_ub=0,z_lb=0,z_ub=0,c0=0) = new(l_A,l_B,dt,u_lb,u_ub,z_lb,z_ub,c0)
+    m::Float64
+    I_z::Float64
+    ModelParams(l_A=0.25,l_B=0.25,dt=0.1,u_lb=0,u_ub=0,z_lb=0,z_ub=0,c0=0,m=2,I_z=0.3) = new(l_A,l_B,dt,u_lb,u_ub,z_lb,z_ub,c0,m,I_z)
 end

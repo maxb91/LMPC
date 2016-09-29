@@ -66,7 +66,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, lapStatus::LapStatus, mpcCo
             println("idx_s = $idx_s")
             println("s_total = $s_total")
         end
-        println("vec_range = $vec_range")
+        
         # Create the vectors used for the interpolation
         # **************** WHAT IF MINIMUM INDEX + PLENGTH IS LONGER THAN ENTIRE OLD TRAJECTORY ? *******************************
         # -> oldTrajectory is designed to go way beyond the "real" measured limit

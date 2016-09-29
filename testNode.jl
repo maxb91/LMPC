@@ -28,6 +28,9 @@ function run_sim()
     oldTraj.oldTraj             = zeros(buffersize,4,2)
     oldTraj.oldInput            = zeros(buffersize,2,2)
 
+    modelParams.m               = 1
+    modelParams.I_z             = 1
+
     posInfo.s_start             = 0
     posInfo.s_target            = 2
     mpcCoeff.order              = 5
@@ -42,8 +45,10 @@ function run_sim()
     global mdl, trackCoeff
 
     # Simulate System
-    t           = collect(0:dt:40)
+    t::Array{Float64,1}
+    t           = collect(0.0:dt:40.0)
     zCurr       = zeros(length(t),4)
+    zCurr_dyn   = zeros(length(t),6)
     uCurr       = zeros(length(t),2)
     cost        = zeros(length(t),6)
     posInfo.s_target            = 6
@@ -58,7 +63,9 @@ function run_sim()
 
         tt          = zeros(length(t),1)
         zCurr       = zeros(length(t),4)
-        zCurr[1,4]  = 0.2
+        zCurr_dyn   = zeros(length(t),6)
+        zCurr[1,4]      = 0.2
+        zCurr_dyn[1,1]  = 0.2
         uCurr       = zeros(length(t),2)
         if j>1                                  # if we are in the second or higher lap
             zCurr[1,:] = z_final
@@ -89,8 +96,11 @@ function run_sim()
             mpcSol      = solveMpcProblem(mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr[i-1,:]',uCurr[i-1,:]')
             tt[i]       = toc()
             cost[i,:]   = mpcSol.cost
+
             uCurr[i,:]  = [mpcSol.a_x mpcSol.d_f]
-            zCurr[i,:]  = simModel(zCurr[i-1,:],uCurr[i-1,:],modelParams.dt,trackCoeff.coeffCurvature,modelParams)
+            zCurr_dyn[i,:] = simDynModel_exact(zCurr_dyn[i-1,:],uCurr[i,:],modelParams.dt,trackCoeff.coeffCurvature,modelParams)
+            zCurr[i,:] = [zCurr_dyn[i,6] zCurr_dyn[i,5] zCurr_dyn[i,4] zCurr_dyn[i,1]]
+
             println("Solving step $i of $(length(t)) - Status: $(mpcSol.solverStatus), Time: $(tt[i]) s")
             println("s = $(zCurr[i,1])")
             if zCurr[i,1] >= posInfo.s_target
@@ -137,6 +147,12 @@ function run_sim()
         # legend(["eY","ePsi","v"])
         # title("States over s")
 
+        figure(1)
+        plot(t,zCurr_dyn)
+        legend(["xDot","yDot","psiDot","ePsi","eY","s"])
+        grid(1)
+
+        figure(2)
         ax1=subplot(311)
         plot(t,zCurr[:,1],"y",t,zCurr[:,2],"r",t,zCurr[:,3],"g",t,zCurr[:,4],"b")
         grid(1)
