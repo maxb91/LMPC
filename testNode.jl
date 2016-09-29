@@ -38,7 +38,7 @@ function run_sim()
     mpcParams.QderivZ       = 0.0*[1 1 1 1]     # cost matrix for derivative cost of states
     mpcParams.QderivU       = 0.1*[1 1]         # cost matrix for derivative cost of inputs
     mpcParams.R             = 0.0*[1 1]        # cost matrix for control inputs
-    mpcParams.Q             = [0.0 10.0 10.0 1.0]     # put weights on ey, epsi and v
+    mpcParams.Q             = [0.0 10.0 0.0 1.0]     # put weights on ey and v (no weight on epsi)
 
     global mdl, trackCoeff
 
@@ -73,12 +73,10 @@ function run_sim()
         while i<length(t) && !finished
             if zCurr[i-1,1] <= 1
                 trackCoeff.coeffCurvature[5] = 0.0
-            elseif zCurr[i-1,1] <= 2
-                trackCoeff.coeffCurvature[5] = 0.4
             elseif zCurr[i-1,1] <= 3
-                trackCoeff.coeffCurvature[5] = -0.8
+                trackCoeff.coeffCurvature[5] = 0.8
             elseif zCurr[i-1,1] <= 5
-                trackCoeff.coeffCurvature[5] = 0.4
+                trackCoeff.coeffCurvature[5] = -0.8
             else
                 trackCoeff.coeffCurvature[5] = 0.0
             end

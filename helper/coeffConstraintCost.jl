@@ -110,8 +110,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, lapStatus::LapStatus, mpcCo
         # structure of coeffConst:
         # 1st dimension specifies state
         # 2nd dimension specifies steps
-        # 3rd dimension not used
-        # 4th dimension specifies lapNumber
+        # 3rd dimension specifies lapNumber
 
         # Finished with calculating the constraint coefficients
         
@@ -121,26 +120,10 @@ function coeffConstraintCost(oldTraj::OldTrajectory, lapStatus::LapStatus, mpcCo
         # These values are calculated for both old trajectories
         # The vector bQfunction_Vector contains the cost at each point in the interpolated area to reach the finish line
         # From this vector, polynomial coefficients coeffCost are calculated to approximate this cost
-        for i=1:2
-            Qfunction  = zeros(N_points,1)
-            IndexBezierS = idx_s[i] - (i-1)*N_points        # IndexBezierS is the index specifying the current position
-            idx_s_target = find(oldS[:,i].>s_target)[1]
-            dist_to_s_target = (idx_s_target - IndexBezierS)
-            
-            bQfunction_Vector = zeros(pLength+1,1)
-            # Select the part needed for the interpolation
-            #bQfunction_Vector                   = Qfunction[IndexBezierS:IndexBezierS+pLength]
-            qLength = min(dist_to_s_target,pLength+1)
-            #println(bQfunction_Vector)
-            bQfunction_Vector                   = zeros(pLength+1,1)
-            bQfunction_Vector[1:qLength]        = (dist_to_s_target:-1:dist_to_s_target-qLength+1)*0.1
+        for i=1:2            
+            bQfunction_Vector = (s_target - oldS[vec_range[i]]) # The Q function is just the distance of old s-values to the target
+                # The bQfunction vector uses only the values of our range for approximation
 
-            #bQfunction_Vector                   = collect((dist_to_s_target:-1:dist_to_s_target-pLength))*0.1
-            #println("length = $(length(bQfunction_Vector)), $(pLength+1)")
-            #println(bQfunction_Vector)
-            #readline()
-
-            # Compute coefficient for the cost
             coeffCost[:,i]      = MatrixInterp[:,:,i]\bQfunction_Vector
             # if maximum(coeffCost) > 1e4
             #     warn("Large coefficients in cost, might cause numerical problems.")
