@@ -69,13 +69,15 @@ end
 type ModelParams
     l_A::Float64
     l_B::Float64
+    m::Float64
+    I_z::Float64
     dt::Float64
     u_lb::Array{Float64}        # lower bounds for u
     u_ub::Array{Float64}        # upper bounds
     z_lb::Array{Float64}
     z_ub::Array{Float64}
     c0::Array{Float64}
-    ModelParams(l_A=0.25,l_B=0.25,dt=0.1,u_lb=Float64[],u_ub=Float64[],z_lb=Float64[],z_ub=Float64[],c0=Float64[]) = new(l_A,l_B,dt,u_lb,u_ub,z_lb,z_ub,c0)
+    ModelParams(l_A=0.25,l_B=0.25,m=1.98,I_z=0.24,dt=0.1,u_lb=Float64[],u_ub=Float64[],z_lb=Float64[],z_ub=Float64[],c0=Float64[]) = new(l_A,l_B,m,I_z,dt,u_lb,u_ub,z_lb,z_ub,c0)
 end
 
 type MpcModel
