@@ -18,7 +18,10 @@ type MpcCoeff           # coefficients for trajectory approximation
     pLength::Int64      # small values here may lead to numerical problems since the functions are only approximated in a short horizon
                         # "small" values are about 2*N, good values about 4*N
                         # numerical problems occur at the edges (s=0, when v is almost 0 and s does not change fast and at s=s_target)
-    MpcCoeff(coeffCost=Float64[], coeffConst=Float64[], order=4, pLength=0) = new(coeffCost, coeffConst, order, pLength)
+    c_Vx::Array{Float64,1}
+    c_Vy::Array{Float64,1}
+    c_Psi::Array{Float64,1}
+    MpcCoeff(coeffCost=Float64[], coeffConst=Float64[], order=4, pLength=0,c_Vx=Float64[],c_Vy=Float64[],c_Psi=Float64[]) = new(coeffCost, coeffConst, order, pLength, c_Vx, c_Vy, c_Psi)
 end
 
 type OldTrajectory      # information about previous trajectories
@@ -85,6 +88,9 @@ type MpcModel
 
     z0::Array{JuMP.NonlinearParameter,1}
     coeff::Array{JuMP.NonlinearParameter,1}
+    c_Vx::Array{JuMP.NonlinearParameter,1}
+    c_Vy::Array{JuMP.NonlinearParameter,1}
+    c_Psi::Array{JuMP.NonlinearParameter,1}
 
     z_Ol::Array{JuMP.Variable,2}
     u_Ol::Array{JuMP.Variable,2}
@@ -97,6 +103,9 @@ type MpcModel
     MpcModel(mdl=JuMP.Model(),
                 z0=@NLparameter(mdl,z0[i=1:4]==0),
                 coeff=@NLparameter(mdl,coeff[i=1:5]==0),
+                c_Vx=@NLparameter(mdl,coeff[i=1:3]==0),
+                c_Vy=@NLparameter(mdl,coeff[i=1:4]==0),
+                c_Psi=@NLparameter(mdl,coeff[i=1:3]==0),
                 z_Ol=@variable(mdl,[1:4,1:10]),
                 u_Ol=@variable(mdl,[1:2,1:9]),
                 ParInt=@variable(mdl,[1:1]),
@@ -105,6 +114,9 @@ type MpcModel
                 c=@NLexpression(mdl,c[1:10],0)) = new(mdl,
                                                         z0,
                                                         coeff,
+                                                        c_Vx,
+                                                        c_Vy,
+                                                        c_Psi,
                                                         z_Ol,
                                                         u_Ol,
                                                         ParInt,

@@ -5,7 +5,7 @@
 # z[5] = eY
 # z[6] = s
 
-function simModel(z::Array{Float64},u::Array{Float64},dt::Float64,coeff::Array{Float64},modelParams::ModelParams)
+function simKinModel(z::Array{Float64},u::Array{Float64},dt::Float64,coeff::Array{Float64},modelParams::ModelParams)
 
     zNext::Array{Float64}
     L_a = modelParams.l_A
@@ -25,6 +25,7 @@ function simModel(z::Array{Float64},u::Array{Float64},dt::Float64,coeff::Array{F
 end
 
 function simDynModel_exact(z::Array{Float64},u::Array{Float64},dt::Float64,coeff::Array{Float64},modelParams::ModelParams)
+    # This function uses smaller steps to achieve higher fidelity than we would achieve using longer timesteps
     z_final = z
     dtn = dt/100
     for i=1:100

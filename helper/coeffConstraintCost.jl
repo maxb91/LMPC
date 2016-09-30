@@ -9,6 +9,13 @@
 
 # structure of oldTrajectory: 1st dimension = state number, 2nd dimension = step number (time equiv.), 3rd dimennsion = lap number
 
+# z[1] = xDot
+# z[2] = yDot
+# z[3] = psiDot
+# z[4] = ePsi
+# z[5] = eY
+# z[6] = s
+
 function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo::PosInfo, mpcParams::MpcParams)
     # this computes the coefficients for the cost and constraints
 
@@ -27,17 +34,21 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     nz              = mpcParams.nz
     R               = mpcParams.R
     Order           = mpcCoeff.order                # interpolation order for cost and constraints
-
     pLength         = mpcCoeff.pLength              # interpolation length for polynomials
 
-    coeffCost       = zeros(Order+1,2)            # polynomial coefficients for cost
-    coeffConst      = zeros(Order+1,2,3)          # nz-1 beacuse no coeff for s
+    n_prev          = 20                            # number of points before current s for interpolation
+    n_ahead         = 60                            # number of points ahead current s for interpolation
+
+    coeffCost       = zeros(Order+1,2)              # polynomial coefficients for cost
+    coeffConst      = zeros(Order+1,2,5)            # nz-1 beacuse no coeff for s
 
     # Select the old data
-    oldS            = oldTraj.oldTraj[:,1,:]::Array{Float64,3}
-    oldeY           = oldTraj.oldTraj[:,2,:]::Array{Float64,3}
-    oldePsi         = oldTraj.oldTraj[:,3,:]::Array{Float64,3}
-    oldV            = oldTraj.oldTraj[:,4,:]::Array{Float64,3}
+    oldxDot         = oldTraj.oldTraj[:,1,:]::Array{Float64,3}
+    oldyDot         = oldTraj.oldTraj[:,2,:]::Array{Float64,3}
+    oldpsiDot       = oldTraj.oldTraj[:,3,:]::Array{Float64,3}
+    oldePsi         = oldTraj.oldTraj[:,4,:]::Array{Float64,3}
+    oldeY           = oldTraj.oldTraj[:,5,:]::Array{Float64,3}
+    oldS            = oldTraj.oldTraj[:,6,:]::Array{Float64,3}
 
     N_points        = size(oldTraj.oldTraj,1)     # second dimension = length
 
@@ -91,11 +102,13 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     end
     
     # Compute the coefficients
-    coeffConst = zeros(Order+1,2,3)
+    coeffConst = zeros(Order+1,2,5)
     for i=1:2
-        coeffConst[:,i,1]    = MatrixInterp[:,:,i]\oldeY[vec_range[i]]
-        coeffConst[:,i,2]    = MatrixInterp[:,:,i]\oldePsi[vec_range[i]]
-        coeffConst[:,i,3]    = MatrixInterp[:,:,i]\oldV[vec_range[i]]
+        coeffConst[:,i,1]    = MatrixInterp[:,:,i]\oldxDot[vec_range[i]]
+        coeffConst[:,i,2]    = MatrixInterp[:,:,i]\oldyDot[vec_range[i]]
+        coeffConst[:,i,3]    = MatrixInterp[:,:,i]\oldpsiDot[vec_range[i]]
+        coeffConst[:,i,4]    = MatrixInterp[:,:,i]\oldePsi[vec_range[i]]
+        coeffConst[:,i,5]    = MatrixInterp[:,:,i]\oldeY[vec_range[i]]
     end
 
     # Finished with calculating the constraint coefficients
@@ -112,6 +125,11 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
                                                                                                     # decreases in equal steps
             coeffCost[:,i]    = MatrixInterp[:,:,i]\bQfunction_Vector           # interpolate this vector with the given s
     end
+
+    # --------------- SYSTEM IDENTIFICATION --------------- #
+    # ----------------------------------------------------- #
+
+
 
     mpcCoeff.coeffCost  = coeffCost
     mpcCoeff.coeffConst = coeffConst
