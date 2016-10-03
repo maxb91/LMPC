@@ -53,7 +53,7 @@ function simDynModel(z::Array{Float64},u::Array{Float64},dt::Float64,coeff::Arra
     a_F = 0
     a_R = 0
     if abs(z[1]) > 0.1
-        a_F     = atan((z[2] + L_f*z[3])/z[1]) - u[2]
+        a_F     = atan((z[2] + L_f*z[3])/z[1]) - z[8]
         a_R     = atan((z[2] - L_r*z[3])/z[1])
     end
     
@@ -66,12 +66,14 @@ function simDynModel(z::Array{Float64},u::Array{Float64},dt::Float64,coeff::Arra
 
     zNext = z
 
-    zNext[1] = z[1] + dt * (u[1] + z[2]*z[3] - c_f*z[1]^2*sign(z[1]))      # xDot
-    zNext[2] = z[2] + dt * (2/m*(FyF*cos(u[2]) + FyR) - z[3]*z[1])          # yDot
+    zNext[1] = z[1] + dt * (z[7] + z[2]*z[3] - c_f*z[1]^2*sign(z[1]))       # xDot
+    zNext[2] = z[2] + dt * (2/m*(FyF*cos(z[8]) + FyR) - z[3]*z[1])          # yDot
     zNext[3] = z[3] + dt * (2/I_z*(L_f*FyF - L_r*FyR))                      # psiDot
     zNext[4] = z[4] + dt * (z[3]-dsdt*c)                                    # ePsi
     zNext[5] = z[5] + dt * (z[1]*sin(z[4]) + z[2]*cos(z[4]))                # eY
     zNext[6] = z[6] + dt * dsdt                                             # s
+    zNext[7] = z[7] + dt * (u[1] - z[7]) * 0.005/dt                         # a
+    zNext[8] = z[8] + dt * sign(u[2] - z[8]) * 0.01/dt                      # d_f
 
     return zNext
 end

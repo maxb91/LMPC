@@ -14,7 +14,7 @@ function saveOldTraj(oldTraj::OldTrajectory,zCurr::Array{Float64},uCurr::Array{F
                 uCurr_export    = zeros(buffersize,2)
 
                 zCurr_export    = cat(1,oldTraj.oldTraj[oldTraj.oldCost[1]+1:oldTraj.oldCost[1]+prebuf,:,1],
-                                        zCurr[1:i,:], 0*[ones(buffersize-i-prebuf,1)*zCurr[i,1:5] zCurr[i,6]+collect(1:buffersize-i-prebuf)*dt*zCurr[i,1]])
+                                        zCurr[1:i,:], [ones(buffersize-i-prebuf,1)*zCurr[i,1:5] zCurr[i,6]+collect(1:buffersize-i-prebuf)*dt*zCurr[i,1]])
                 uCurr_export    = cat(1,oldTraj.oldInput[oldTraj.oldCost[1]+1:oldTraj.oldCost[1]+prebuf,:,1],
                                         uCurr[1:i,:], zeros(buffersize-i-prebuf,2))
 
@@ -67,11 +67,13 @@ function InitializeModel(m::MpcModel,mpcParams::MpcParams,modelParams::ModelPara
 
     z_lb_6s = ones(mpcParams.N+1,1)*[0.1 -Inf -Inf -Inf -Inf -Inf]                    # lower bounds on states
     z_ub_6s = ones(mpcParams.N+1,1)*[3.0  Inf  Inf  Inf  Inf  Inf]                    # upper bounds
+    u_lb_6s = ones(mpcParams.N,1) * [-2.0  -pi/6]                    # lower bounds on steering
+    u_ub_6s = ones(mpcParams.N,1) * [5.0    pi/6]                  # upper bounds
 
     for i=1:2       # I don't know why but somehow the short method returns errors sometimes
         for j=1:N
-            #setlowerbound(m.u_Ol[j,i], modelParams.u_lb[j,i])
-            #setupperbound(m.u_Ol[j,i], modelParams.u_ub[j,i])
+            setlowerbound(m.u_Ol[j,i], modelParams.u_lb[j,i])
+            setupperbound(m.u_Ol[j,i], modelParams.u_ub[j,i])
         end
     end
     for i=1:6       # I don't know why but somehow the short method returns errors sometimes
@@ -194,14 +196,14 @@ end
 
 function InitializeParameters(mpcParams::MpcParams,mpcParams_pF::MpcParams,trackCoeff::TrackCoeff,modelParams::ModelParams,
                                 posInfo::PosInfo,oldTraj::OldTrajectory,mpcCoeff::MpcCoeff,lapStatus::LapStatus,buffersize::Int64)
-    mpcParams.N                 = 10
+    mpcParams.N                 = 5
     mpcParams.Q                 = [0.0,10.0,0.0,1.0]      # put weights on ey, epsi and v
     mpcParams.Q_term            = 10*[1.0,1.0,1.0,1.0,1.0]        # weights for terminal constraints (LMPC, for e_y, e_psi, and v)
     mpcParams.R                 = 0*[1.0,1.0]             # put weights on a and d_f
     mpcParams.QderivZ           = 0.0*[0,0,0.1,0,0,0]       # cost matrix for derivative cost of states
     mpcParams.QderivU           = 0.1*[1,1]               # cost matrix for derivative cost of inputs
 
-    mpcParams_pF.N              = 10
+    mpcParams_pF.N              = 5
     mpcParams_pF.Q              = [0.0,10.0,0.0,1.0]
     mpcParams_pF.R              = 0*[1.0,1.0]             # put weights on a and d_f
     mpcParams_pF.QderivZ        = 0.0*[0,0,0.1,0]       # cost matrix for derivative cost of states

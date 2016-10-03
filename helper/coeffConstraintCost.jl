@@ -36,8 +36,8 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     Order           = mpcCoeff.order                # interpolation order for cost and constraints
     pLength         = mpcCoeff.pLength              # interpolation length for polynomials
 
-    n_prev          = 20                            # number of points before current s for interpolation
-    n_ahead         = 40                            # number of points ahead current s for interpolation
+    n_prev          = 5                            # number of points before current s for interpolation
+    n_ahead         = 10                            # number of points ahead current s for interpolation
 
     coeffCost       = zeros(Order+1,2)              # polynomial coefficients for cost
     coeffConst      = zeros(Order+1,2,5)            # nz-1 beacuse no coeff for s
@@ -132,29 +132,44 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     # ----------------------------------------------------- #
 
     n_ID            = n_prev+n_ahead+1                  # number of system ID points (using only 1 round)
-    vec_range_ID    = idx_s[1]-n_prev:idx_s[1]+n_ahead  # related index range
-    vec_range_ID2   = size(currentTraj,1)-n_prev+1:size(currentTraj,1)      # index range of previous states and inputs
+    vec_range_ID    = (idx_s[1]-n_prev:idx_s[1]+n_ahead,idx_s[2]-n_prev:idx_s[2]+n_ahead)  # related index range
+    vec_range_ID2   = size(currentTraj,1)-n_prev:size(currentTraj,1)-1      # index range of previous states and inputs
 
     # psiDot
     # last lap
     y_psi = diff(oldpsiDot[idx_s[1]-n_prev:idx_s[1]+n_ahead+1])
-    A_psi = [oldpsiDot[vec_range_ID]./oldxDot[vec_range_ID] oldyDot[vec_range_ID]./oldxDot[vec_range_ID] olddF[vec_range_ID]]
-    y_psi = cat(1,y_psi,currentTraj[vec_range_ID2,3])
+    A_psi = [oldpsiDot[vec_range_ID[1]]./oldxDot[vec_range_ID[1]] oldyDot[vec_range_ID[1]]./oldxDot[vec_range_ID[1]] olddF[vec_range_ID[1]]]
+
+    #y_psi = cat(1,y_psi,diff(oldpsiDot[idx_s[2]-n_prev:idx_s[2]+n_ahead+1]))
+    #A_psi = cat(1,A_psi,[oldpsiDot[vec_range_ID[2]]./oldxDot[vec_range_ID[2]] oldyDot[vec_range_ID[2]]./oldxDot[vec_range_ID[2]] olddF[vec_range_ID[2]]])
+
+    y_psi = cat(1,y_psi,diff(currentTraj[end-n_prev:end,3]))
     A_psi = cat(1,A_psi,[currentTraj[vec_range_ID2,3]./currentTraj[vec_range_ID2,1] currentTraj[vec_range_ID2,2]./currentTraj[vec_range_ID2,1] currentInput[vec_range_ID2,2]])
-    #println("y_psi:")
-    #println(y_psi)
+ 
     # xDot
     y_xDot = diff(oldxDot[idx_s[1]-n_prev:idx_s[1]+n_ahead+1])
-    A_xDot = [oldyDot[vec_range_ID] oldpsiDot[vec_range_ID] olda[vec_range_ID]]
-    y_xDot = cat(1,y_xDot,currentTraj[vec_range_ID2,1])
+    A_xDot = [oldyDot[vec_range_ID[1]] oldpsiDot[vec_range_ID[1]] olda[vec_range_ID[1]]]
+
+    #y_xDot = cat(1,y_xDot,diff(oldxDot[idx_s[2]-n_prev:idx_s[2]+n_ahead+1]))
+    #A_xDot = cat(1,A_xDot,[oldyDot[vec_range_ID[2]] oldpsiDot[vec_range_ID[2]] olda[vec_range_ID[2]]])
+
+    y_xDot = cat(1,y_xDot,diff(currentTraj[end-n_prev:end,1]))
     A_xDot = cat(1,A_xDot,[currentTraj[vec_range_ID2,2] currentTraj[vec_range_ID2,3] currentInput[vec_range_ID2,1]])
 
     # yDot
     y_yDot = diff(oldyDot[idx_s[1]-n_prev:idx_s[1]+n_ahead+1])
-    A_yDot = [oldyDot[vec_range_ID]./oldxDot[vec_range_ID] oldpsiDot[vec_range_ID].*oldxDot[vec_range_ID] oldpsiDot[vec_range_ID]./oldxDot[vec_range_ID] olddF[vec_range_ID]]
-    y_yDot = cat(1,y_yDot,currentTraj[vec_range_ID2,2])
+    A_yDot = [oldyDot[vec_range_ID[1]]./oldxDot[vec_range_ID[1]] oldpsiDot[vec_range_ID[1]].*oldxDot[vec_range_ID[1]] oldpsiDot[vec_range_ID[1]]./oldxDot[vec_range_ID[1]] olddF[vec_range_ID[1]]]
+
+    #y_yDot = cat(1,y_yDot,diff(oldyDot[idx_s[2]-n_prev:idx_s[2]+n_ahead+1]))
+    #A_yDot = cat(1,A_yDot,[oldyDot[vec_range_ID[2]]./oldxDot[vec_range_ID[2]] oldpsiDot[vec_range_ID[2]].*oldxDot[vec_range_ID[2]] oldpsiDot[vec_range_ID[2]]./oldxDot[vec_range_ID[2]] olddF[vec_range_ID[2]]])
+
+    y_yDot = cat(1,y_yDot,diff(currentTraj[end-n_prev:end,2]))
     A_yDot = cat(1,A_yDot,[currentTraj[vec_range_ID2,2]./currentTraj[vec_range_ID2,1] currentTraj[vec_range_ID2,3].*currentTraj[vec_range_ID2,1] currentTraj[vec_range_ID2,3]./currentTraj[vec_range_ID2,1] currentInput[vec_range_ID2,2]])
 
+   # println("y_yDot:")
+   # println(y_yDot)
+   # println("olddF")
+   # println(olddF[vec_range_ID])
     mpcCoeff.c_Psi = (A_psi'*A_psi)\A_psi'*y_psi
     mpcCoeff.c_Vx  = (A_xDot'*A_xDot)\A_xDot'*y_xDot
     mpcCoeff.c_Vy  = (A_yDot'*A_yDot)\A_yDot'*y_yDot        # Todo: If all matrix/vector values are really low (<e-22) this might return an error
@@ -168,3 +183,10 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     #println(currentInput[vec_range_ID2,:])
     nothing
 end
+
+# Notes about oldTrajectory:
+# oldTrajectory[1:prebuf] = states before finish line (s < 0)
+# oldTrajectory[prebuf+1:prebuf+cost] = states between start and finish line (0 <= s < s_target)
+# oldTrajectory[prebuf+cost+1:prebuf+cost+postbuf] = states after finish line (s_target <= s)
+# once one lap is over, the states are saved (interval prebuf:s_target)
+# during the next lap, the states behind the finish line are appended (interval s_target:postbuf)

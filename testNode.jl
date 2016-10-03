@@ -1,6 +1,7 @@
 using JuMP
 using Ipopt
 using PyPlot
+using JLD
 
 include("helper/classes.jl")
 include("helper/functions.jl")
@@ -46,7 +47,7 @@ function run_sim()
     # Simulation parameters
     dt                          = modelParams.dt::Float64
     t                           = collect(0:dt:40)
-    zCurr                       = zeros(length(t),6)
+    zCurr                       = zeros(length(t),8)
     uCurr                       = zeros(length(t),2)
     cost                        = zeros(length(t),6)
     zCurr_meas                  = zeros(length(t),6)
@@ -64,16 +65,16 @@ function run_sim()
     u_final = zeros(2)
     z_pf    = zeros(2)
 
-    for j=1:4
+    for j=1:6
         lapStatus.currentLap = j
 
         tt          = zeros(length(t),1)
-        zCurr       = zeros(length(t),6)
+        zCurr       = zeros(length(t),8)
         zCurr[1,1]  = 0.2
         uCurr       = zeros(length(t),2)
         if j>1                                  # if we are in the second or higher lap
             zCurr[1,:] = z_final
-            zCurr_meas[1,:] = z_final
+            zCurr_meas[1,:] = z_final[1:6]
             uCurr[1,:] = u_final
             zCurr[1,6] = zCurr[1,6]%posInfo.s_target
             zCurr_meas[1,6] = zCurr[1,6]%posInfo.s_target
@@ -131,18 +132,19 @@ function run_sim()
             # Simulate the model
             uCurr[i,:]  = [mpcSol.a_x mpcSol.d_f]
             zCurr[i,:]  = simDynModel_exact(zCurr[i-1,:],uCurr[i,:],modelParams.dt,trackCoeff.coeffCurvature,modelParams)
-            zCurr_meas[i,:] = zCurr[i,:] + 0.001*randn(1,6)
+            zCurr_meas[i,:] = zCurr[i,1:6] + randn(1,6)*diagm([0.01,0.01,0.0001,0.0001,0.0001,0.001])
             zInput = circshift(zInput,-1)
             uInput = circshift(uInput,-1)
-            zInput[end,:] = zCurr[i,:]
+            zInput[end,:] = zCurr_meas[i,:]
             uInput[end,:] = uCurr[i,:]
 
             println("Solving step $i of $(length(t)) - Status: $(mpcSol.solverStatus), Time: $(tt[i]) s")
             println("s = $(zCurr[i,6])")
+            println("z = $(zCurr[i,:])")
             if j <= 3
                 step_diff[i,1:4] = (mpcSol.z[2,:]-[zCurr[i,6] zCurr[i,5] zCurr[i,4] zCurr[i,1]]).^2
             else
-                step_diff[i,:] = (mpcSol.z[2,:]-zCurr[i,:]).^2
+                step_diff[i,:] = (mpcSol.z[2,:]-zCurr[i,1:6]).^2
             end
             println("step_diff = $(step_diff[i,:])")
 
@@ -157,9 +159,31 @@ function run_sim()
             oldTraj.oldTraj[oldTraj.oldCost[1]+oldTraj.prebuf+i,6,1] += posInfo.s_target
             oldTraj.oldInput[oldTraj.oldCost[1]+oldTraj.prebuf+i,:,1] = uCurr[i,:]
 
+            # if j == 4
+            #     figure(1)
+            #     title("System ID coefficients")
+            #     subplot(311)
+            #     plot(zCurr[i-1:i,6],coeff_sysID[1][i-1:i,:],"*-")
+            #     legend(["1","2","3"])
+            #     title("xDot")
+            #     grid(1)
+            #     subplot(312)
+            #     plot(zCurr[i-1:i,6],coeff_sysID[2][i-1:i,:],"*-")
+            #     legend(["1","2","3","4"])
+            #     title("yDot")
+            #     grid(1)
+            #     subplot(313)
+            #     plot(zCurr[i-1:i,6],coeff_sysID[3][i-1:i,:],"*-")
+            #     legend(["1","2","3"])
+            #     title("psiDot")
+            #     grid(1)
+            #     readline()
+            # end
+
             i = i + 1
             lapStatus.currentIt = i
         end
+
         i = i - 1                       # i = number of steps to *cross* the finish line -> s[i] >= s_target
         lapStatus.currentIt = i
         z_final = zCurr[i,:]
@@ -167,31 +191,41 @@ function run_sim()
         println("=================\nFinished Solving. Avg. time = $(mean(tt[1:i])) s")
         println("Finished Lap Nr. $j with state $(zCurr[i,:])")
 
+        figure(4)
+        title("Old Trajectories")
+        plot(oldTraj.oldTraj[:,6,1],oldTraj.oldTraj[:,1:5,1],"-",oldTraj.oldTraj[:,6,1],oldTraj.oldTraj[:,1:5,2],"--")
+        grid("on")
+        legend(["xDot","yDot","psiDot","ePsi","eY"])
+
         # Save states in oldTraj:
         # --------------------------------
         saveOldTraj(oldTraj,zCurr_meas,uCurr,lapStatus,posInfo,buffersize,modelParams.dt)
 
-        println("Old Trajectory:")
-        println(oldTraj.oldTraj[:,:,1])
-        println("Old Input:")
-        println(oldTraj.oldInput[:,:,1])
+        #println("Old Trajectory:")
+        #println(oldTraj.oldTraj[:,:,1])
+        #println("Old Input:")
+        #println(oldTraj.oldInput[:,:,1])
         # Print results
         # --------------------------------
 
+        figure(5)
+        plot(zCurr[1:i,6],step_diff[1:i,:])
+        grid("on")
+        title("One step errors")
         if j>2
             figure(1)
             title("System ID coefficients")
-            subplot(311)
+            ax=subplot(311)
             plot(zCurr[1:i,6],coeff_sysID[1][1:i,:])
             legend(["1","2","3"])
             title("xDot")
             grid(1)
-            subplot(312)
+            subplot(312,sharex=ax)
             plot(zCurr[1:i,6],coeff_sysID[2][1:i,:])
             legend(["1","2","3","4"])
             title("yDot")
             grid(1)
-            subplot(313)
+            subplot(313,sharex=ax)
             plot(zCurr[1:i,6],coeff_sysID[3][1:i,:])
             legend(["1","2","3"])
             title("psiDot")
@@ -199,10 +233,18 @@ function run_sim()
         end
 
         figure(2)
-        plot(zCurr[1:i,6],zCurr[1:i,1:5])
-        legend(["xDot","yDot","psiDot","ePsi","eY"])
+        plot(zCurr[1:i,6],zCurr[1:i,1:5],zCurr[1:i,6],zCurr[1:i,7:8])
+        title("Real")
+        legend(["xDot","yDot","psiDot","ePsi","eY","a","d_f"])
         xlabel("s [m]")
-        grid(1)
+        grid("on")
+
+        #figure(3)
+        #plot(zCurr[1:i,6],zCurr_meas[1:i,1:5])
+        #title("Measured")
+        #legend(["xDot","yDot","psiDot","ePsi","eY","a","d_f"])
+        #xlabel("s [m]")
+        #grid("on")
 
         # figure(2)
         # ax1=subplot(311)
