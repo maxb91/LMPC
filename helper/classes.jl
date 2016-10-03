@@ -28,7 +28,9 @@ type OldTrajectory      # information about previous trajectories
     oldTraj::Array{Float64}
     oldInput::Array{Float64}
     oldCost::Array{Int64}
-    OldTrajectory(oldTraj=Float64[],oldInput=Float64[],oldCost=Float64[]) = new(oldTraj,oldInput,oldCost)
+    prebuf::Int64
+    postbuf::Int64
+    OldTrajectory(oldTraj=Float64[],oldInput=Float64[],oldCost=Float64[],prebuf=50,postbuf=50) = new(oldTraj,oldInput,oldCost,prebuf,postbuf)
 end
 
 type MpcParams          # parameters for MPC solver
@@ -66,7 +68,7 @@ type TrackCoeff         # coefficients of track
     coeffCurvature::Array{Float64,1}
     nPolyCurvature::Int64      # order of the interpolation polynom
     width::Float64               # lane width -> is used in cost function as soft constraints (to stay on track)
-    TrackCoeff(coeffAngle=Float64[],coeffCurvature=Float64[],nPolyCurvature=4,width=1.0) = new(coeffAngle,coeffCurvature,nPolyCurvature)
+    TrackCoeff(coeffAngle=Float64[],coeffCurvature=Float64[],nPolyCurvature=4,width=1.0) = new(coeffAngle,coeffCurvature,nPolyCurvature,width)
 end
 
 type ModelParams
@@ -80,7 +82,8 @@ type ModelParams
     z_lb::Array{Float64}
     z_ub::Array{Float64}
     c0::Array{Float64}
-    ModelParams(l_A=0.25,l_B=0.25,m=1.98,I_z=0.24,dt=0.1,u_lb=Float64[],u_ub=Float64[],z_lb=Float64[],z_ub=Float64[],c0=Float64[]) = new(l_A,l_B,m,I_z,dt,u_lb,u_ub,z_lb,z_ub,c0)
+    c_f::Float64
+    ModelParams(l_A=0.25,l_B=0.25,m=1.98,I_z=0.24,dt=0.1,u_lb=Float64[],u_ub=Float64[],z_lb=Float64[],z_ub=Float64[],c0=Float64[],c_f=0.0) = new(l_A,l_B,m,I_z,dt,u_lb,u_ub,z_lb,z_ub,c0,c_f)
 end
 
 type MpcModel
@@ -106,7 +109,7 @@ type MpcModel
                 c_Vx=@NLparameter(mdl,coeff[i=1:3]==0),
                 c_Vy=@NLparameter(mdl,coeff[i=1:4]==0),
                 c_Psi=@NLparameter(mdl,coeff[i=1:3]==0),
-                z_Ol=@variable(mdl,[1:4,1:10]),
+                z_Ol=@variable(mdl,[1:6,1:10]),
                 u_Ol=@variable(mdl,[1:2,1:9]),
                 ParInt=@variable(mdl,[1:1]),
                 dsdt=@NLexpression(mdl,dsdt[1:10],0),
@@ -120,6 +123,36 @@ type MpcModel
                                                         z_Ol,
                                                         u_Ol,
                                                         ParInt,
+                                                        dsdt,
+                                                        bta,
+                                                        c)
+end
+
+type MpcModel_pF
+    mdl::JuMP.Model
+
+    z0::Array{JuMP.NonlinearParameter,1}
+    coeff::Array{JuMP.NonlinearParameter,1}
+
+    z_Ol::Array{JuMP.Variable,2}
+    u_Ol::Array{JuMP.Variable,2}
+
+    dsdt::Array{JuMP.NonlinearExpression,1}
+    bta::Array{JuMP.NonlinearExpression,1}
+    c::Array{JuMP.NonlinearExpression,1}
+
+    MpcModel_pF(mdl=JuMP.Model(),
+                z0=@NLparameter(mdl,z0[i=1:4]==0),
+                coeff=@NLparameter(mdl,coeff[i=1:5]==0),
+                z_Ol=@variable(mdl,[1:4,1:10]),
+                u_Ol=@variable(mdl,[1:2,1:9]),
+                dsdt=@NLexpression(mdl,dsdt[1:10],0),
+                bta=@NLexpression(mdl,bta[1:10],0),
+                c=@NLexpression(mdl,c[1:10],0)) = new(mdl,
+                                                        z0,
+                                                        coeff,
+                                                        z_Ol,
+                                                        u_Ol,
                                                         dsdt,
                                                         bta,
                                                         c)

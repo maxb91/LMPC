@@ -19,7 +19,7 @@ function simKinModel(z::Array{Float64},u::Array{Float64},dt::Float64,coeff::Arra
     zNext[1] = z[1] + dt*dsdt
     zNext[2] = z[2] + dt*z[4] * sin(z[3] + bta)
     zNext[3] = z[3] + dt*(z[4]/L_a*sin(bta)-dsdt*c)
-    zNext[4] = z[4] + dt*(u[1] - 0.63*abs(z[4])*z[4])
+    zNext[4] = z[4] + dt*(u[1] - modelParams.c_f*abs(z[4])*z[4])
 
     return zNext
 end
@@ -27,10 +27,16 @@ end
 function simDynModel_exact(z::Array{Float64},u::Array{Float64},dt::Float64,coeff::Array{Float64},modelParams::ModelParams)
     # This function uses smaller steps to achieve higher fidelity than we would achieve using longer timesteps
     z_final = z
+    u[1] = min(u[1],5)
+    u[1] = max(u[1],-5)
+    u[2] = min(u[2],pi/6)
+    u[2] = max(u[2],-pi/6)
     dtn = dt/100
     for i=1:100
         z_final = simDynModel(z,u,dtn,coeff,modelParams)
     end
+    #z_final += 0.001*randn(1,6)
+    #z_final[1] += 0.01*randn()
     return z_final
 end
 
@@ -42,6 +48,7 @@ function simDynModel(z::Array{Float64},u::Array{Float64},dt::Float64,coeff::Arra
     c0  = modelParams.c0
     m   = modelParams.m
     I_z = modelParams.I_z
+    c_f = modelParams.c_f
 
     a_F = 0
     a_R = 0
@@ -59,7 +66,7 @@ function simDynModel(z::Array{Float64},u::Array{Float64},dt::Float64,coeff::Arra
 
     zNext = z
 
-    zNext[1] = z[1] + dt * (u[1] + z[2]*z[3] - 0.63*z[1]^2*sign(z[1]))      # xDot
+    zNext[1] = z[1] + dt * (u[1] + z[2]*z[3] - c_f*z[1]^2*sign(z[1]))      # xDot
     zNext[2] = z[2] + dt * (2/m*(FyF*cos(u[2]) + FyR) - z[3]*z[1])          # yDot
     zNext[3] = z[3] + dt * (2/I_z*(L_f*FyF - L_r*FyR))                      # psiDot
     zNext[4] = z[4] + dt * (z[3]-dsdt*c)                                    # ePsi

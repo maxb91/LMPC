@@ -16,7 +16,7 @@
 # z[5] = eY
 # z[6] = s
 
-function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo::PosInfo, mpcParams::MpcParams)
+function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo::PosInfo, mpcParams::MpcParams,currentTraj::Array{Float64},currentInput::Array{Float64})
     # this computes the coefficients for the cost and constraints
 
     # Outputs: 
@@ -37,7 +37,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     pLength         = mpcCoeff.pLength              # interpolation length for polynomials
 
     n_prev          = 20                            # number of points before current s for interpolation
-    n_ahead         = 60                            # number of points ahead current s for interpolation
+    n_ahead         = 40                            # number of points ahead current s for interpolation
 
     coeffCost       = zeros(Order+1,2)              # polynomial coefficients for cost
     coeffConst      = zeros(Order+1,2,5)            # nz-1 beacuse no coeff for s
@@ -49,8 +49,10 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     oldePsi         = oldTraj.oldTraj[:,4,:]::Array{Float64,3}
     oldeY           = oldTraj.oldTraj[:,5,:]::Array{Float64,3}
     oldS            = oldTraj.oldTraj[:,6,:]::Array{Float64,3}
+    olda            = oldTraj.oldInput[:,1,:]::Array{Float64,3}
+    olddF           = oldTraj.oldInput[:,2,:]::Array{Float64,3}
 
-    N_points        = size(oldTraj.oldTraj,1)     # second dimension = length
+    N_points        = size(oldTraj.oldTraj,1)     # second dimension = length (=buffersize)
 
     s_total::Float64        # initialize
     DistS::Array{Float64}   # initialize
@@ -129,10 +131,40 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     # --------------- SYSTEM IDENTIFICATION --------------- #
     # ----------------------------------------------------- #
 
+    n_ID            = n_prev+n_ahead+1                  # number of system ID points (using only 1 round)
+    vec_range_ID    = idx_s[1]-n_prev:idx_s[1]+n_ahead  # related index range
+    vec_range_ID2   = size(currentTraj,1)-n_prev+1:size(currentTraj,1)      # index range of previous states and inputs
 
+    # psiDot
+    # last lap
+    y_psi = diff(oldpsiDot[idx_s[1]-n_prev:idx_s[1]+n_ahead+1])
+    A_psi = [oldpsiDot[vec_range_ID]./oldxDot[vec_range_ID] oldyDot[vec_range_ID]./oldxDot[vec_range_ID] olddF[vec_range_ID]]
+    y_psi = cat(1,y_psi,currentTraj[vec_range_ID2,3])
+    A_psi = cat(1,A_psi,[currentTraj[vec_range_ID2,3]./currentTraj[vec_range_ID2,1] currentTraj[vec_range_ID2,2]./currentTraj[vec_range_ID2,1] currentInput[vec_range_ID2,2]])
+    #println("y_psi:")
+    #println(y_psi)
+    # xDot
+    y_xDot = diff(oldxDot[idx_s[1]-n_prev:idx_s[1]+n_ahead+1])
+    A_xDot = [oldyDot[vec_range_ID] oldpsiDot[vec_range_ID] olda[vec_range_ID]]
+    y_xDot = cat(1,y_xDot,currentTraj[vec_range_ID2,1])
+    A_xDot = cat(1,A_xDot,[currentTraj[vec_range_ID2,2] currentTraj[vec_range_ID2,3] currentInput[vec_range_ID2,1]])
+
+    # yDot
+    y_yDot = diff(oldyDot[idx_s[1]-n_prev:idx_s[1]+n_ahead+1])
+    A_yDot = [oldyDot[vec_range_ID]./oldxDot[vec_range_ID] oldpsiDot[vec_range_ID].*oldxDot[vec_range_ID] oldpsiDot[vec_range_ID]./oldxDot[vec_range_ID] olddF[vec_range_ID]]
+    y_yDot = cat(1,y_yDot,currentTraj[vec_range_ID2,2])
+    A_yDot = cat(1,A_yDot,[currentTraj[vec_range_ID2,2]./currentTraj[vec_range_ID2,1] currentTraj[vec_range_ID2,3].*currentTraj[vec_range_ID2,1] currentTraj[vec_range_ID2,3]./currentTraj[vec_range_ID2,1] currentInput[vec_range_ID2,2]])
+
+    mpcCoeff.c_Psi = (A_psi'*A_psi)\A_psi'*y_psi
+    mpcCoeff.c_Vx  = (A_xDot'*A_xDot)\A_xDot'*y_xDot
+    mpcCoeff.c_Vy  = (A_yDot'*A_yDot)\A_yDot'*y_yDot        # Todo: If all matrix/vector values are really low (<e-22) this might return an error
+                                                            # this might happen on long straight parts of the track (no change in psi/y states)
 
     mpcCoeff.coeffCost  = coeffCost
     mpcCoeff.coeffConst = coeffConst
-    
+        
+    #println("CurrentTraj and Input:")
+    #println(currentTraj[vec_range_ID2,:])
+    #println(currentInput[vec_range_ID2,:])
     nothing
 end
