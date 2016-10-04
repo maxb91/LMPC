@@ -16,7 +16,7 @@
 # z[5] = eY
 # z[6] = s
 
-function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo::PosInfo, mpcParams::MpcParams,currentTraj::Array{Float64},currentInput::Array{Float64})
+function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo::PosInfo, mpcParams::MpcParams,currentTraj::Array{Float64},currentInput::Array{Float64},lapStatus::LapStatus)
     # this computes the coefficients for the cost and constraints
 
     # Outputs: 
@@ -36,8 +36,8 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     Order           = mpcCoeff.order                # interpolation order for cost and constraints
     pLength         = mpcCoeff.pLength              # interpolation length for polynomials
 
-    n_prev          = 5                            # number of points before current s for interpolation
-    n_ahead         = 10                            # number of points ahead current s for interpolation
+    n_prev          = 10                            # number of points before current s for System ID
+    n_ahead         = 20                            # number of points ahead of current s for System ID
 
     coeffCost       = zeros(Order+1,2)              # polynomial coefficients for cost
     coeffConst      = zeros(Order+1,2,5)            # nz-1 beacuse no coeff for s
@@ -75,17 +75,21 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     vec_range = (idx_s[1]:idx_s[1]+pLength,idx_s[2]:idx_s[2]+pLength)
 
     # Create the vectors used for the interpolation
+    # bS_vector contains the s-values for later interpolation (total s, s_start is subtracted later)
     bS_Vector       = zeros(pLength+1,2)
     for i=1:pLength+1
         bS_Vector[i,1] = oldS[vec_range[1][i]]
         bS_Vector[i,2] = oldS[vec_range[2][i]]
+    end
+    if norm(bS_Vector[1,1]-s_total) > 0.3 || norm(bS_Vector[1,2]-s_total) > 0.3
+        warn("Couldn't find a close point to current s.")
     end
     # bS_Vector       = cat(2, oldS[vec_range[1]],    oldS[vec_range[2]])
 
     # println("************************************** COEFFICIENTS **************************************")
     # println("idx_s[1]  = $(idx_s[1]), idx_s[2] = $(idx_s[2])")
     # println("s_total   = $s_total")
-    # println("bS_Vector[1] = $(bS_Vector[:,:,1]')")
+    # println("bS_Vector[1,:] = $(bS_Vector[1,:]')")
     # These matrices (above) contain two vectors each (for both old trajectories), stored in the 3rd dimension
     
     # The states are parametrized with resprect to the curvilinear abscissa,
@@ -95,7 +99,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     if s_total - s_start < 0
         s_forinterpy += s_target
     end
-    # println("s_forinterpy[:,1,1]' = $(s_forinterpy[:,1,1]')")
+    # println("s_forinterpy[:,:]' = $(s_forinterpy[:,:]')")
     # Create the Matrices for the interpolation
     MatrixInterp = zeros(pLength+1,Order+1,2)
 
@@ -112,6 +116,12 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
         coeffConst[:,i,4]    = MatrixInterp[:,:,i]\oldePsi[vec_range[i]]
         coeffConst[:,i,5]    = MatrixInterp[:,:,i]\oldeY[vec_range[i]]
     end
+
+    # xDotInterp = [s_forinterpy[:,1].^5 s_forinterpy[:,1].^4 s_forinterpy[:,1].^3 s_forinterpy[:,1].^2 s_forinterpy[:,1].^1 s_forinterpy[:,1].^0]*coeffConst[:,1,1]
+    # plot(s_forinterpy,oldxDot[vec_range[1]],"*",s_forinterpy,xDotInterp)
+    # title("xDotInterp")
+    # grid("on")
+    # readline()
 
     # Finished with calculating the constraint coefficients
     
@@ -136,42 +146,84 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     vec_range_ID2   = size(currentTraj,1)-n_prev:size(currentTraj,1)-1      # index range of previous states and inputs
 
     # psiDot
-    # last lap
     y_psi = diff(oldpsiDot[idx_s[1]-n_prev:idx_s[1]+n_ahead+1])
     A_psi = [oldpsiDot[vec_range_ID[1]]./oldxDot[vec_range_ID[1]] oldyDot[vec_range_ID[1]]./oldxDot[vec_range_ID[1]] olddF[vec_range_ID[1]]]
-
-    y_psi = cat(1,y_psi,diff(oldpsiDot[idx_s[2]-n_prev:idx_s[2]+n_ahead+1]))
-    A_psi = cat(1,A_psi,[oldpsiDot[vec_range_ID[2]]./oldxDot[vec_range_ID[2]] oldyDot[vec_range_ID[2]]./oldxDot[vec_range_ID[2]] olddF[vec_range_ID[2]]])
-
     y_psi = cat(1,y_psi,diff(currentTraj[end-n_prev:end,3]))
     A_psi = cat(1,A_psi,[currentTraj[vec_range_ID2,3]./currentTraj[vec_range_ID2,1] currentTraj[vec_range_ID2,2]./currentTraj[vec_range_ID2,1] currentInput[vec_range_ID2,2]])
  
     # xDot
     y_xDot = diff(oldxDot[idx_s[1]-n_prev:idx_s[1]+n_ahead+1])
-    A_xDot = [oldyDot[vec_range_ID[1]] oldpsiDot[vec_range_ID[1]] olda[vec_range_ID[1]]]
-
-    y_xDot = cat(1,y_xDot,diff(oldxDot[idx_s[2]-n_prev:idx_s[2]+n_ahead+1]))
-    A_xDot = cat(1,A_xDot,[oldyDot[vec_range_ID[2]] oldpsiDot[vec_range_ID[2]] olda[vec_range_ID[2]]])
-
+    A_xDot = [oldyDot[vec_range_ID[1]] oldpsiDot[vec_range_ID[1]] oldxDot[vec_range_ID[1]].^2 olda[vec_range_ID[1]]]
     y_xDot = cat(1,y_xDot,diff(currentTraj[end-n_prev:end,1]))
-    A_xDot = cat(1,A_xDot,[currentTraj[vec_range_ID2,2] currentTraj[vec_range_ID2,3] currentInput[vec_range_ID2,1]])
+    A_xDot = cat(1,A_xDot,[currentTraj[vec_range_ID2,2] currentTraj[vec_range_ID2,3] currentTraj[vec_range_ID2,1] currentInput[vec_range_ID2,1]])
 
     # yDot
     y_yDot = diff(oldyDot[idx_s[1]-n_prev:idx_s[1]+n_ahead+1])
     A_yDot = [oldyDot[vec_range_ID[1]]./oldxDot[vec_range_ID[1]] oldpsiDot[vec_range_ID[1]].*oldxDot[vec_range_ID[1]] oldpsiDot[vec_range_ID[1]]./oldxDot[vec_range_ID[1]] olddF[vec_range_ID[1]]]
-
-    y_yDot = cat(1,y_yDot,diff(oldyDot[idx_s[2]-n_prev:idx_s[2]+n_ahead+1]))
-    A_yDot = cat(1,A_yDot,[oldyDot[vec_range_ID[2]]./oldxDot[vec_range_ID[2]] oldpsiDot[vec_range_ID[2]].*oldxDot[vec_range_ID[2]] oldpsiDot[vec_range_ID[2]]./oldxDot[vec_range_ID[2]] olddF[vec_range_ID[2]]])
-
     y_yDot = cat(1,y_yDot,diff(currentTraj[end-n_prev:end,2]))
     A_yDot = cat(1,A_yDot,[currentTraj[vec_range_ID2,2]./currentTraj[vec_range_ID2,1] currentTraj[vec_range_ID2,3].*currentTraj[vec_range_ID2,1] currentTraj[vec_range_ID2,3]./currentTraj[vec_range_ID2,1] currentInput[vec_range_ID2,2]])
+
+    if lapStatus.currentLap > 3
+        y_psi  = cat(1,y_psi,diff(oldpsiDot[idx_s[2]-n_prev:idx_s[2]+n_ahead+1]))
+        A_psi  = cat(1,A_psi,[oldpsiDot[vec_range_ID[2]]./oldxDot[vec_range_ID[2]] oldyDot[vec_range_ID[2]]./oldxDot[vec_range_ID[2]] olddF[vec_range_ID[2]]])
+        y_xDot = cat(1,y_xDot,diff(oldxDot[idx_s[2]-n_prev:idx_s[2]+n_ahead+1]))
+        A_xDot = cat(1,A_xDot,[oldyDot[vec_range_ID[2]] oldpsiDot[vec_range_ID[2]] oldxDot[vec_range_ID[2]].^2 olda[vec_range_ID[2]]])
+        y_yDot = cat(1,y_yDot,diff(oldyDot[idx_s[2]-n_prev:idx_s[2]+n_ahead+1]))
+        A_yDot = cat(1,A_yDot,[oldyDot[vec_range_ID[2]]./oldxDot[vec_range_ID[2]] oldpsiDot[vec_range_ID[2]].*oldxDot[vec_range_ID[2]] oldpsiDot[vec_range_ID[2]]./oldxDot[vec_range_ID[2]] olddF[vec_range_ID[2]]])
+    end
 
     #println("y_yDot:")
     #println(y_yDot)
     #println("y_psi:")
     #println(y_psi)
+
+    # figure(6)
+    # subplot(511)
+    # plot(A_xDot[:,1],"-o")
+    # legend(["yDot"])
+    # grid("on")
+    # subplot(512)
+    # plot(A_xDot[:,2],"-o")
+    # legend(["psiDot"])
+    # grid("on")
+    # subplot(513)
+    # plot(A_xDot[:,3],"-o")
+    # legend(["xDot.^2"])
+    # grid("on")
+    # subplot(514)
+    # plot(A_xDot[:,4],"-o")
+    # legend(["a"])
+    # grid("on")
+    # subplot(515)
+    # plot(y_xDot,"-o")
+    # legend(["y_xDot"])
+    # grid("on")
+
+    # figure(7)
+    # subplot(511)
+    # plot(A_yDot[:,1],"-o")
+    # legend(["y/x"])
+    # grid("on")
+    # subplot(512)
+    # plot(A_yDot[:,2],"-o")
+    # legend(["psi*x"])
+    # grid("on")
+    # subplot(513)
+    # plot(A_yDot[:,3],"-o")
+    # legend(["psi/x"])
+    # grid("on")
+    # subplot(514)
+    # plot(A_yDot[:,4],"-o")
+    # legend(["d_f"])
+    # grid("on")
+    # subplot(515)
+    # plot(y_yDot,"-o")
+    # legend(["y_yDot"])
+    # grid("on")
+    # readline()
+
     if any(isnan,y_yDot)
-        warn("NAN HERE!!!!!!!!!!!!!!! Press to continue...")
+        warn("NaN value detected in coeffConstraintCost! Press to continue...")
         readline()
     end
    # println("olddF")
@@ -180,6 +232,10 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     mpcCoeff.c_Vx  = (A_xDot'*A_xDot)\A_xDot'*y_xDot
     mpcCoeff.c_Vy  = (A_yDot'*A_yDot)\A_yDot'*y_yDot        # Todo: If all matrix/vector values are really low (<e-22) this might return an error
                                                             # this might happen on long straight parts of the track (no change in psi/y states)
+    println("RESIDUALS:")
+    println(norm(y_psi-A_psi*mpcCoeff.c_Psi))
+    println(norm(y_xDot-A_xDot*mpcCoeff.c_Vx))
+    println(norm(y_yDot-A_yDot*mpcCoeff.c_Vy))
 
     mpcCoeff.coeffCost  = coeffCost
     mpcCoeff.coeffConst = coeffConst

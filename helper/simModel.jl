@@ -26,17 +26,18 @@ end
 
 function simDynModel_exact(z::Array{Float64},u::Array{Float64},dt::Float64,coeff::Array{Float64},modelParams::ModelParams)
     # This function uses smaller steps to achieve higher fidelity than we would achieve using longer timesteps
-    z_final = z
+    z_final = copy(z)
     u[1] = min(u[1],3)
     u[1] = max(u[1],-3)
     u[2] = min(u[2],pi/6)
     u[2] = max(u[2],-pi/6)
     dtn = dt/100
+    println("0. u = $u")
+    println("1. z = $(z_final)")
     for i=1:100
-        z_final = simDynModel(z,u,dtn,coeff,modelParams)
+        z_final = simDynModel(z_final,u,dtn,coeff,modelParams)
     end
-    #z_final += 0.001*randn(1,6)
-    #z_final[1] += 0.01*randn()
+    println("2. z = $(z_final)")
     return z_final
 end
 
@@ -50,11 +51,17 @@ function simDynModel(z::Array{Float64},u::Array{Float64},dt::Float64,coeff::Arra
     I_z = modelParams.I_z
     c_f = modelParams.c_f
 
+    #z[7] = u[1]
+    #z[8] = u[2]
+
     a_F = 0
     a_R = 0
-    if abs(z[1]) > 0.1
+    if abs(z[1]) >= 0.02
         a_F     = atan((z[2] + L_f*z[3])/z[1]) - z[8]
         a_R     = atan((z[2] - L_r*z[3])/z[1])
+    end
+    if max(abs(a_F),abs(a_R))>20/180*pi
+        warn("Large tire angles: a_F = $a_F, a_R = $a_R, xDot = $(z[1]), d_F = $(z[8])")
     end
     
     FyF = -pacejka(a_F)
@@ -64,16 +71,16 @@ function simDynModel(z::Array{Float64},u::Array{Float64},dt::Float64,coeff::Arra
     
     dsdt = (z[1]*cos(z[4]) - z[2]*sin(z[4]))/(1-z[5]*c)
 
-    zNext = z
-
+    zNext = copy(z)
     zNext[1] = z[1] + dt * (z[7] + z[2]*z[3] - c_f*z[1]^2*sign(z[1]))       # xDot
     zNext[2] = z[2] + dt * (2/m*(FyF*cos(z[8]) + FyR) - z[3]*z[1])          # yDot
     zNext[3] = z[3] + dt * (2/I_z*(L_f*FyF - L_r*FyR))                      # psiDot
     zNext[4] = z[4] + dt * (z[3]-dsdt*c)                                    # ePsi
     zNext[5] = z[5] + dt * (z[1]*sin(z[4]) + z[2]*cos(z[4]))                # eY
     zNext[6] = z[6] + dt * dsdt                                             # s
-    zNext[7] = z[7] + dt * (u[1] - z[7]) * 0.001/dt                         # a
-    zNext[8] = z[8] + dt * sign(u[2] - z[8]) * 0.01/dt                      # d_f
+    zNext[7] = z[7] + dt * (u[1] - z[7]) * 0.1/dt                          # a
+    zNext[8] = z[8] + dt * (u[2] - z[8]) * 0.1/dt                         # d_f
+    #zNext[8] = z[8] + dt * sign(u[2] - z[8]) * 0.01/dt                     # d_f
 
     return zNext
 end
@@ -85,7 +92,7 @@ function pacejka(a)
     m = 1.98
     g = 9.81
     D = mu * m * g/2
-    D = D*100
+    D = D*100.0
 
     C_alpha_f = D*sin(C*atan(B*a))
     return C_alpha_f
