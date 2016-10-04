@@ -14,9 +14,9 @@ function saveOldTraj(oldTraj::OldTrajectory,zCurr::Array{Float64},uCurr::Array{F
                 uCurr_export    = zeros(buffersize,2)
 
                 zCurr_export    = cat(1,oldTraj.oldTraj[oldTraj.oldCost[1]+1:oldTraj.oldCost[1]+prebuf,:,1],
-                                        zCurr[1:i,:], [ones(buffersize-i-prebuf,1)*zCurr[i,1:5] zCurr[i,6]+collect(1:buffersize-i-prebuf)*dt*zCurr[i,1]])
+                                        zCurr[1:i,:], NaN*ones(buffersize-i-prebuf,6))#[ones(buffersize-i-prebuf,1)*zCurr[i,1:5] zCurr[i,6]+collect(1:buffersize-i-prebuf)*dt*zCurr[i,1]])
                 uCurr_export    = cat(1,oldTraj.oldInput[oldTraj.oldCost[1]+1:oldTraj.oldCost[1]+prebuf,:,1],
-                                        uCurr[1:i,:], zeros(buffersize-i-prebuf,2))
+                                        uCurr[1:i,:], NaN*ones(buffersize-i-prebuf,2))#zeros(buffersize-i-prebuf,2))
 
                 zCurr_export[1:prebuf,6] -= posInfo.s_target       # make the prebuf-values below zero
                 costLap                   = i                      # the cost of the current lap is the time it took to reach the finish line
@@ -26,7 +26,7 @@ function saveOldTraj(oldTraj::OldTrajectory,zCurr::Array{Float64},uCurr::Array{F
                 # println(uCurr_export)
 
                 # Save all data in oldTrajectory:
-                if lapStatus.currentLap == 1                        # if it's the first lap
+                if lapStatus.currentLap <= 2                        # if it's the first or second lap
                     oldTraj.oldTraj[:,:,1]  = zCurr_export          # ... just save everything
                     oldTraj.oldInput[:,:,1] = uCurr_export
                     oldTraj.oldTraj[:,:,2]  = zCurr_export
@@ -67,13 +67,13 @@ function InitializeModel(m::MpcModel,mpcParams::MpcParams,modelParams::ModelPara
 
     z_lb_6s = ones(mpcParams.N+1,1)*[0.1 -Inf -Inf -Inf -Inf -Inf]                    # lower bounds on states
     z_ub_6s = ones(mpcParams.N+1,1)*[3.0  Inf  Inf  Inf  Inf  Inf]                    # upper bounds
-    u_lb_6s = ones(mpcParams.N,1) * [-2.0  -pi/6]                    # lower bounds on steering
-    u_ub_6s = ones(mpcParams.N,1) * [5.0    pi/6]                  # upper bounds
+    u_lb_6s = ones(mpcParams.N,1) * [-1.0  -pi/6]                    # lower bounds on steering
+    u_ub_6s = ones(mpcParams.N,1) * [3.0    pi/6]                  # upper bounds
 
     for i=1:2       # I don't know why but somehow the short method returns errors sometimes
         for j=1:N
-            setlowerbound(m.u_Ol[j,i], modelParams.u_lb[j,i])
-            setupperbound(m.u_Ol[j,i], modelParams.u_ub[j,i])
+            setlowerbound(m.u_Ol[j,i], u_lb_6s[j,i])
+            setupperbound(m.u_Ol[j,i], u_ub_6s[j,i])
         end
     end
     for i=1:6       # I don't know why but somehow the short method returns errors sometimes
@@ -103,12 +103,12 @@ function InitializeModel(m::MpcModel,mpcParams::MpcParams,modelParams::ModelPara
     #@NLexpression(m.mdl, m.dsdt[i = 1:N], 1)
     
     println("Initializing model...")
-    println("z0   = $(getvalue(m.z0))")
-    println("z_Ol = $(getvalue(m.z_Ol))")
-    println("m.coeff = $(getvalue(m.coeff))")
-    println("m.c     = $(getvalue(m.c))")
-    println("n_poly_curv = $n_poly_curv")
-    println("dt = $dt")
+    #println("z0   = $(getvalue(m.z0))")
+    #println("z_Ol = $(getvalue(m.z_Ol))")
+    #println("m.coeff = $(getvalue(m.coeff))")
+    #println("m.c     = $(getvalue(m.c))")
+    #println("n_poly_curv = $n_poly_curv")
+    #println("dt = $dt")
     # System dynamics
     for i=1:N
         @NLconstraint(m.mdl, m.z_Ol[i+1,1]  == m.z_Ol[i,1] + dt*(m.z_Ol[i,1] + m.c_Vx[1]*m.z_Ol[i,2] + m.c_Vx[2]*m.z_Ol[i,3] + m.c_Vx[3]*m.u_Ol[i,1]))  # xDot
@@ -135,7 +135,7 @@ function InitializeModel(m::MpcModel,mpcParams::MpcParams,modelParams::ModelPara
     #solve(m.mdl)
     #solve(m.mdl)
     #solve(m.mdl)
-    println("Solution: $(getvalue(m.z_Ol))")
+    #println("Solution: $(getvalue(m.z_Ol))")
     println("finished")
 
 end
@@ -198,7 +198,7 @@ function InitializeParameters(mpcParams::MpcParams,mpcParams_pF::MpcParams,track
                                 posInfo::PosInfo,oldTraj::OldTrajectory,mpcCoeff::MpcCoeff,lapStatus::LapStatus,buffersize::Int64)
     mpcParams.N                 = 5
     mpcParams.Q                 = [0.0,10.0,0.0,1.0]      # put weights on ey, epsi and v
-    mpcParams.Q_term            = 10*[1.0,1.0,1.0,1.0,1.0]        # weights for terminal constraints (LMPC, for e_y, e_psi, and v)
+    mpcParams.Q_term            = 1.0*[1.0,1.0,1.0,1.0,1.0]        # weights for terminal constraints (LMPC, for e_y, e_psi, and v)
     mpcParams.R                 = 0*[1.0,1.0]             # put weights on a and d_f
     mpcParams.QderivZ           = 0.0*[0,0,0.1,0,0,0]       # cost matrix for derivative cost of states
     mpcParams.QderivU           = 0.1*[1,1]               # cost matrix for derivative cost of inputs
@@ -223,16 +223,16 @@ function InitializeParameters(mpcParams::MpcParams,mpcParams_pF::MpcParams,track
     modelParams.dt              = 0.1
     modelParams.m               = 1.98
     modelParams.I_z             = 0.24
-    modelParams.c_f             = 0                 # friction coefficient: xDot = - c_f*xDot²
+    modelParams.c_f             = 0.63                 # friction coefficient: xDot = - c_f*xDot² (aerodynamic+tire)
 
     posInfo.s_start             = 0.0
     posInfo.s_target            = 5.0
 
-    oldTraj.oldTraj             = zeros(buffersize,6,2)
-    oldTraj.oldTraj[:,6,1]      = 1:buffersize
-    oldTraj.oldTraj[:,6,2]      = 1:buffersize
-    oldTraj.oldInput            = zeros(buffersize,2,2)
-    oldTraj.oldCost             = 100*ones(Int64,2)                   # dummies for initialization
+    oldTraj.oldTraj             = NaN*ones(buffersize,6,2)
+    #oldTraj.oldTraj[:,6,1]      = 1:buffersize
+    #oldTraj.oldTraj[:,6,2]      = 1:buffersize
+    oldTraj.oldInput            = NaN*ones(buffersize,2,2)
+    oldTraj.oldCost             = ones(Int64,2)                   # dummies for initialization
     oldTraj.prebuf              = 30
     oldTraj.postbuf             = 30
 

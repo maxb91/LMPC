@@ -81,6 +81,11 @@ function run_sim()
             oldTraj.oldTraj[oldTraj.oldCost[1]+oldTraj.prebuf+1,:,1] = zCurr_meas[1,:]
             oldTraj.oldTraj[oldTraj.oldCost[1]+oldTraj.prebuf+1,6,1] += posInfo.s_target
             oldTraj.oldInput[oldTraj.oldCost[1]+oldTraj.prebuf+1,:,1] = uCurr[1,:]
+            if j==3
+                oldTraj.oldTraj[oldTraj.oldCost[1]+oldTraj.prebuf+1,:,2] = zCurr_meas[1,:]
+                oldTraj.oldTraj[oldTraj.oldCost[1]+oldTraj.prebuf+1,6,2] += posInfo.s_target
+                oldTraj.oldInput[oldTraj.oldCost[1]+oldTraj.prebuf+1,:,2] = uCurr[1,:]
+            end
         end
         cost        = zeros(length(t),6)
         finished    = false
@@ -93,9 +98,9 @@ function run_sim()
             if zCurr[i-1,6] <= 0.5
                 trackCoeff.coeffCurvature[5] = 0.0
             elseif zCurr[i-1,6] <= 3
-                trackCoeff.coeffCurvature[5] = 0.0
+                trackCoeff.coeffCurvature[5] = 0.4
             elseif zCurr[i-1,6] <= 5
-                trackCoeff.coeffCurvature[5] = 0.0
+                trackCoeff.coeffCurvature[5] = 0
             else
                 trackCoeff.coeffCurvature[5] = 0.0
             end
@@ -115,7 +120,7 @@ function run_sim()
 
             # Calculate optimal inputs (solve MPC problem)
             tic()
-            if j <= 3                   # if we are in the first lap
+            if j <= 2                   # if we are in the first two laps
                 z_pf = [zCurr_meas[i-1,6],zCurr_meas[i-1,5],zCurr_meas[i-1,4],zCurr_meas[i-1,1]]        # use kinematic model and its states
                 solveMpcProblem_pathFollow(mdl_pF,mpcSol,mpcParams_pF,trackCoeff,posInfo,modelParams,z_pf,uCurr[i-1,:]')
             else                        # otherwise: use system-ID-model
@@ -141,7 +146,7 @@ function run_sim()
             println("Solving step $i of $(length(t)) - Status: $(mpcSol.solverStatus), Time: $(tt[i]) s")
             println("s = $(zCurr[i,6])")
             println("z = $(zCurr[i,:])")
-            if j <= 3
+            if j <= 2
                 step_diff[i,1:4] = (mpcSol.z[2,:]-[zCurr[i,6] zCurr[i,5] zCurr[i,4] zCurr[i,1]]).^2
             else
                 step_diff[i,:] = (mpcSol.z[2,:]-zCurr[i,1:6]).^2
@@ -158,27 +163,32 @@ function run_sim()
             oldTraj.oldTraj[oldTraj.oldCost[1]+oldTraj.prebuf+i,:,1] = zCurr_meas[i,:]
             oldTraj.oldTraj[oldTraj.oldCost[1]+oldTraj.prebuf+i,6,1] += posInfo.s_target
             oldTraj.oldInput[oldTraj.oldCost[1]+oldTraj.prebuf+i,:,1] = uCurr[i,:]
+            if j==3     # if its the third lap, append to both old trajectories! (since both are the same)
+                oldTraj.oldTraj[oldTraj.oldCost[1]+oldTraj.prebuf+i,:,2] = zCurr_meas[i,:]
+                oldTraj.oldTraj[oldTraj.oldCost[1]+oldTraj.prebuf+i,6,2] += posInfo.s_target
+                oldTraj.oldInput[oldTraj.oldCost[1]+oldTraj.prebuf+i,:,2] = uCurr[i,:]
+            end
 
-            # if j == 4
-            #     figure(1)
-            #     title("System ID coefficients")
-            #     subplot(311)
-            #     plot(zCurr[i-1:i,6],coeff_sysID[1][i-1:i,:],"*-")
-            #     legend(["1","2","3"])
-            #     title("xDot")
-            #     grid(1)
-            #     subplot(312)
-            #     plot(zCurr[i-1:i,6],coeff_sysID[2][i-1:i,:],"*-")
-            #     legend(["1","2","3","4"])
-            #     title("yDot")
-            #     grid(1)
-            #     subplot(313)
-            #     plot(zCurr[i-1:i,6],coeff_sysID[3][i-1:i,:],"*-")
-            #     legend(["1","2","3"])
-            #     title("psiDot")
-            #     grid(1)
-            #     readline()
-            # end
+            if j == 3
+                figure(1)
+                title("System ID coefficients")
+                subplot(311)
+                plot(zCurr[i-1:i,6],coeff_sysID[1][i-1:i,:],"*-")
+                legend(["1","2","3"])
+                title("xDot")
+                grid(1)
+                subplot(312)
+                plot(zCurr[i-1:i,6],coeff_sysID[2][i-1:i,:],"*-")
+                legend(["1","2","3","4"])
+                title("yDot")
+                grid(1)
+                subplot(313)
+                plot(zCurr[i-1:i,6],coeff_sysID[3][i-1:i,:],"*-")
+                legend(["1","2","3"])
+                title("psiDot")
+                grid(1)
+                readline()
+            end
 
             i = i + 1
             lapStatus.currentIt = i
@@ -191,16 +201,23 @@ function run_sim()
         println("=================\nFinished Solving. Avg. time = $(mean(tt[1:i])) s")
         println("Finished Lap Nr. $j with state $(zCurr[i,:])")
 
-        figure(4)
-        title("Old Trajectories")
-        plot(oldTraj.oldTraj[:,6,1],oldTraj.oldTraj[:,1:5,1],"-",oldTraj.oldTraj[:,6,1],oldTraj.oldTraj[:,1:5,2],"--")
-        grid("on")
-        legend(["xDot","yDot","psiDot","ePsi","eY"])
+        
 
         # Save states in oldTraj:
         # --------------------------------
         saveOldTraj(oldTraj,zCurr_meas,uCurr,lapStatus,posInfo,buffersize,modelParams.dt)
 
+        figure(4)
+        subplot(211)
+        title("Old Trajectory #1")
+        plot(oldTraj.oldTraj[:,6,1],oldTraj.oldTraj[:,1:5,1])
+        grid("on")
+        legend(["xDot","yDot","psiDot","ePsi","eY"])
+        subplot(212)
+        title("Old Trajectory #2")
+        plot(oldTraj.oldTraj[:,6,2],oldTraj.oldTraj[:,1:5,2])
+        grid("on")
+        legend(["xDot","yDot","psiDot","ePsi","eY"])
         #println("Old Trajectory:")
         #println(oldTraj.oldTraj[:,:,1])
         #println("Old Input:")
@@ -265,5 +282,14 @@ function run_sim()
         # println("Press Enter to continue")
         readline()
     end
-
 end
+
+# Sequence of Laps:
+# 1st lap:
+# Path following, collect data. Actually only the end of the first lap is used in the data of the 2nd lap.
+# End of lap: Save trajectory
+# 2nd lap:
+# Path following, append data to first old trajectory and collect further data
+# Data of the end of 1st lap is added to data of 2nd lap.
+# 3rd lap:
+# Start LMPC, use data of previous trajectories for system ID

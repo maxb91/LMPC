@@ -27,8 +27,8 @@ end
 function simDynModel_exact(z::Array{Float64},u::Array{Float64},dt::Float64,coeff::Array{Float64},modelParams::ModelParams)
     # This function uses smaller steps to achieve higher fidelity than we would achieve using longer timesteps
     z_final = z
-    u[1] = min(u[1],5)
-    u[1] = max(u[1],-5)
+    u[1] = min(u[1],3)
+    u[1] = max(u[1],-3)
     u[2] = min(u[2],pi/6)
     u[2] = max(u[2],-pi/6)
     dtn = dt/100
@@ -72,7 +72,7 @@ function simDynModel(z::Array{Float64},u::Array{Float64},dt::Float64,coeff::Arra
     zNext[4] = z[4] + dt * (z[3]-dsdt*c)                                    # ePsi
     zNext[5] = z[5] + dt * (z[1]*sin(z[4]) + z[2]*cos(z[4]))                # eY
     zNext[6] = z[6] + dt * dsdt                                             # s
-    zNext[7] = z[7] + dt * (u[1] - z[7]) * 0.005/dt                         # a
+    zNext[7] = z[7] + dt * (u[1] - z[7]) * 0.001/dt                         # a
     zNext[8] = z[8] + dt * sign(u[2] - z[8]) * 0.01/dt                      # d_f
 
     return zNext
