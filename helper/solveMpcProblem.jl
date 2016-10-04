@@ -147,57 +147,31 @@ function solveMpcProblem_pathFollow(mdl::MpcModel_pF,mpcSol::MpcSol,mpcParams::M
 
     # Load Parameters
     coeffCurvature  = trackCoeff.coeffCurvature::Array{Float64,1}
-    N               = mpcParams.N
-    Q               = mpcParams.Q
-    R               = mpcParams.R
-    s_target        = posInfo.s_target
-
-    QderivZ         = mpcParams.QderivZ::Array{Float64,1}
-    QderivU         = mpcParams.QderivU::Array{Float64,1}
-
-    v_ref           = mpcParams.vPathFollowing
 
     sol_status::Symbol
     sol_u::Array{Float64,2}
     sol_z::Array{Float64,2}
 
-    # Create function-specific parameters
-    z_Ref::Array{Float64,2}
-    z_Ref           = cat(2,s_target*ones(N+1,1),zeros(N+1,2),v_ref*ones(N+1,1))       # Reference trajectory: path following -> stay on line and keep constant velocity
-    u_Ref           = zeros(N,2)
-
-    # Update current initial condition, curvature and System ID coefficients
+    # Update current initial condition, curvature and previous input
     setvalue(mdl.z0,zCurr)
+    setvalue(mdl.uCurr,uCurr[:])
     setvalue(mdl.coeff,coeffCurvature)
-
-    # Derivative cost
-    # ---------------------------------
-    @NLexpression(mdl.mdl, derivCost, sum{QderivZ[j]*((zCurr[j]-mdl.z_Ol[1,j])^2+sum{(mdl.z_Ol[i,j]-mdl.z_Ol[i+1,j])^2,i=1:N}),j=1:4} +
-                                      sum{QderivU[j]*((uCurr[j]-mdl.u_Ol[1,j])^2+sum{(mdl.u_Ol[i,j]-mdl.u_Ol[i+1,j])^2,i=1:N-1}),j=1:2})
-
-    # Control Input cost
-    # ---------------------------------
-    @NLexpression(mdl.mdl, controlCost, 0.5*sum{R[j]*sum{(mdl.u_Ol[i,j]-u_Ref[i,j])^2,i=1:N},j=1:2})
-
-    # State cost
-    # ---------------------------------
-    @NLexpression(mdl.mdl, costZ, 0.5*sum{Q[i]*sum{(mdl.z_Ol[j,i]-z_Ref[j,i])^2,j=2:N+1},i=1:4})    # Follow trajectory
-
-
-    @NLobjective(mdl.mdl, Min, costZ + derivCost + controlCost)
 
     # Solve Problem and return solution
     sol_status  = solve(mdl.mdl)
     sol_u       = getvalue(mdl.u_Ol)
     sol_z       = getvalue(mdl.z_Ol)
 
+    println("Solved model")
+    println("u = $sol_u")
+    println("z = $sol_z")
     mpcSol.a_x = sol_u[1,1]
     mpcSol.d_f = sol_u[1,2]
     mpcSol.u   = sol_u
     mpcSol.z   = sol_z
     mpcSol.solverStatus = sol_status
-    #mpcSol.cost = zeros(6)
-    mpcSol.cost = [getvalue(costZ),0,0,getvalue(derivCost),getvalue(controlCost),0]
+    mpcSol.cost = zeros(6)
+    #mpcSol.cost = [getvalue(mdl.costZ),0,0,getvalue(mdl.derivCost),getvalue(mdl.controlCost),0]
 
     nothing
 end

@@ -104,6 +104,7 @@ type MpcModel
     bta::Array{JuMP.NonlinearExpression,1}
     c::Array{JuMP.NonlinearExpression,1}
 
+    uCurr::Array{JuMP.NonlinearParameter,1}
     MpcModel(mdl=JuMP.Model(),
                 z0=@NLparameter(mdl,z0[i=1:4]==0),
                 coeff=@NLparameter(mdl,coeff[i=1:5]==0),
@@ -142,6 +143,12 @@ type MpcModel_pF
     bta::Array{JuMP.NonlinearExpression,1}
     c::Array{JuMP.NonlinearExpression,1}
 
+    #derivCost::JuMP.NonlinearExpression
+    #costZ::JuMP.NonlinearExpression
+    #controlCost::JuMP.NonlinearExpression
+
+    uCurr::Array{JuMP.NonlinearParameter,1}
+
     MpcModel_pF(mdl=JuMP.Model(),
                 z0=@NLparameter(mdl,z0[i=1:4]==0),
                 coeff=@NLparameter(mdl,coeff[i=1:5]==0),
@@ -149,12 +156,20 @@ type MpcModel_pF
                 u_Ol=@variable(mdl,[1:2,1:9]),
                 dsdt=@NLexpression(mdl,dsdt[1:10],0),
                 bta=@NLexpression(mdl,bta[1:10],0),
-                c=@NLexpression(mdl,c[1:10],0)) = new(mdl,
-                                                        z0,
-                                                        coeff,
-                                                        z_Ol,
-                                                        u_Ol,
-                                                        dsdt,
-                                                        bta,
-                                                        c)
+                #derivCost=@NLexpression(mdl,derivCost,0)::JuMP.NonlinearExpression,
+                #costZ=@NLexpression(mdl,costZ,0)::JuMP.NonlinearExpression,
+                #controlCost=@NLexpression(mdl,controlCost,0)::JuMP.NonlinearExpression,
+                c=@NLexpression(mdl,c[1:10],0),
+                uCurr=@NLparameter(mdl,uCurr[i=1:2]==0)) = new(mdl,
+                                                                z0,
+                                                                coeff,
+                                                                z_Ol,
+                                                                u_Ol,
+                                                                dsdt,
+                                                                bta,
+                                                                #derivCost,
+                                                                #costZ,
+                                                                #controlCost,
+                                                                c,
+                                                                uCurr)
 end

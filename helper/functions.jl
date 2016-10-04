@@ -128,15 +128,29 @@ function InitializeModel_pathFollow(m::MpcModel_pF,mpcParams::MpcParams,modelPar
     z_lb = modelParams.z_lb
     z_ub = modelParams.z_ub
 
-    N    = mpcParams.N
+    N           = mpcParams.N
+    Q           = mpcParams.Q
+    R           = mpcParams.R
+    QderivZ     = mpcParams.QderivZ::Array{Float64,1}
+    QderivU     = mpcParams.QderivU::Array{Float64,1}
+
+    v_ref       = mpcParams.vPathFollowing
 
     n_poly_curv = trackCoeff.nPolyCurvature         # polynomial degree of curvature approximation
-    
+
+    # Create function-specific parameters
+    z_Ref::Array{Float64,2}
+    z_Ref           = cat(2,zeros(N+1,3),v_ref*ones(N+1,1))       # Reference trajectory: path following -> stay on line and keep constant velocity
+    u_Ref           = zeros(N,2)
+
+    # Create Model
     m.mdl = Model(solver = IpoptSolver(print_level=0,max_cpu_time=0.1))#,linear_solver="ma57",print_user_options="yes"))
 
+    # Create variables (these are going to be optimized)
     @variable( m.mdl, m.z_Ol[1:(N+1),1:4])      # z = s, ey, epsi, v
     @variable( m.mdl, m.u_Ol[1:N,1:2])
 
+    # Set bounds (hard constraints)
     for i=1:2
         for j=1:N
             setlowerbound(m.u_Ol[j,i], modelParams.u_lb[j,i])
@@ -151,6 +165,7 @@ function InitializeModel_pathFollow(m::MpcModel_pF,mpcParams::MpcParams,modelPar
     end
 
     @NLparameter(m.mdl, m.z0[i=1:4] == z_Init[i])
+    @NLparameter(m.mdl, m.uCurr[i=1:2] == 0)
     @NLconstraint(m.mdl, [i=1:4], m.z_Ol[1,i] == m.z0[i])
 
     @NLparameter(m.mdl, m.coeff[i=1:n_poly_curv+1] == trackCoeff.coeffCurvature[i]);
@@ -166,6 +181,25 @@ function InitializeModel_pathFollow(m::MpcModel_pF,mpcParams::MpcParams,modelPar
         @NLconstraint(m.mdl, m.z_Ol[i+1,3]  == m.z_Ol[i,3] + dt*(m.z_Ol[i,4]/L_a*sin(m.bta[i])-m.dsdt[i]*m.c[i])  )            # epsi
         @NLconstraint(m.mdl, m.z_Ol[i+1,4]  == m.z_Ol[i,4] + dt*(m.u_Ol[i,1] - modelParams.c_f*abs(m.z_Ol[i,4]) * m.z_Ol[i,4]))  # v
     end
+
+    # Cost definitions
+    # Derivative cost
+    # ---------------------------------
+    @NLexpression(m.mdl, derivCost, sum{QderivZ[j]*(sum{(m.z_Ol[i,j]-m.z_Ol[i+1,j])^2,i=1:N}),j=1:4} +
+                                        sum{QderivU[j]*((m.uCurr[j]-m.u_Ol[1,j])^2+sum{(m.u_Ol[i,j]-m.u_Ol[i+1,j])^2,i=1:N-1}),j=1:2})
+
+    # Control Input cost
+    # ---------------------------------
+    @NLexpression(m.mdl, controlCost, 0.5*sum{R[j]*sum{(m.u_Ol[i,j])^2,i=1:N},j=1:2})
+
+    # State cost
+    # ---------------------------------
+    @NLexpression(m.mdl, costZ, 0.5*sum{Q[i]*sum{(m.z_Ol[j,i]-z_Ref[j,i])^2,j=2:N+1},i=1:4})    # Follow trajectory
+
+    # Objective function
+    @NLobjective(m.mdl, Min, costZ + derivCost + controlCost)
+
+    # First solve
     solve(m.mdl)
 end
 
