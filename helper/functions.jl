@@ -42,175 +42,16 @@ function saveOldTraj(oldTraj::OldTrajectory,zCurr::Array{Float64},uCurr::Array{F
                 end
 end
 
-function InitializeModel(m::MpcModel,mpcParams::MpcParams,modelParams::ModelParams,trackCoeff::TrackCoeff,z_Init::Array{Float64,1})
-
-    dt   = modelParams.dt
-    L_a  = modelParams.l_A
-    L_b  = modelParams.l_B
-    c0   = modelParams.c0
-    u_lb = modelParams.u_lb
-    u_ub = modelParams.u_ub
-    z_lb = modelParams.z_lb
-    z_ub = modelParams.z_ub
-
-    N    = mpcParams.N
-
-    n_poly_curv = trackCoeff.nPolyCurvature         # polynomial degree of curvature approximation
-    
-    m.mdl = Model(solver = IpoptSolver(print_level=0,max_cpu_time=0.5))#,check_derivatives_for_naninf="yes"))#,linear_solver="ma57",print_user_options="yes"))
-
-    @variable( m.mdl, m.z_Ol[1:(N+1),1:6])
-    @variable( m.mdl, m.u_Ol[1:N,1:2])
-    @variable( m.mdl, 0 <= m.ParInt[1:1] <= 1)
-
-    z_lb_6s = ones(mpcParams.N+1,1)*[0.1 -Inf -Inf -Inf -Inf -Inf]                     # lower bounds on states
-    z_ub_6s = ones(mpcParams.N+1,1)*[3.0  Inf  Inf  Inf  Inf  Inf]                      # upper bounds
-    u_lb_6s = ones(mpcParams.N,1) * [-1.0  -pi/6]                                       # lower bounds on steering
-    u_ub_6s = ones(mpcParams.N,1) * [3.0    pi/6]                                       # upper bounds
-
-    for i=1:2
-        for j=1:N
-            setlowerbound(m.u_Ol[j,i], u_lb_6s[j,i])
-            setupperbound(m.u_Ol[j,i], u_ub_6s[j,i])
-        end
-    end
-    for i=1:6
-        for j=1:N+1
-            setlowerbound(m.z_Ol[j,i], z_lb_6s[j,i])
-            setupperbound(m.z_Ol[j,i], z_ub_6s[j,i])
-        end
-    end
-
-    @NLparameter(m.mdl, m.z0[i=1:6] == z_Init[i])
-    @NLparameter(m.mdl, m.coeff[i=1:n_poly_curv+1] == trackCoeff.coeffCurvature[i]);
-    @NLparameter(m.mdl, m.c_Vx[i=1:4]  == 1)
-    @NLparameter(m.mdl, m.c_Vy[i=1:4]  == 1)
-    @NLparameter(m.mdl, m.c_Psi[i=1:3] == 1)
-
-    @NLconstraint(m.mdl, [i=1:6], m.z_Ol[1,i] == m.z0[i])
-
-    @NLexpression(m.mdl, m.c[i = 1:N], sum{m.coeff[j]*m.z_Ol[i,6]^(n_poly_curv-j+1),j=1:n_poly_curv} + m.coeff[n_poly_curv+1])
-
-    @NLexpression(m.mdl, m.dsdt[i = 1:N], (m.z_Ol[i,1]*cos(m.z_Ol[i,4]) - m.z_Ol[i,2]*sin(m.z_Ol[i,4]))/(1-m.z_Ol[i,5]*m.c[i]))
-    
-    println("Initializing model...")
-
-    # System dynamics
-    for i=1:N
-        @NLconstraint(m.mdl, m.z_Ol[i+1,1]  == m.z_Ol[i,1] + m.c_Vx[1]*m.z_Ol[i,2] + m.c_Vx[2]*m.z_Ol[i,3] + m.c_Vx[3]*m.z_Ol[i,1]^2 + m.c_Vx[4]*m.u_Ol[i,1])  # xDot
-        @NLconstraint(m.mdl, m.z_Ol[i+1,2]  == m.z_Ol[i,2] + m.c_Vy[1]*m.z_Ol[i,2]/m.z_Ol[i,1] + m.c_Vy[2]*m.z_Ol[i,1]*m.z_Ol[i,3] +
-                                                               m.c_Vy[3]*m.z_Ol[i,3]/m.z_Ol[i,1] + m.c_Vy[4]*m.u_Ol[i,2])
-        @NLconstraint(m.mdl, m.z_Ol[i+1,3]  == m.z_Ol[i,3] + m.c_Psi[1]*m.z_Ol[i,3]/m.z_Ol[i,1] + m.c_Psi[2]*m.z_Ol[i,2]/m.z_Ol[i,1] +
-                                                               m.c_Psi[3]*m.u_Ol[i,2])                       # psiDot
-        @NLconstraint(m.mdl, m.z_Ol[i+1,4]  == m.z_Ol[i,4] + dt*(m.z_Ol[i,3]-m.dsdt[i]*m.c[i]))                                                   # ePsi
-        @NLconstraint(m.mdl, m.z_Ol[i+1,5]  == m.z_Ol[i,5] + dt*(m.z_Ol[i,1]*sin(m.z_Ol[i,4])+m.z_Ol[i,2]*cos(m.z_Ol[i,4])))                    # eY
-        @NLconstraint(m.mdl, m.z_Ol[i+1,6]  == m.z_Ol[i,6] + dt*m.dsdt[i]  )
-    end
-
-    @NLexpression(m.mdl, costZ, 0.5*sum{(m.z_Ol[j,5])^2+(m.z_Ol[j,1]-0.2)^2,j=2:N+1})
-    # solve model once
-    println("solving...")
-    solve(m.mdl)
-    println("finished")
-
-end
-
-
-function InitializeModel_pathFollow(m::MpcModel_pF,mpcParams::MpcParams,modelParams::ModelParams,trackCoeff::TrackCoeff,z_Init::Array{Float64,1})
-    dt   = modelParams.dt
-    L_a  = modelParams.l_A
-    L_b  = modelParams.l_B
-    c0   = modelParams.c0
-    u_lb = modelParams.u_lb
-    u_ub = modelParams.u_ub
-    z_lb = modelParams.z_lb
-    z_ub = modelParams.z_ub
-
-    N           = mpcParams.N
-    Q           = mpcParams.Q
-    R           = mpcParams.R
-    QderivZ     = mpcParams.QderivZ::Array{Float64,1}
-    QderivU     = mpcParams.QderivU::Array{Float64,1}
-
-    v_ref       = mpcParams.vPathFollowing
-
-    n_poly_curv = trackCoeff.nPolyCurvature         # polynomial degree of curvature approximation
-
-    # Create function-specific parameters
-    z_Ref::Array{Float64,2}
-    z_Ref           = cat(2,zeros(N+1,3),v_ref*ones(N+1,1))       # Reference trajectory: path following -> stay on line and keep constant velocity
-    u_Ref           = zeros(N,2)
-
-    # Create Model
-    m.mdl = Model(solver = IpoptSolver(print_level=0,max_cpu_time=0.1))#,linear_solver="ma57",print_user_options="yes"))
-
-    # Create variables (these are going to be optimized)
-    @variable( m.mdl, m.z_Ol[1:(N+1),1:4])      # z = s, ey, epsi, v
-    @variable( m.mdl, m.u_Ol[1:N,1:2])
-
-    # Set bounds (hard constraints)
-    for i=1:2
-        for j=1:N
-            setlowerbound(m.u_Ol[j,i], modelParams.u_lb[j,i])
-            setupperbound(m.u_Ol[j,i], modelParams.u_ub[j,i])
-        end
-    end
-    for i=1:4
-        for j=1:N
-            setlowerbound(m.z_Ol[j,i], modelParams.z_lb[j,i])
-            setupperbound(m.z_Ol[j,i], modelParams.z_ub[j,i])
-        end
-    end
-
-    @NLparameter(m.mdl, m.z0[i=1:4] == z_Init[i])
-    @NLparameter(m.mdl, m.uCurr[i=1:2] == 0)
-    @NLconstraint(m.mdl, [i=1:4], m.z_Ol[1,i] == m.z0[i])
-
-    @NLparameter(m.mdl, m.coeff[i=1:n_poly_curv+1] == trackCoeff.coeffCurvature[i]);
-
-    @NLexpression(m.mdl, m.c[i = 1:N],    sum{m.coeff[j]*m.z_Ol[i,1]^(n_poly_curv-j+1),j=1:n_poly_curv} + m.coeff[n_poly_curv+1])
-    @NLexpression(m.mdl, m.bta[i = 1:N],  atan( L_a / (L_a + L_b) * ( m.u_Ol[i,2] ) ) )
-    @NLexpression(m.mdl, m.dsdt[i = 1:N], m.z_Ol[i,4]*cos(m.z_Ol[i,3]+m.bta[i])/(1-m.z_Ol[i,2]*m.c[i]))
-
-    # System dynamics
-    for i=1:N
-        @NLconstraint(m.mdl, m.z_Ol[i+1,1]  == m.z_Ol[i,1] + dt*m.dsdt[i]  )                                             # s
-        @NLconstraint(m.mdl, m.z_Ol[i+1,2]  == m.z_Ol[i,2] + dt*m.z_Ol[i,4]*sin(m.z_Ol[i,3]+m.bta[i])  )                     # ey
-        @NLconstraint(m.mdl, m.z_Ol[i+1,3]  == m.z_Ol[i,3] + dt*(m.z_Ol[i,4]/L_a*sin(m.bta[i])-m.dsdt[i]*m.c[i])  )            # epsi
-        @NLconstraint(m.mdl, m.z_Ol[i+1,4]  == m.z_Ol[i,4] + dt*(m.u_Ol[i,1] - modelParams.c_f*abs(m.z_Ol[i,4]) * m.z_Ol[i,4]))  # v
-    end
-
-    # Cost definitions
-    # Derivative cost
-    # ---------------------------------
-    @NLexpression(m.mdl, derivCost, sum{QderivZ[j]*(sum{(m.z_Ol[i,j]-m.z_Ol[i+1,j])^2,i=1:N}),j=1:4} +
-                                        sum{QderivU[j]*((m.uCurr[j]-m.u_Ol[1,j])^2+sum{(m.u_Ol[i,j]-m.u_Ol[i+1,j])^2,i=1:N-1}),j=1:2})
-
-    # Control Input cost
-    # ---------------------------------
-    @NLexpression(m.mdl, controlCost, 0.5*sum{R[j]*sum{(m.u_Ol[i,j])^2,i=1:N},j=1:2})
-
-    # State cost
-    # ---------------------------------
-    @NLexpression(m.mdl, costZ, 0.5*sum{Q[i]*sum{(m.z_Ol[j,i]-z_Ref[j,i])^2,j=2:N+1},i=1:4})    # Follow trajectory
-
-    # Objective function
-    @NLobjective(m.mdl, Min, costZ + derivCost + controlCost)
-
-    # First solve
-    solve(m.mdl)
-end
-
 function InitializeParameters(mpcParams::MpcParams,mpcParams_pF::MpcParams,trackCoeff::TrackCoeff,modelParams::ModelParams,
                                 posInfo::PosInfo,oldTraj::OldTrajectory,mpcCoeff::MpcCoeff,lapStatus::LapStatus,buffersize::Int64)
-    mpcParams.N                 = 10
+    mpcParams.N                 = 5
     mpcParams.Q_term            = 0.1*[0.01,1.0,1.0,1.0,1.0]     # weights for terminal constraints (LMPC, for xDot,yDot,psiDot,ePsi,eY)
     mpcParams.R                 = 0*[1.0,1.0]                   # put weights on a and d_f
     mpcParams.QderivZ           = 0.0*[0,0,0.1,0,0,0]           # cost matrix for derivative cost of states
     mpcParams.QderivU           = 0.1*[1,10]                    # cost matrix for derivative cost of inputs
     mpcParams.Q_term_cost       = 0.01                          # scaling of Q-function
 
-    mpcParams_pF.N              = 10
+    mpcParams_pF.N              = 5
     mpcParams_pF.Q              = [0.0,10.0,0.1,1.0]
     mpcParams_pF.R              = 0*[1.0,1.0]               # put weights on a and d_f
     mpcParams_pF.QderivZ        = 0.0*[0,0,0.1,0]           # cost matrix for derivative cost of states
@@ -223,7 +64,7 @@ function InitializeParameters(mpcParams::MpcParams,mpcParams_pF::MpcParams,track
 
     modelParams.u_lb            = ones(mpcParams.N,1) * [-0.2  -pi/6]                           # lower bounds on steering
     modelParams.u_ub            = ones(mpcParams.N,1) * [1.2   pi/6]                            # upper bounds
-    modelParams.z_lb            = ones(mpcParams.N+1,1)*[-Inf -Inf -Inf -0.1]                   # lower bounds on states
+    modelParams.z_lb            = ones(mpcParams.N+1,1)*[-Inf -Inf -Inf -0.5]                   # lower bounds on states
     modelParams.z_ub            = ones(mpcParams.N+1,1)*[ Inf  Inf  Inf  2.0]                   # upper bounds
     modelParams.l_A             = 0.125
     modelParams.l_B             = 0.125

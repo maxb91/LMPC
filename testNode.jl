@@ -28,8 +28,6 @@ function run_sim()
     modelParams                 = ModelParams()
     mpcParams                   = MpcParams()
     mpcParams_pF                = MpcParams()       # for 1st lap (path following)
-    mdl                         = MpcModel()
-    mdl_pF                      = MpcModel_pF()
 
     buffersize                  = 700
 
@@ -37,8 +35,8 @@ function run_sim()
     z_Init_pF = zeros(4)
 
     InitializeParameters(mpcParams,mpcParams_pF,trackCoeff,modelParams,posInfo,oldTraj,mpcCoeff,lapStatus,buffersize)
-    InitializeModel(mdl,mpcParams,modelParams,trackCoeff,z_Init)
-    InitializeModel_pathFollow(mdl_pF,mpcParams_pF,modelParams,trackCoeff,z_Init_pF)
+    mdl    = MpcModel(mpcParams,mpcCoeff,modelParams,trackCoeff,z_Init)
+    mdl_pF = MpcModel_pF(mpcParams_pF,modelParams,trackCoeff,z_Init_pF)
 
     zInput = zeros(50,6)
     uInput = zeros(50,2)
