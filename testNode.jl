@@ -66,7 +66,7 @@ function run_sim()
 
     z_pf            = zeros(4)
 
-    for j=1:6
+    for j=1:10
         # Initialize Lap
         lapStatus.currentLap = j
 
@@ -163,7 +163,6 @@ function run_sim()
             println("Solving step $i of $(length(t)) - Status: $(mpcSol.solverStatus), Time: $(tt[i]) s")
             println("s_meas[i+1] = $(zCurr_meas[i+1,6])")
             println("z_meas[i+1] = $(zCurr_meas[i+1,:])")
-            println("step_diff = $(step_diff[i,:])")
 
             # Check if we're crossing the finish line
             if zCurr_meas[i+1,6] >= posInfo.s_target
@@ -223,96 +222,98 @@ function run_sim()
         # --------------------------------
         saveOldTraj(oldTraj,zCurr_meas,uCurr,lapStatus,posInfo,buffersize,modelParams.dt)
 
-        figure(4)
-        subplot(211)
-        title("Old Trajectory #1")
-        plot(oldTraj.oldTraj[:,6,1],oldTraj.oldTraj[:,1:5,1])
-        grid("on")
-        legend(["xDot","yDot","psiDot","ePsi","eY"])
-        subplot(212)
-        title("Old Trajectory #2")
-        plot(oldTraj.oldTraj[:,6,2],oldTraj.oldTraj[:,1:5,2])
-        grid("on")
-        legend(["xDot","yDot","psiDot","ePsi","eY"])
-        #println("Old Trajectory:")
-        #println(oldTraj.oldTraj[:,:,1])
-        #println("Old Input:")
-        #println(oldTraj.oldInput[:,:,1])
-        # Print results
-        # --------------------------------
-
-        figure(5)
-        plot(zCurr[1:i,6],step_diff[1:i,:])
-        grid("on")
-        title("One step errors")
         if j>2
-            figure(1)
-            title("System ID coefficients")
-            ax=subplot(311)
-            plot(zCurr[1:i,6],coeff_sysID[1][1:i,:])
-            legend(["1","2","3"])
-            title("xDot")
+            figure(4)
+            subplot(211)
+            title("Old Trajectory #1")
+            plot(oldTraj.oldTraj[:,6,1],oldTraj.oldTraj[:,1:5,1])
+            grid("on")
+            legend(["xDot","yDot","psiDot","ePsi","eY"])
+            subplot(212)
+            title("Old Trajectory #2")
+            plot(oldTraj.oldTraj[:,6,2],oldTraj.oldTraj[:,1:5,2])
+            grid("on")
+            legend(["xDot","yDot","psiDot","ePsi","eY"])
+            #println("Old Trajectory:")
+            #println(oldTraj.oldTraj[:,:,1])
+            #println("Old Input:")
+            #println(oldTraj.oldInput[:,:,1])
+            # Print results
+            # --------------------------------
+
+            figure(5)
+            plot(zCurr[1:i,6],step_diff[1:i,:])
+            grid("on")
+            title("One step errors")
+            if j>2
+                figure(1)
+                title("System ID coefficients")
+                ax=subplot(311)
+                plot(zCurr[1:i,6],coeff_sysID[1][1:i,:])
+                legend(["1","2","3"])
+                title("xDot")
+                grid(1)
+                subplot(312,sharex=ax)
+                plot(zCurr[1:i,6],coeff_sysID[2][1:i,:])
+                legend(["1","2","3","4"])
+                title("yDot")
+                grid(1)
+                subplot(313,sharex=ax)
+                plot(zCurr[1:i,6],coeff_sysID[3][1:i,:])
+                legend(["1","2","3"])
+                title("psiDot")
+                grid(1)
+            end
+
+            figure(2)
+            subplot(211)
+            plot(zCurr[1:i,6],zCurr[1:i,1:5],zCurr[1:i,6],zCurr[1:i,7:8])
+            title("Real")
+            legend(["xDot","yDot","psiDot","ePsi","eY","a","d_f"])
+            xlabel("s [m]")
+            grid("on")
+            subplot(212)
+            plot(zCurr[1:i,6],uCurr[1:i,:])
+            legend(["a","d_f"])
+            grid("on")
+
+            figure(3)
+            plot(zCurr_meas[1:i,6],zCurr_meas[1:i,1:5])
+            title("Measured")
+            legend(["xDot","yDot","psiDot","ePsi","eY","a","d_f"])
+            xlabel("s [m]")
+            grid("on")
+
+            # figure(2)
+            # ax1=subplot(311)
+            # plot(t,zCurr[:,6],"y",t,zCurr[:,5],"r",t,zCurr[:,4],"g",t,zCurr[:,1],"b")
+            # grid(1)
+            # legend(["s","eY","ePsi","v"])
+            # title("States")
+            # ax2=subplot(312,sharex=ax1)
+            # plot(t,uCurr[:,1],"r",t,uCurr[:,2],"g")
+            # grid(1)
+            # title("Control input")
+            # legend(["a","d_f"])
+            # ax3=subplot(313,sharex=ax1)
+            figure(8)
+            plot(zCurr_meas[1:i,6],cost[1:i,1],"r",zCurr_meas[1:i,6],cost[1:i,2],"g",zCurr_meas[1:i,6],cost[1:i,3],"b",zCurr_meas[1:i,6],cost[1:i,4],"y",zCurr_meas[1:i,6],cost[1:i,5],"m",zCurr_meas[1:i,6],cost[1:i,6],"c")
             grid(1)
-            subplot(312,sharex=ax)
-            plot(zCurr[1:i,6],coeff_sysID[2][1:i,:])
-            legend(["1","2","3","4"])
-            title("yDot")
-            grid(1)
-            subplot(313,sharex=ax)
-            plot(zCurr[1:i,6],coeff_sysID[3][1:i,:])
-            legend(["1","2","3"])
-            title("psiDot")
-            grid(1)
+            title("Cost distribution")
+            legend(["z","z_Term","z_Term_const","deriv","control","lane"])
+            println("Press Enter to continue")
+
+            readline()
         end
-
-        figure(2)
-        subplot(211)
-        plot(zCurr[1:i,6],zCurr[1:i,1:5],zCurr[1:i,6],zCurr[1:i,7:8])
-        title("Real")
-        legend(["xDot","yDot","psiDot","ePsi","eY","a","d_f"])
-        xlabel("s [m]")
-        grid("on")
-        subplot(212)
-        plot(zCurr[1:i,6],uCurr[1:i,:])
-        legend(["a","d_f"])
-        grid("on")
-
-        figure(3)
-        plot(zCurr_meas[1:i,6],zCurr_meas[1:i,1:5])
-        title("Measured")
-        legend(["xDot","yDot","psiDot","ePsi","eY","a","d_f"])
-        xlabel("s [m]")
-        grid("on")
-
-        # figure(2)
-        # ax1=subplot(311)
-        # plot(t,zCurr[:,6],"y",t,zCurr[:,5],"r",t,zCurr[:,4],"g",t,zCurr[:,1],"b")
-        # grid(1)
-        # legend(["s","eY","ePsi","v"])
-        # title("States")
-        # ax2=subplot(312,sharex=ax1)
-        # plot(t,uCurr[:,1],"r",t,uCurr[:,2],"g")
-        # grid(1)
-        # title("Control input")
-        # legend(["a","d_f"])
-        # ax3=subplot(313,sharex=ax1)
-        figure(8)
-        plot(zCurr_meas[1:i,6],cost[1:i,1],"r",zCurr_meas[1:i,6],cost[1:i,2],"g",zCurr_meas[1:i,6],cost[1:i,3],"b",zCurr_meas[1:i,6],cost[1:i,4],"y",zCurr_meas[1:i,6],cost[1:i,5],"m",zCurr_meas[1:i,6],cost[1:i,6],"c")
-        grid(1)
-        title("Cost distribution")
-        legend(["z","z_Term","z_Term_const","deriv","control","lane"])
-        println("Press Enter to continue")
-
-        readline()
     end
 end
 
 # Sequence of Laps:
 # 1st lap:
-# Path following, collect data. Actually only the end of the first lap is used in the data of the 2nd lap.
+# Path following, collect data. Actually only the end of the first lap is used for the data of the 2nd lap.
 # End of lap: Save trajectory
 # 2nd lap:
 # Path following, append data to first old trajectory and collect further data
 # Data of the end of 1st lap is added to data of 2nd lap.
 # 3rd lap:
-# Start LMPC, use data of previous trajectories for system ID
+# Start LMPC, use data of previous trajectories for system ID and LMPC

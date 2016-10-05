@@ -84,7 +84,6 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     if norm(bS_Vector[1,1]-s_total) > 0.3 || norm(bS_Vector[1,2]-s_total) > 0.3
         warn("Couldn't find a close point to current s.")
     end
-    # bS_Vector       = cat(2, oldS[vec_range[1]],    oldS[vec_range[2]])
 
     # println("************************************** COEFFICIENTS **************************************")
     # println("idx_s[1]  = $(idx_s[1]), idx_s[2] = $(idx_s[2])")
@@ -163,7 +162,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     y_yDot = cat(1,y_yDot,diff(currentTraj[end-n_prev:end,2]))
     A_yDot = cat(1,A_yDot,[currentTraj[vec_range_ID2,2]./currentTraj[vec_range_ID2,1] currentTraj[vec_range_ID2,3].*currentTraj[vec_range_ID2,1] currentTraj[vec_range_ID2,3]./currentTraj[vec_range_ID2,1] currentInput[vec_range_ID2,2]])
 
-    if lapStatus.currentLap > 6
+    if diff(oldTraj.oldCost) != 0       # if the two saved old trajectories are different (resp. have different costs)
         y_psi  = cat(1,y_psi,diff(oldpsiDot[idx_s[2]-n_prev:idx_s[2]+n_ahead+1]))
         A_psi  = cat(1,A_psi,[oldpsiDot[vec_range_ID[2]]./oldxDot[vec_range_ID[2]] oldyDot[vec_range_ID[2]]./oldxDot[vec_range_ID[2]] olddF[vec_range_ID[2]]])
         y_xDot = cat(1,y_xDot,diff(oldxDot[idx_s[2]-n_prev:idx_s[2]+n_ahead+1]))
@@ -222,27 +221,16 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     # grid("on")
     # readline()
 
-    if any(isnan,y_yDot)
+    if any(isnan,y_yDot)            # check if any value in the y_yDot value is NaN
         warn("NaN value detected in coeffConstraintCost! Press to continue...")
         readline()
     end
-   # println("olddF")
-   # println(olddF[vec_range_ID])
     mpcCoeff.c_Psi = (A_psi'*A_psi)\A_psi'*y_psi
     mpcCoeff.c_Vx  = (A_xDot'*A_xDot)\A_xDot'*y_xDot
     mpcCoeff.c_Vy  = (A_yDot'*A_yDot)\A_yDot'*y_yDot        # Todo: If all matrix/vector values are really low (<e-22) this might return an error
                                                             # this might happen on long straight parts of the track (no change in psi/y states)
-    println("RESIDUALS:")
-    println(norm(y_psi-A_psi*mpcCoeff.c_Psi))
-    println(norm(y_xDot-A_xDot*mpcCoeff.c_Vx))
-    println(norm(y_yDot-A_yDot*mpcCoeff.c_Vy))
-
     mpcCoeff.coeffCost  = coeffCost
     mpcCoeff.coeffConst = coeffConst
-        
-    #println("CurrentTraj and Input:")
-    #println(currentTraj[vec_range_ID2,:])
-    #println(currentInput[vec_range_ID2,:])
     nothing
 end
 

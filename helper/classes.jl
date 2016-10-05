@@ -6,10 +6,9 @@ type LapStatus
 end
 
 # Structure of coeffConst:
-# 1st dimension specifies the state (1 = eY, 2 = ePsi, 3 = v)
-# 2nd dimension is the polynomial coefficient
-# 3rd dimension is not used
-# 4th dimension specifies one of the two lap numbers between which are iterated
+# 1st dimension is the polynomial coefficient
+# 2nd dimension specifies the state (1 = eY, 2 = ePsi, 3 = v or 1 = xDot, 2 = yDot, 3 = psiDot, 4 = ePsi, 5 = eY)
+# 3th dimension specifies one of the two lap numbers between which are iterated
 
 type MpcCoeff           # coefficients for trajectory approximation
     coeffCost::Array{Float64}

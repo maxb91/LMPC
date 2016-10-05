@@ -54,11 +54,11 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
     setvalue(mdl.c_Vy,mpcCoeff.c_Vy)
     setvalue(mdl.c_Psi,mpcCoeff.c_Psi)
 
-    println("mdl.z0    = $(getvalue(mdl.z0))")
-    println("coeffCurvature = $(getvalue(mdl.coeff))")
-    println("mdl.c_Vx  = $(getvalue(mdl.c_Vx))")
-    println("mdl.c_Vy  = $(getvalue(mdl.c_Vy))")
-    println("mdl.c_Psi = $(getvalue(mdl.c_Psi))")
+    #println("mdl.z0    = $(getvalue(mdl.z0))")
+    #println("coeffCurvature = $(getvalue(mdl.coeff))")
+    #println("mdl.c_Vx  = $(getvalue(mdl.c_Vx))")
+    #println("mdl.c_Vy  = $(getvalue(mdl.c_Vy))")
+    #println("mdl.c_Psi = $(getvalue(mdl.c_Psi))")
     #println("coeffTermCost  = $(coeffTermCost)")
     #println("coeffTermConst = $(coeffTermConst)")
 
@@ -112,8 +112,8 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
     sol_status  = solve(mdl.mdl)
     println("Solved")
 
-    println("z_Ol      = $(getvalue(mdl.z_Ol))")
-    println("u_Ol      = $(getvalue(mdl.u_Ol))")
+    #println("z_Ol      = $(getvalue(mdl.z_Ol))")
+    #println("u_Ol      = $(getvalue(mdl.u_Ol))")
     sol_u       = getvalue(mdl.u_Ol)
     sol_z       = getvalue(mdl.z_Ol)
     println("Predicting until z = $(sol_z[end,6])")
@@ -121,14 +121,14 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
 
     # COST PRINTS: ********************************************************
     # println("coeff: $(getvalue(mdl.coeff))")
-    println("z0: $(getvalue(mdl.z0))")
-    println("Solution status: $sol_status")
-    println("Objective value: $(getobjectivevalue(mdl.mdl))")
-    println("Control Cost: $(getvalue(controlCost))")
-    println("DerivCost:    $(getvalue(derivCost))")
-    println("LaneCost:     $(getvalue(laneCost))")
-    println("costZTerm:    $(getvalue(costZTerm))")
-    println("constZTerm:   $(getvalue(constZTerm))")
+    #println("z0: $(getvalue(mdl.z0))")
+    #println("Solution status: $sol_status")
+    #println("Objective value: $(getobjectivevalue(mdl.mdl))")
+    #println("Control Cost: $(getvalue(controlCost))")
+    #println("DerivCost:    $(getvalue(derivCost))")
+    #println("LaneCost:     $(getvalue(laneCost))")
+    #println("costZTerm:    $(getvalue(costZTerm))")
+    #println("constZTerm:   $(getvalue(constZTerm))")
 
     mpcSol.a_x = sol_u[1,1]
     mpcSol.d_f = sol_u[1,2]

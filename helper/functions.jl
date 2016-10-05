@@ -1,10 +1,12 @@
+# Important information about oldTraj:
+# ======================================
 # oldTraj.oldTraj contains all state information of one lap. It is structured like follows:
 # The first <prebuf> values are the end of one lap before the next lap starts (necessary for inter-lap-system-ID)
-# The last value of <prebuf> ends with the last value *before* the finish line
+# The last value of <prebuf> ends with the last value *before* the finish line (s < s_target)
 # The s-values within <prebuf> need to be below zero (-> before the finish line). Otherwise they can be mistaken as the end of the current (not previous) lap.
 # After <prebuf> follow the recorded states of the trajectory (as many as there were during one lap)
+# The number of recorded states during one trajectory (0 <= s < s_target) is equal to <oldCost>.
 # After the recorded trajectory, the rest of the vector (until <buffersize>) is filled up with constant values
-# oldCost is the number of values between the start and finish line (0 <= s < s_target)
 
 function saveOldTraj(oldTraj::OldTrajectory,zCurr::Array{Float64},uCurr::Array{Float64},lapStatus::LapStatus,posInfo::PosInfo,buffersize::Int64,dt::Float64)
                 
@@ -20,10 +22,6 @@ function saveOldTraj(oldTraj::OldTrajectory,zCurr::Array{Float64},uCurr::Array{F
 
                 zCurr_export[1:prebuf,6] -= posInfo.s_target       # make the prebuf-values below zero
                 costLap                   = i                      # the cost of the current lap is the time it took to reach the finish line
-                # println("zCurr_export:")
-                # println(zCurr_export)
-                # println("uCurr_export:")
-                # println(uCurr_export)
 
                 # Save all data in oldTrajectory:
                 if lapStatus.currentLap <= 2                        # if it's the first or second lap
@@ -205,14 +203,14 @@ end
 
 function InitializeParameters(mpcParams::MpcParams,mpcParams_pF::MpcParams,trackCoeff::TrackCoeff,modelParams::ModelParams,
                                 posInfo::PosInfo,oldTraj::OldTrajectory,mpcCoeff::MpcCoeff,lapStatus::LapStatus,buffersize::Int64)
-    mpcParams.N                 = 6
-    mpcParams.Q_term            = 1.0*[0.01,1.0,1.0,1.0,1.0]     # weights for terminal constraints (LMPC, for xDot,yDot,psiDot,ePsi,eY)
+    mpcParams.N                 = 10
+    mpcParams.Q_term            = 0.1*[0.01,1.0,1.0,1.0,1.0]     # weights for terminal constraints (LMPC, for xDot,yDot,psiDot,ePsi,eY)
     mpcParams.R                 = 0*[1.0,1.0]                   # put weights on a and d_f
     mpcParams.QderivZ           = 0.0*[0,0,0.1,0,0,0]           # cost matrix for derivative cost of states
     mpcParams.QderivU           = 0.1*[1,10]                    # cost matrix for derivative cost of inputs
     mpcParams.Q_term_cost       = 0.01                          # scaling of Q-function
 
-    mpcParams_pF.N              = 6
+    mpcParams_pF.N              = 10
     mpcParams_pF.Q              = [0.0,10.0,0.1,1.0]
     mpcParams_pF.R              = 0*[1.0,1.0]               # put weights on a and d_f
     mpcParams_pF.QderivZ        = 0.0*[0,0,0.1,0]           # cost matrix for derivative cost of states
@@ -254,21 +252,3 @@ function InitializeParameters(mpcParams::MpcParams,mpcParams_pF::MpcParams,track
     lapStatus.currentLap        = 1         # initialize lap number
     lapStatus.currentIt         = 0         # current iteration in lap
 end
-
-# obsolete function: appends beginning of lap to end of previous old trajectory
-# function extendOldTraj(oldTraj::OldTrajectory,posInfo::PosInfo,zCurr::Array{Float64,2},uCurr::Array{Float64,2})
-#     postbuf = oldTraj.postbuf
-#     for i=1:6
-#         for j=1:postbuf
-#             oldTraj.oldTraj[oldTraj.oldCost[1]+oldTraj.prebuf+j,i,1]  = zCurr[j,i]
-#         end
-#     end
-#     for i=1:2
-#         for j=1:postbuf
-#             oldTraj.oldInput[oldTraj.oldCost[1]+oldTraj.prebuf+j,i,1] = uCurr[j,i]
-#         end
-#     end
-#     oldTraj.oldTraj[oldTraj.oldCost[1]+oldTraj.prebuf+1:oldTraj.oldCost[1]+oldTraj.prebuf+postbuf,6,1] += posInfo.s_target
-#     println("oldTraj extended:")
-#     println(oldTraj.oldTraj[:,:,1])
-# end
