@@ -7,6 +7,7 @@ include("helper/functions.jl")
 include("helper/coeffConstraintCost.jl")
 include("helper/solveMpcProblem.jl")
 include("helper/simModel.jl")
+include("helper/printHelper.jl")
 
 
 # IMPORTANT GENERAL DEFINITION:
@@ -179,7 +180,9 @@ function run_sim()
                 oldTraj.oldTraj[oldTraj.oldCost[1]+oldTraj.prebuf+i,6,2] += posInfo.s_target
                 oldTraj.oldInput[oldTraj.oldCost[1]+oldTraj.prebuf+i,:,2] = uCurr[i,:]
             end
-
+            #if j>=3
+            #    printPrediction(mpcSol)
+            #end
             # if j == 3
             #     figure(1)
             #     title("System ID coefficients")
@@ -294,7 +297,7 @@ function run_sim()
         # legend(["a","d_f"])
         # ax3=subplot(313,sharex=ax1)
         figure(8)
-        plot(t,cost[:,1],"r",t,cost[:,2],"g",t,cost[:,3],"b",t,cost[:,4],"y",t,cost[:,5],"m",t,cost[:,6],"c")
+        plot(zCurr_meas[1:i,6],cost[1:i,1],"r",zCurr_meas[1:i,6],cost[1:i,2],"g",zCurr_meas[1:i,6],cost[1:i,3],"b",zCurr_meas[1:i,6],cost[1:i,4],"y",zCurr_meas[1:i,6],cost[1:i,5],"m",zCurr_meas[1:i,6],cost[1:i,6],"c")
         grid(1)
         title("Cost distribution")
         legend(["z","z_Term","z_Term_const","deriv","control","lane"])

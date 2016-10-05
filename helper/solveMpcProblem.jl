@@ -21,7 +21,6 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
     # Load Parameters
     coeffCurvature  = trackCoeff.coeffCurvature::Array{Float64,1}
     N               = mpcParams.N
-    Q               = mpcParams.Q
     Q_term          = mpcParams.Q_term
     R               = mpcParams.R
     coeffTermCost   = mpcCoeff.coeffCost::Array{Float64,2}

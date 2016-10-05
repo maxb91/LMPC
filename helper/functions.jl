@@ -99,11 +99,11 @@ function InitializeModel(m::MpcModel,mpcParams::MpcParams,modelParams::ModelPara
 
     # System dynamics
     for i=1:N
-        @NLconstraint(m.mdl, m.z_Ol[i+1,1]  == m.z_Ol[i,1] + dt*(m.z_Ol[i,1] + m.c_Vx[1]*m.z_Ol[i,2] + m.c_Vx[2]*m.z_Ol[i,3] + m.c_Vx[3]*m.z_Ol[i,1]^2 + m.c_Vx[4]*m.u_Ol[i,1]))  # xDot
-        @NLconstraint(m.mdl, m.z_Ol[i+1,2]  == m.z_Ol[i,2] + dt*(m.z_Ol[i,2] + m.c_Vy[1]*m.z_Ol[i,2]/m.z_Ol[i,1] + m.c_Vy[2]*m.z_Ol[i,1]*m.z_Ol[i,3] +
-                                                               m.c_Vy[3]*m.z_Ol[i,3]/m.z_Ol[i,1] + m.c_Vy[4]*m.u_Ol[i,2]))
-        @NLconstraint(m.mdl, m.z_Ol[i+1,3]  == m.z_Ol[i,3] + dt*(m.z_Ol[i,3] + m.c_Psi[1]*m.z_Ol[i,3]/m.z_Ol[i,1] + m.c_Psi[2]*m.z_Ol[i,2]/m.z_Ol[i,1] +
-                                                               m.c_Psi[3]*m.u_Ol[i,2]))                       # psiDot
+        @NLconstraint(m.mdl, m.z_Ol[i+1,1]  == m.z_Ol[i,1] + m.c_Vx[1]*m.z_Ol[i,2] + m.c_Vx[2]*m.z_Ol[i,3] + m.c_Vx[3]*m.z_Ol[i,1]^2 + m.c_Vx[4]*m.u_Ol[i,1])  # xDot
+        @NLconstraint(m.mdl, m.z_Ol[i+1,2]  == m.z_Ol[i,2] + m.c_Vy[1]*m.z_Ol[i,2]/m.z_Ol[i,1] + m.c_Vy[2]*m.z_Ol[i,1]*m.z_Ol[i,3] +
+                                                               m.c_Vy[3]*m.z_Ol[i,3]/m.z_Ol[i,1] + m.c_Vy[4]*m.u_Ol[i,2])
+        @NLconstraint(m.mdl, m.z_Ol[i+1,3]  == m.z_Ol[i,3] + m.c_Psi[1]*m.z_Ol[i,3]/m.z_Ol[i,1] + m.c_Psi[2]*m.z_Ol[i,2]/m.z_Ol[i,1] +
+                                                               m.c_Psi[3]*m.u_Ol[i,2])                       # psiDot
         @NLconstraint(m.mdl, m.z_Ol[i+1,4]  == m.z_Ol[i,4] + dt*(m.z_Ol[i,3]-m.dsdt[i]*m.c[i]))                                                   # ePsi
         @NLconstraint(m.mdl, m.z_Ol[i+1,5]  == m.z_Ol[i,5] + dt*(m.z_Ol[i,1]*sin(m.z_Ol[i,4])+m.z_Ol[i,2]*cos(m.z_Ol[i,4])))                    # eY
         @NLconstraint(m.mdl, m.z_Ol[i+1,6]  == m.z_Ol[i,6] + dt*m.dsdt[i]  )
@@ -206,12 +206,11 @@ end
 function InitializeParameters(mpcParams::MpcParams,mpcParams_pF::MpcParams,trackCoeff::TrackCoeff,modelParams::ModelParams,
                                 posInfo::PosInfo,oldTraj::OldTrajectory,mpcCoeff::MpcCoeff,lapStatus::LapStatus,buffersize::Int64)
     mpcParams.N                 = 6
-    mpcParams.Q                 = [0.0,10.0,0.0,1.0]            # put weights on ey, epsi and v
-    mpcParams.Q_term            = 10.0*[1.0,1.0,1.0,1.0,1.0]    # weights for terminal constraints (LMPC, for e_y, e_psi, and v)
+    mpcParams.Q_term            = 1.0*[0.01,1.0,1.0,1.0,1.0]     # weights for terminal constraints (LMPC, for xDot,yDot,psiDot,ePsi,eY)
     mpcParams.R                 = 0*[1.0,1.0]                   # put weights on a and d_f
     mpcParams.QderivZ           = 0.0*[0,0,0.1,0,0,0]           # cost matrix for derivative cost of states
     mpcParams.QderivU           = 0.1*[1,10]                    # cost matrix for derivative cost of inputs
-    mpcParams.Q_term_cost       = 0.01                           # scaling of Q-function
+    mpcParams.Q_term_cost       = 0.01                          # scaling of Q-function
 
     mpcParams_pF.N              = 6
     mpcParams_pF.Q              = [0.0,10.0,0.1,1.0]
