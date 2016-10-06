@@ -8,6 +8,7 @@ include("LMPC_lib/coeffConstraintCost.jl")
 include("LMPC_lib/solveMpcProblem.jl")
 include("LMPC_lib/simModel.jl")
 include("LMPC_lib/printHelper.jl")
+include("LMPC_lib/MPC_models.jl")
 
 
 # IMPORTANT GENERAL DEFINITION:
