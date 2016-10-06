@@ -1,0 +1,3 @@
+[submodule "LMPC_lib"]
+	path = LMPC_lib
+	url = https://github.com/maxb91/LMPC_lib
