@@ -2,12 +2,12 @@ using JuMP
 using Ipopt
 using PyPlot
 
-include("helper/classes.jl")
-include("helper/functions.jl")
-include("helper/coeffConstraintCost.jl")
-include("helper/solveMpcProblem.jl")
-include("helper/simModel.jl")
-include("helper/printHelper.jl")
+include("LMPC_lib/classes.jl")
+include("LMPC_lib/functions.jl")
+include("LMPC_lib/coeffConstraintCost.jl")
+include("LMPC_lib/solveMpcProblem.jl")
+include("LMPC_lib/simModel.jl")
+include("LMPC_lib/printHelper.jl")
 
 
 # IMPORTANT GENERAL DEFINITION:
