@@ -3,12 +3,12 @@ using Ipopt
 using PyPlot
 
 include("LMPC_lib/classes.jl")
+include("LMPC_lib/MPC_models.jl")
 include("LMPC_lib/functions.jl")
 include("LMPC_lib/coeffConstraintCost.jl")
 include("LMPC_lib/solveMpcProblem.jl")
 include("LMPC_lib/simModel.jl")
 include("LMPC_lib/printHelper.jl")
-include("LMPC_lib/MPC_models.jl")
 
 
 # IMPORTANT GENERAL DEFINITION:
@@ -51,7 +51,7 @@ function run_sim()
     cost                        = zeros(length(t),6)        # these are MPC cost values at each step
 
     # Logging parameters
-    coeff_sysID                 = (zeros(length(t),4),zeros(length(t),4),zeros(length(t),3))      # xDot, yDot, psiDot
+    coeff_sysID                 = (zeros(length(t),3),zeros(length(t),4),zeros(length(t),3))      # xDot, yDot, psiDot
     step_diff                   = zeros(length(t),6)        # one-step errors
 
 
