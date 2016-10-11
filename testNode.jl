@@ -32,12 +32,9 @@ function run_sim()
 
     buffersize                  = 700
 
-    z_Init    = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0]      # xDot needs to be > 0
-    z_Init_pF = zeros(4)
-
     InitializeParameters(mpcParams,mpcParams_pF,trackCoeff,modelParams,posInfo,oldTraj,mpcCoeff,lapStatus,buffersize)
-    mdl    = MpcModel(mpcParams,mpcCoeff,modelParams,trackCoeff,z_Init)
-    mdl_pF = MpcModel_pF(mpcParams_pF,modelParams,trackCoeff,z_Init_pF)
+    mdl    = MpcModel(mpcParams,mpcCoeff,modelParams,trackCoeff)
+    mdl_pF = MpcModel_pF(mpcParams_pF,modelParams,trackCoeff)
 
     zInput = zeros(50,6)
     uInput = zeros(50,2)
@@ -57,7 +54,7 @@ function run_sim()
 
     posInfo.s_start             = 0
     posInfo.s_target            = 7
-    trackCoeff.coeffCurvature   = [0.0,0.0,0.0,0.0,0.0]         # polynomial coefficients for curvature approximation (zeros for straight line)
+    trackCoeff.coeffCurvature   = zeros(9)         # polynomial coefficients for curvature approximation (zeros for straight line)
     
     z_final         = zeros(8)
     u_final         = zeros(2)
@@ -100,18 +97,17 @@ function run_sim()
         while i<length(t) && !finished
             # Define track curvature
             if zCurr[i,6] <= 1.0
-                trackCoeff.coeffCurvature[5] = 0.0
+                trackCoeff.coeffCurvature[9] = 0.0
             elseif zCurr[i,6] <= 3
-                trackCoeff.coeffCurvature[5] = 0.2
+                trackCoeff.coeffCurvature[9] = 0.2
             elseif zCurr[i,6] <= 5
-                trackCoeff.coeffCurvature[5] = -0.2
+                trackCoeff.coeffCurvature[9] = -0.2
             else
-                trackCoeff.coeffCurvature[5] = 0.0
+                trackCoeff.coeffCurvature[9] = 0.0
             end
             println("///////////////////////////////// STARTING ONE ITERATION /////////////////////////////////")
 
             # Calculate coefficients for LMPC (if at least in the 2nd lap)
-            tic()
             posInfo.s   = zCurr_meas[i,6]
             if j > 2
                 coeffConstraintCost(oldTraj,mpcCoeff,posInfo,mpcParams,zInput,uInput,lapStatus)
@@ -119,8 +115,6 @@ function run_sim()
                 coeff_sysID[2][i,:] = mpcCoeff.c_Vy
                 coeff_sysID[3][i,:] = mpcCoeff.c_Psi
             end
-            tt1 = toq()
-            println("coeffConstr: $tt1 s")
 
             # Find last inputs u_i-1
             if i>1                      # last u is needed for smooth MPC solutions (for derivative of u)
@@ -160,8 +154,6 @@ function run_sim()
             end
 
             println("Solving step $i of $(length(t)) - Status: $(mpcSol.solverStatus), Time: $(tt[i]) s")
-            println("s_meas[i+1] = $(zCurr_meas[i+1,6])")
-            println("z_meas[i+1] = $(zCurr_meas[i+1,:])")
 
             # Check if we're crossing the finish line
             if zCurr_meas[i+1,6] >= posInfo.s_target
@@ -219,7 +211,7 @@ function run_sim()
 
         # Save states in oldTraj:
         # --------------------------------
-        saveOldTraj(oldTraj,zCurr_meas,uCurr,lapStatus,posInfo,buffersize,modelParams.dt)
+        saveOldTraj(oldTraj,zCurr_meas,uCurr,lapStatus,posInfo,buffersize)
 
         if j>2
             figure(4)
