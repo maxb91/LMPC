@@ -12,9 +12,9 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
     # Load Parameters
     coeffCurvature  = trackCoeff.coeffCurvature::Array{Float64,1}
     N               = mpcParams.N
-    Q               = mpcParams.Q
+    Q               = mpcParams.Q #Cost of states just for path following
     Q_term          = mpcParams.Q_term
-    R               = mpcParams.R
+    R               = mpcParams.R # cost for control is always used but curently 0
     coeffTermCost   = mpcCoeff.coeffCost::Array{Float64,2}
     coeffTermConst  = mpcCoeff.coeffConst::Array{Float64,3}
     order           = mpcCoeff.order       # polynomial order of terminal constraints and cost approximation
@@ -27,8 +27,8 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
 
     v_ref           = mpcParams.vPathFollowing
 
-    sol_u::Array{Float64,2}
-    sol_z::Array{Float64,2}
+   local sol_u::Array{Float64,2} #??
+   local sol_z::Array{Float64,2}
 
     # println("************************************** MPC SOLVER **************************************")
     # println("zCurr    = $(zCurr')")
@@ -37,12 +37,12 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
     # println("s_total  = $((zCurr[1]+s_start)%s_target)")
 
     # Create function-specific parameters
-    z_Ref::Array{Float64,2}
-    z_Ref           = cat(2,s_target*ones(N+1,1),zeros(N+1,2),v_ref*ones(N+1,1))       # Reference trajectory: path following -> stay on line and keep constant velocity
+    local z_Ref::Array{Float64,2}
+    z_Ref           = cat(2,s_target*ones(N+1,1),zeros(N+1,2),v_ref*ones(N+1,1))     # Reference trajectory: path following -> stay on line and keep constant velocity
     u_Ref           = zeros(N,2)
 
     # Update current initial condition
-    setvalue(mdl.z0,zCurr)
+    setvalue(mdl.z0,zCurr')
     # Update curvature
     setvalue(mdl.coeff,coeffCurvature)
     println("z0 = $(getvalue(mdl.z0))")
@@ -61,15 +61,17 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
 
     # Lane cost
     # ---------------------------------
-    @NLexpression(mdl.mdl, laneCost, 10*sum{mdl.z_Ol[i,2]^2*((0.5+0.5*tanh(10*(mdl.z_Ol[i,2]-ey_max))) + (0.5-0.5*tanh(10*(mdl.z_Ol[i,2]+ey_max)))),i=1:N+1})
+   # @NLexpression(mdl.mdl, laneCost, 10*sum{mdl.z_Ol[i,2]^2*((0.5+0.5*tanh(10*(mdl.z_Ol[i,2]-ey_max))) + (0.5-0.5*tanh(10*(mdl.z_Ol[i,2]+ey_max)))),i=1:N+1})
 
     # Control Input cost
     # ---------------------------------
     @NLexpression(mdl.mdl, controlCost, 0.5*sum{R[j]*sum{(mdl.u_Ol[i,j]-u_Ref[i,j])^2,i=1:N},j=1:2})
 
-    # Terminal constraints (soft), starting from 2nd lap
+
+    #?? write down the cost funciton here to be clear what they mean
+    # Terminal constraints (soft), starting from 2nd lap #?? explain diff between terminal contrains and cost, cost is Q function?constraitns force to be on ss but how?
     # ---------------------------------
-    if lapStatus.currentLap > 2    # if at least in the 3rd lap
+    if lapStatus.currentLap > 2    # if at least in the 3rd lap, as of the third round we have two old trajectories between which we can interpolate
         @NLexpression(mdl.mdl, constZTerm, (sum{Q_term[j]*(mdl.ParInt[1]*sum{coeffTermConst[i,1,j]*mdl.z_Ol[N+1,1]^(order+1-i),i=1:order+1}+
                                         (1-mdl.ParInt[1])*sum{coeffTermConst[i,2,j]*mdl.z_Ol[N+1,1]^(order+1-i),i=1:order+1}-mdl.z_Ol[N+1,j+1])^2,j=1:3}))
     elseif lapStatus.currentLap == 2        # if in the 2nd lap
@@ -105,7 +107,7 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
     sol_status  = solve(mdl.mdl)
     sol_u       = getvalue(mdl.u_Ol)
     sol_z       = getvalue(mdl.z_Ol)
-    println("Predicting until z = $(sol_z[end,1])")
+    println("Predicting until s = $(sol_z[end,1])") #?? predicting until s = 
     #println("curvature = $(getvalue(mdl.c))")
 
     # COST PRINTS: ********************************************************
@@ -120,7 +122,7 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
     # println("costZTerm:    $(getvalue(costZTerm))")
     # println("constZTerm:   $(getvalue(constZTerm))")
 
-    # println("cost_ey:      $(0.5*sum(sol_z[2,:].^2)*Q[2])")
+    # println("cost_ey:      $(0.5*sum(sol_z[2,:].^2)*Q[2])") #?? sum with () or {} difference?
     # println("cost_ePsi:    $(0.5*sum(sol_z[3,:].^2)*Q[3])")
     # println("cost_V:       $(0.5*sum((sol_z[4,:]-z_Ref[:,4]').^2)*Q[4])")
 
@@ -155,5 +157,5 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
     # println(getvalue(mdl.z_Ol))
     # println("==============")
     # println(getvalue(mdl.u_Ol))
-    nothing
+    nothing #nothing to return apprently syntax is like this
 end

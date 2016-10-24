@@ -1,9 +1,9 @@
-function simModel(z::Array{Float64},u::Array{Float64},dt::Float64,coeff::Array{Float64},modelParams::ModelParams)
+function simModel_s(z::Array{Float64},u::Array{Float64},dt::Float64,coeff::Array{Float64},modelParams::ModelParams)
 
-    zNext::Array{Float64}
+    local zNext::Array{Float64}
     L_a = modelParams.l_A
     L_b = modelParams.l_B
-    c = ([z[1]^4 z[1]^3 z[1]^2 z[1] 1]*coeff)[1]        # Polynomial
+    c = ([z[1]^4 z[1]^3 z[1]^2 z[1] 1]*coeff)[1]        # Polynomial to approximate curvature kappa
 
     bta = atan(L_a/(L_a+L_b)*tan(u[2]+abs(u[2])*u[2]))
     dsdt = z[4]*cos(z[3]+bta)/(1-z[2]*c)
@@ -11,8 +11,30 @@ function simModel(z::Array{Float64},u::Array{Float64},dt::Float64,coeff::Array{F
     zNext = z
     zNext[1] = z[1] + dt*dsdt
     zNext[2] = z[2] + dt*z[4] * sin(z[3] + bta)
-    zNext[3] = z[3] + dt*(z[4]/L_a*sin(bta)-dsdt*c)
-    zNext[4] = z[4] + dt*(u[1] - 0.63*abs(z[4])*z[4])
+    zNext[3] = z[3] + dt*(z[4]/L_b*sin(bta)-dsdt*c)
+    zNext[4] = z[4] + dt*(u[1] - 0.63*abs(z[4])*z[4])#sign)=
+
+    return zNext
+end
+
+
+function simModel_x(z::Array{Float64},u::Array{Float64},dt::Float64,modelParams::ModelParams)
+
+   # kinematic bicycle model
+   # u[1] = acceleration
+   # u[2] = steering angle
+
+    local zNext::Array{Float64}
+    l_A = modelParams.l_A
+    l_B = modelParams.l_B
+
+    bta = atan(l_A/(l_A+l_B)*tan(u[2]))
+
+    zNext = z
+    zNext[1] = z[1] + dt*(z[4]*cos(z[3]+bta))       # x
+    zNext[2] = z[2] + dt*(z[4]*sin(z[3] + bta))      # y
+    zNext[3] = z[3] + dt*(z[4]/l_B*sin(bta))        # psi
+    zNext[4] = z[4] + dt*(u[1] - 0.63 * z[4]^2 * sign(z[4]))                #0.63     # v
 
     return zNext
 end

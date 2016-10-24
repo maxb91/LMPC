@@ -17,8 +17,8 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     # coeffCost
 
     # Read Inputs
-    s_start         = posInfo.s_start
-    s               = posInfo.s
+   @show  s_start         = posInfo.s_start #currently start alqys 0 , normally start current postion and s till beginn of pred horizon
+   @show  s               = posInfo.s #?? current meter on track? what is s_start?
     s_target        = posInfo.s_target
 
 
@@ -30,29 +30,29 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
 
     pLength         = mpcCoeff.pLength              # interpolation length for polynomials
 
-    coeffCost       = zeros(Order+1,2)            # polynomial coefficients for cost
+    coeffCost       = zeros(Order+1,2)            # polynomial coefficients for cost, second dimension for number of old trajectories
     coeffConst      = zeros(Order+1,2,3)          # nz-1 beacuse no coeff for s
 
     # Select the old data
-    oldS            = oldTraj.oldTraj[:,1,:]::Array{Float64,3}
-    oldeY           = oldTraj.oldTraj[:,2,:]::Array{Float64,3}
-    oldePsi         = oldTraj.oldTraj[:,3,:]::Array{Float64,3}
-    oldV            = oldTraj.oldTraj[:,4,:]::Array{Float64,3}
+    oldS            = oldTraj.oldTraj[:,1,:]::Array{Float64,2}
+    oldeY           = oldTraj.oldTraj[:,2,:]::Array{Float64,2}
+    oldePsi         = oldTraj.oldTraj[:,3,:]::Array{Float64,2}
+    oldV            = oldTraj.oldTraj[:,4,:]::Array{Float64,2}
 
-    N_points        = size(oldTraj.oldTraj,1)     # second dimension = length
+    N_points        = size(oldTraj.oldTraj,1)     #  dimension = length #?? how many time steps we needed?
 
-    s_total::Float64        # initialize
-    DistS::Array{Float64}   # initialize
-    idx_s::Array{Int64}     # initialize
+    local s_total::Float64        # initialize
+    local DistS::Array{Float64}   # initialize
+    local idx_s::Array{Int64}     # initialize
     idx_s_target        = 0
     dist_to_s_target    = 0
     qLength             = 0
-    vec_range::Tuple{UnitRange{Int64},UnitRange{Int64}}
-    bS_Vector::Array{Float64}
-    s_forinterpy::Array{Float64}
+    local vec_range::Tuple{UnitRange{Int64},UnitRange{Int64}}
+    local bS_Vector::Array{Float64}
+    local s_forinterpy::Array{Float64}
 
     # Compute the total s (current position along track)
-    s_total = (s_start + s) % s_target
+   @show s_total = (s_start + s) % s_target #?? what do we calculate total_s for one round?
 
     # Compute the index
     DistS = ( s_total - oldS ).^2
@@ -68,7 +68,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
         bS_Vector[i,2] = oldS[vec_range[2][i]]
     end
     # bS_Vector       = cat(2, oldS[vec_range[1]],    oldS[vec_range[2]])
-
+    @show bS_Vector
     # println("************************************** COEFFICIENTS **************************************")
     # println("idx_s[1]  = $(idx_s[1]), idx_s[2] = $(idx_s[2])")
     # println("s_total   = $s_total")
@@ -78,8 +78,8 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     # The states are parametrized with resprect to the curvilinear abscissa,
     # so we select the point used for the interpolation. Need to subtract an
     # offset to be coherent with the MPC formulation
-    s_forinterpy   = bS_Vector - s_start
-    if s_total - s_start < 0
+    s_forinterpy   = bS_Vector - s_start #?? s_start moves to zcurr at each sim? doesnt this always create a vector with s_forinterpy =
+    if s_total - s_start < 0 #?? what is s_total
         s_forinterpy += s_target
     end
     # println("s_forinterpy[:,1,1]' = $(s_forinterpy[:,1,1]')")
@@ -90,7 +90,8 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
         MatrixInterp[:,Order+1-k,:] = s_forinterpy[:,:].^k
     end
     
-    # Compute the coefficients
+    # Compute the constraint coefficients for both old trajectories
+    #?? this is used to calculate the values of ey epsi and v to be reached which lie on the safe set. all values of s can be introduced for different i ?
     coeffConst = zeros(Order+1,2,3)
     for i=1:2
         coeffConst[:,i,1]    = MatrixInterp[:,:,i]\oldeY[vec_range[i]]
@@ -107,14 +108,13 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     # The vector bQfunction_Vector contains the cost at each point in the interpolated area to reach the finish line
     # From this vector, polynomial coefficients coeffCost are calculated to approximate this cost
     for i=1:2   
-            dist_to_s_target  = oldTraj.oldCost[i] - (idx_s[i]-N_points*(i-1))  # number of iterations from idx_s to s_target
-            bQfunction_Vector = collect(linspace(dist_to_s_target,dist_to_s_target-1,pLength+1))    # build a vector that starts at the distance and
-                                                                                                    # decreases in equal steps
+            dist_to_s_target  = oldTraj.oldCost[i] - (idx_s[i]-N_points*(i-1))  # number of iterations from idx_s to s_target #?? this has sth todo with the count in the array as we look at values in second row
+            bQfunction_Vector = collect(linspace(dist_to_s_target,dist_to_s_target-1,pLength+1))    # build a vector that starts at the distance and decreases in equal steps
             coeffCost[:,i]    = MatrixInterp[:,:,i]\bQfunction_Vector           # interpolate this vector with the given s
     end
 
-    mpcCoeff.coeffCost  = coeffCost
-    mpcCoeff.coeffConst = coeffConst
+    mpcCoeff.coeffCost  = coeffCost #this value goes into the variable mpcCoeff in testNode.jl as well variables by reference
+    mpcCoeff.coeffConst = coeffConst #this way we dont need to return anything #??speed advantage ? looks weird
     
     nothing
 end

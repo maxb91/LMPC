@@ -62,8 +62,9 @@ type TrackCoeff         # coefficients of track
     coeffAngle::Array{Float64,1}
     coeffCurvature::Array{Float64,1}
     nPolyCurvature::Int64      # order of the interpolation polynom
+    nPolyXY::Int64              # order of the interpolation polynom of the x y coordinates
     width::Float64               # lane width -> is used in cost function as soft constraints (to stay on track)
-    TrackCoeff(coeffAngle=Float64[],coeffCurvature=Float64[],nPolyCurvature=4,width=1.0) = new(coeffAngle,coeffCurvature,nPolyCurvature)
+    TrackCoeff(coeffAngle=Float64[], coeffCurvature=Float64[], nPolyCurvature=4, nPolyXY = 6, width=1.0) = new(coeffAngle,coeffCurvature,nPolyCurvature,nPolyXY)
 end
 
 type ModelParams
@@ -93,12 +94,12 @@ type MpcModel
     c::Array{JuMP.NonlinearExpression,1}
 
     MpcModel(mdl=JuMP.Model(),
-                z0=@NLparameter(mdl,z0[i=1:4]==0),
+                z0=@NLparameter(mdl,z0[i=1:4]==0), #?? ==
                 coeff=@NLparameter(mdl,coeff[i=1:5]==0),
-                z_Ol=@variable(mdl,[1:4,1:10]),
-                u_Ol=@variable(mdl,[1:2,1:9]),
+                z_Ol=@variable(mdl,[1:10, 1:4]),
+                u_Ol=@variable(mdl,[1:9, 1:2]),
                 ParInt=@variable(mdl,[1:1]),
-                dsdt=@NLexpression(mdl,dsdt[1:10],0),
+                dsdt=@NLexpression(mdl,dsdt[1:10],0), #?? ,0
                 bta=@NLexpression(mdl,bta[1:10],0),
                 c=@NLexpression(mdl,c[1:10],0)) = new(mdl,
                                                         z0,
