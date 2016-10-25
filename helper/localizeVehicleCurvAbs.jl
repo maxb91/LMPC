@@ -60,8 +60,8 @@ function localizeVehicleCurvAbs(states_x,x_track,y_track,TrackCoeff)
         ind_end     = nPoints+1
         error("hello") #because this does not work yet we set an error msg
     else 
-        ind_start   = max(1,idx_min-N_nodes_poly_back)
-        ind_end     = min(N_nodes_center,idx_min+N_nodes_poly_front)
+        ind_start   = idx_min-N_nodes_poly_back #max(1,idx_min-N_nodes_poly_back)
+        ind_end     = idx_min+N_nodes_poly_front #min(N_nodes_center,idx_min+N_nodes_poly_front)
     end
     nodes_near = nodes_center[:,ind_start:ind_end]
 
@@ -91,7 +91,7 @@ function localizeVehicleCurvAbs(states_x,x_track,y_track,TrackCoeff)
     #!! this is only correct if the car is at a as greater 30  we need to adjust a if statement
     if idx_min <= N_nodes_poly_back #if the nearest point is less meters away from the start of the track then we need to change the structure and interpolate just from 1 to the future
     #use point from end of track or make some points up
-
+    error("not implemeted")
     else   
         for j=(N_nodes_poly_back-1):Discretization:(N_nodes_poly_back+1) #?? j between 29 and 31 should be between idx_min+-1?
             # j does not stand for the id of the node but for the length of s in meters so j = 29 means node number 30

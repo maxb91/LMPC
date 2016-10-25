@@ -96,8 +96,8 @@ type MpcModel
     MpcModel(mdl=JuMP.Model(),
                 z0=@NLparameter(mdl,z0[i=1:4]==0), #?? ==
                 coeff=@NLparameter(mdl,coeff[i=1:5]==0),
-                z_Ol=@variable(mdl,[1:10, 1:4]),
-                u_Ol=@variable(mdl,[1:9, 1:2]),
+                z_Ol=@variable(mdl,[1:11, 1:4]),
+                u_Ol=@variable(mdl,[1:10, 1:2]),
                 ParInt=@variable(mdl,[1:1]),
                 dsdt=@NLexpression(mdl,dsdt[1:10],0), #?? ,0
                 bta=@NLexpression(mdl,bta[1:10],0),

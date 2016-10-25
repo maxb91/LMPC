@@ -40,6 +40,10 @@ function run_sim()
     buffersize                  = 700
 
     z_Init = zeros(4)
+    z_Init[1] = 18.1 # x = 1.81 for s = 32     14 in curve
+    z_Init[2] = 25.05 # y = 2.505 for s = 32  12.6
+    z_Init[3] = 0.9
+    z_Init[4]  = 2 
 
     InitializeParameters(mpcParams,trackCoeff,modelParams,posInfo,oldTraj,mpcCoeff,lapStatus,buffersize)
     InitializeModel(mdl,mpcParams,modelParams,trackCoeff,z_Init)
@@ -65,7 +69,7 @@ function run_sim()
     #T
      figure(1)
      plot(x_track',y_track')
-    for j=1:10
+    for j=1:1#10
         lapStatus.currentLap = j
         tt          = zeros(length(t),1)
         zCurr_x       = zeros(length(t)+1,4)
@@ -97,7 +101,7 @@ function run_sim()
             #!!todo func z curr oaut of xy
             # to make it work s start has to grow over time actual it is just always at 0
            #!!see what is defined in mpc params arguments vall there?
-            zCurr_s[i,:], trackCoeff.coeffCurvature, posInfo.s_start = localizeVehicleCurvAbs(zCurr_x[i,:],x_track,y_track,trackCoeff)
+            @show zCurr_s[i,:], trackCoeff.coeffCurvature, posInfo.s_start = localizeVehicleCurvAbs(zCurr_x[i,:],x_track,y_track,trackCoeff)
             #if the car has crossed the finish line
             if zCurr_s[i,1] >= posInfo.s_target
                 println("Reached finish line at step $i")
