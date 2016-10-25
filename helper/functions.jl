@@ -93,7 +93,7 @@ function InitializeParameters(mpcParams::MpcParams,trackCoeff::TrackCoeff,modelP
                                 posInfo::PosInfo,oldTraj::OldTrajectory,mpcCoeff::MpcCoeff,lapStatus::LapStatus,buffersize::Int64)
     mpcParams.N                 = 10                        #lenght of prediction horizon
     mpcParams.nz                = 4                         #number of States
-    mpcParams.Q                 = [0.0,10.0,0.0,1.0]  #0 10 0 1    # put weights on ey, epsi and v, just for first round of PathFollowing
+    mpcParams.Q                 = [0.0,10.0,1.0,1.0]  #0 10 0 1    # put weights on ey, epsi and v, just for first round of PathFollowing
     mpcParams.Q_term            = 10*[1.0,1.0,1.0]           # weights for terminal constraints (LMPC, for e_y, e_psi, and v)
     mpcParams.R                 = 0*[1.0,1.0]             # put weights on a and d_f
     mpcParams.QderivZ           = 0.0*[0,0.0,0.1,0]             # cost matrix for derivative cost of states
