@@ -71,7 +71,8 @@ function InitializeModel(m::MpcModel,mpcParams::MpcParams,modelParams::ModelPara
     @NLparameter(m.mdl, m.z0[i=1:4] == z_Init[i])
     @NLconstraint(m.mdl, [i=1:4], m.z_Ol[1,i] == m.z0[i])
 
-    @NLparameter(m.mdl, m.coeff[i=1:n_poly_curv+1] == trackCoeff.coeffCurvature[i]);
+    @NLparameter(m.mdl, m.coeff[i=1:n_poly_curv+1] == trackCoeff.coeffCurvature[i])
+    #@NLparameter(m.mdl, m.s_startC == 0.1)
 
     #@NLexpression(m.mdl, m.c[i = 1:N],    m.coeff[1]*m.z_Ol[1,i]^4+m.coeff[2]*m.z_Ol[1,i]^3+m.coeff[3]*m.z_Ol[1,i]^2+m.coeff[4]*m.z_Ol[1,i]+m.coeff[5])
     @NLexpression(m.mdl, m.c[i = 1:N],    sum{m.coeff[j]*m.z_Ol[i,1]^(n_poly_curv-j+1),j=1:n_poly_curv} + m.coeff[n_poly_curv+1]) #??  last value x^0  poly to appxo cuvature syntax? what is this,approx of states?
@@ -98,7 +99,7 @@ function InitializeParameters(mpcParams::MpcParams,trackCoeff::TrackCoeff,modelP
     mpcParams.R                 = 0*[1.0,1.0]             # put weights on a and d_f
     mpcParams.QderivZ           = 0.0*[0,0.0,0.1,0]             # cost matrix for derivative cost of states
     mpcParams.QderivU           = 0.1*[1,1]                 # cost matrix for derivative cost of inputs
-    mpcParams.vPathFollowing    = 6#!!was 0.6                   # reference speed for first lap of path following
+    mpcParams.vPathFollowing    = 7#!!was 0.6                   # reference speed for first lap of path following
 
     trackCoeff.nPolyCurvature   = 4                       # 4th order polynomial for curvature approximation
     trackCoeff.coeffCurvature   = zeros(trackCoeff.nPolyCurvature+1)         # polynomial coefficients for curvature approximation (zeros for straight line)
@@ -109,8 +110,8 @@ function InitializeParameters(mpcParams::MpcParams,trackCoeff::TrackCoeff,modelP
     modelParams.z_lb            = ones(mpcParams.N+1,1)*[-Inf -Inf -Inf -0.1]                    # lower bounds on states
     #changeMetersforBARC
     modelParams.z_ub            = ones(mpcParams.N+1,1)*[ Inf  Inf  Inf  12.0]       #!! was 2             # upper bounds
-    modelParams.l_A             = 1.25
-    modelParams.l_B             = 1.25 #0.125
+    modelParams.l_A             = 0.125
+    modelParams.l_B             = 0.125 #0.125
 
     modelParams.dt              = 0.1
 

@@ -43,6 +43,9 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
 
     # Update current initial condition
     setvalue(mdl.z0,zCurr')
+    setvalue(mdl.z0[1],zCurr[1]-s_start)
+    #setvalue(mdl.s_startC, s_start)
+
     # Update curvature
     setvalue(mdl.coeff,coeffCurvature)
     println("z0 = $(getvalue(mdl.z0))")
@@ -54,6 +57,8 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
     @NLexpression(mdl.mdl, derivCost,   0)
     @NLexpression(mdl.mdl, laneCost,    0)
 
+    #n_poly_curv = trackCoeff.nPolyCurvature 
+        #@NLexpression(mdl.mdl, mdl.c[i = 1:N],    sum{mdl.coeff[j]*(mdl.z_Ol[i,1]-s_start)^(n_poly_curv-j+1),j=1:n_poly_curv} + mdl.coeff[n_poly_curv+1])
     # Derivative cost
     # ---------------------------------
     @NLexpression(mdl.mdl, derivCost, sum{QderivZ[j]*((zCurr[j]-mdl.z_Ol[1,j])^2+sum{(mdl.z_Ol[i,j]-mdl.z_Ol[i+1,j])^2,i=1:N}),j=1:4} +
@@ -98,7 +103,7 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
         #@NLexpression(mdl.mdl, costZ, 1 + (costZ_h-1) * (0.5+0.5*tanh(50*(mdl.z_Ol[1,N+1]+s_start-s_target))))
         @NLexpression(mdl.mdl, costZ, 1)
     end
-
+   
     @NLobjective(mdl.mdl, Min, costZ + costZTerm + constZTerm + derivCost + controlCost + laneCost)
 
     #println("Model formulation:")

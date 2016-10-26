@@ -1,7 +1,7 @@
-function localizeVehicleCurvAbs(states_x,x_track,y_track,TrackCoeff)
+function localizeVehicleCurvAbs(states_x,x_track,y_track,TrackCoeff, itercount)
     # Outputs: zCurr_s, coeffCurv 
     # zCurr_s = [s, ey, epsi, states_x[4]]
-
+    # itercount is solely used for debugging purposes plots
 
     OrderXY = TrackCoeff.nPolyXY
     OrderThetaCurv = TrackCoeff.nPolyCurvature
@@ -58,7 +58,7 @@ function localizeVehicleCurvAbs(states_x,x_track,y_track,TrackCoeff)
     if idx_min <= N_nodes_poly_back #if the nearest point is less meters away from the start of the track then we need to change the structure and interpolate just from 1 to the future
         ind_start   = 1     #this has to be tested at the moment we just start at s= 30 to prevetn this part
         ind_end     = nPoints+1
-        error("hello") #because this does not work yet we set an error msg
+        error("too close to start") #because this does not work yet we set an error msg
     else 
         ind_start   = idx_min-N_nodes_poly_back #max(1,idx_min-N_nodes_poly_back)
         ind_end     = idx_min+N_nodes_poly_front #min(N_nodes_center,idx_min+N_nodes_poly_front)
@@ -215,25 +215,33 @@ function localizeVehicleCurvAbs(states_x,x_track,y_track,TrackCoeff)
    
    #####T
    #test the approximation of the curvature
-    # @show genau = b_curvature_vector[25:35,1]
-    # polyt = zeros(101)
-    # Count = 1
-    # for s_t = 25:0.1:35
-    # polyt[Count] = dot(coeffCurv, [s^4 s^3 s^2 s 1])
-    # Count+=1
-    # end
-    # s_t = zeros(25:0.1:35)
-    # for i = 1:size(s_t)[1]
-    # s_t[i] =25+0.1*(i-1)
-    # end
-    # s_i = zeros(0:nPoints)
-    # for i = 1:size(s_i)[1]
-    # s_i[i] =(i-1)
-    # end
-   #  figure(3)
-   #  plot(s_t,polyt)
-   # # plot(s_i, genau)
-   #  plot(s_i,b_curvature_vector)
+   # if itercount%20 == 0 
+        
+
+   #      #EXTRACT the caluclated curvatue form drivatives formula
+   #      curv_from_formula = b_curvature_vector[1:nPoints+1,1]
+   #      s_curv=collect(0.0:nPoints)
+        
+   #      #calculate the curvature back from the coefficients
+   #      Count = 1
+   #      polyt = zeros(201)
+   #      for s_t = 10:0.2:50
+   #      polyt[Count] = dot(coeffCurv, [s_t^4 s_t^3 s_t^2 s_t 1])
+   #      Count+=1
+   #      end
+   #      s_t = collect(10:0.2:50)
+   #      # # s_t = zeros(25:0.1:35)
+   #      # # for i = 1:size(s_t)[1]
+   #      # # s_t[i] =25+0.1*(i-1)
+   #      # # end
+
+   #      #plot
+   #      close(3)
+   #      figure(3)
+   #      plot(s_curv, curv_from_formula)
+   #      plot(s_t,polyt)
+   #      legend(["curv_from_formula","curv from back calculation"])
+   #  end
     #####endT
 
 

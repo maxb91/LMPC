@@ -84,6 +84,7 @@ type MpcModel
 
     z0::Array{JuMP.NonlinearParameter,1}
     coeff::Array{JuMP.NonlinearParameter,1}
+    #s_startC::JuMP.NonlinearParameter
 
     z_Ol::Array{JuMP.Variable,2}
     u_Ol::Array{JuMP.Variable,2}
@@ -96,6 +97,7 @@ type MpcModel
     MpcModel(mdl=JuMP.Model(),
                 z0=@NLparameter(mdl,z0[i=1:4]==0), #?? ==
                 coeff=@NLparameter(mdl,coeff[i=1:5]==0),
+                #s_startC=@NLparameter(mdl, s_startC==0),
                 z_Ol=@variable(mdl,[1:11, 1:4]),
                 u_Ol=@variable(mdl,[1:10, 1:2]),
                 ParInt=@variable(mdl,[1:1]),
@@ -104,6 +106,7 @@ type MpcModel
                 c=@NLexpression(mdl,c[1:10],0)) = new(mdl,
                                                         z0,
                                                         coeff,
+                                                        #s_startC,
                                                         z_Ol,
                                                         u_Ol,
                                                         ParInt,
