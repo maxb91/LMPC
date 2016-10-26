@@ -39,7 +39,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     oldePsi         = oldTraj.oldTraj[:,3,:]::Array{Float64,2}
     oldV            = oldTraj.oldTraj[:,4,:]::Array{Float64,2}
 
-    N_points        = size(oldTraj.oldTraj,1)     #  dimension = length #?? how many time steps we needed?
+    N_points        = size(oldTraj.oldTraj,1)     #  dimension = length #how many points we saved so that we can subract these indeces to get values for second stroed trajectory which beginns at index NPoints+1
 
     local s_total::Float64        # initialize
     local DistS::Array{Float64}   # initialize
@@ -52,13 +52,13 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     local s_forinterpy::Array{Float64}
 
     # Compute the total s (current position along track)
-   @show s_total = (s_start + s) % s_target #?? what do we calculate total_s for one round?
+    #we dont need that anymore 
+    s_total =  s % s_target #?? what do we calculate total_s for one round?
 
     # Compute the index
     DistS = ( s_total - oldS ).^2
 
-    idx_s = findmin(DistS,1)[2]              # contains both indices for the closest distances for both oldS !!
-
+    @show idx_s = findmin(DistS,1)[2]              # contains both indices for the closest distances for both oldS !!
     vec_range = (idx_s[1]:idx_s[1]+pLength,idx_s[2]:idx_s[2]+pLength)
 
     # Create the vectors used for the interpolation
@@ -68,7 +68,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
         bS_Vector[i,2] = oldS[vec_range[2][i]]
     end
     # bS_Vector       = cat(2, oldS[vec_range[1]],    oldS[vec_range[2]])
-    @show bS_Vector
+    
     # println("************************************** COEFFICIENTS **************************************")
     # println("idx_s[1]  = $(idx_s[1]), idx_s[2] = $(idx_s[2])")
     # println("s_total   = $s_total")
@@ -107,9 +107,10 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     # These values are calculated for both old trajectories
     # The vector bQfunction_Vector contains the cost at each point in the interpolated area to reach the finish line
     # From this vector, polynomial coefficients coeffCost are calculated to approximate this cost
+
     for i=1:2   
-            dist_to_s_target  = oldTraj.oldCost[i] - (idx_s[i]-N_points*(i-1))  # number of iterations from idx_s to s_target #?? this has sth todo with the count in the array as we look at values in second row
-            bQfunction_Vector = collect(linspace(dist_to_s_target,dist_to_s_target-1,pLength+1))    # build a vector that starts at the distance and decreases in equal steps
+            iter_to_s_target  = oldTraj.oldCost[i] - (idx_s[i]-N_points*(i-1))  # number of iterations from idx_s to s_target #?? this has sth todo with the count in the array as we look at values in second row
+            bQfunction_Vector = collect(linspace(iter_to_s_target,iter_to_s_target-1,pLength+1))    # build a vector that starts at the distance and decreases in equal steps
             coeffCost[:,i]    = MatrixInterp[:,:,i]\bQfunction_Vector           # interpolate this vector with the given s
     end
 

@@ -27,19 +27,6 @@ function localizeVehicleCurvAbs(states_x,x_track,y_track,TrackCoeff, itercount)
 
     #--- HERE I am assuming that the distance between two points in the map is
     #--- 1M <----------- IMPORTANT ASSUMPTION --------------------------------
-    Matrix = zeros(nPoints+1,OrderXY+1)
-    for i = 0:nPoints
-        for k = 0:OrderXY
-            Matrix[i+1,OrderXY+1-k] = i^k
-        end
-    end
-
-    Matrix4th = zeros(nPoints+1,OrderThetaCurv+1) #generate a matrix of 4th order to approximate Theta and the curvature
-    for i = 0:nPoints
-        for k = 0:OrderThetaCurv
-            Matrix4th[i+1,OrderThetaCurv+1-k] = i^k
-        end
-    end
 
 
     #--- NEED to check if in nodes_lane there are no point repeated. I had
@@ -65,9 +52,29 @@ function localizeVehicleCurvAbs(states_x,x_track,y_track,TrackCoeff, itercount)
     end
     nodes_near = nodes_center[:,ind_start:ind_end]
 
+    s_interp_start = ind_start-1 # in the first index s is equal 0. (always one less)
+    s_interp_end = ind_end-1
+    s_nearest = idx_min-1
     # Select node for X Y
     nodes_near_X = vec(nodes_near[1,:])
     nodes_near_Y = vec(nodes_near[2,:])
+
+
+#this just works because s = 1 m between points
+        Matrix = zeros(nPoints+1,OrderXY+1)
+    for i = s_interp_start:s_interp_end
+        for k = 0:OrderXY
+            Matrix[i+1-s_interp_start,OrderXY+1-k] = i^k
+        end
+    end
+
+    Matrix4th = zeros(nPoints+1,OrderThetaCurv+1) #generate a matrix of 4th order to approximate Theta and the curvature
+    for i = s_interp_start:s_interp_end
+        for k = 0:OrderThetaCurv
+            Matrix4th[i+1-s_interp_start,OrderThetaCurv+1-k] = i^k
+        end
+    end
+
     
     # xyVectorModule=((x-nodes_near_X(ind_start))^2+(y-nodes_near_Y(ind_start))^2)^(1/2);
     # compute least squares coefficients that approximate the road
@@ -93,7 +100,7 @@ function localizeVehicleCurvAbs(states_x,x_track,y_track,TrackCoeff, itercount)
     #use point from end of track or make some points up
     error("not implemeted")
     else   
-        for j=(N_nodes_poly_back-1):Discretization:(N_nodes_poly_back+1) #?? j between 29 and 31 should be between idx_min+-1?
+        for j=(s_nearest-1):Discretization:(s_nearest+1) #?? j between 29 and 31 should be between idx_min+-1?
             # j does not stand for the id of the node but for the length of s in meters so j = 29 means node number 30
             for i = 1:OrderXY+1
                 j_vec[i] =j^(OrderXY+1-i)
@@ -169,7 +176,7 @@ function localizeVehicleCurvAbs(states_x,x_track,y_track,TrackCoeff, itercount)
     jd_vec = zeros(OrderXY+1,1)::Array{Float64,2}
     jdd_vec = zeros(OrderXY+1,1)::Array{Float64,2}
     #we go from s = 0 because s is 0 at s_start and then we interpolate over the interval we defined above 
-    for j=0.0:nPoints #j must be 0.0 to be initialized as a float to be able to do j^-1 in for loop
+    for j=s_interp_start:s_interp_end #j must be 0.0 to be initialized as a float to be able to do j^-1 in for loop
     
        
         #this generic approach did not work because last elements become NaN
@@ -290,10 +297,10 @@ function localizeVehicleCurvAbs(states_x,x_track,y_track,TrackCoeff, itercount)
     #changeMetersforBARC
    # @show s_start = ind_start/10-0.1 #--- HERE assuming all point are 1m distant, # if we are at the 4th point we are 3m away from the start
    # s= s/10
-    s_start = ind_start - 1
+    
 
     #return s_start, s, ey, coeffX,coeffY, coeffTheta, coeffCurv, epsi
     zCurr_s = zeros(4)
-    zCurr_s = [s+s_start ey epsi states_x[4]]
-    return zCurr_s, coeffCurv, s_start
+    zCurr_s = [s ey epsi states_x[4]]
+    return zCurr_s, coeffCurv
 end

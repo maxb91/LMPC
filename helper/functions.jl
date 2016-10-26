@@ -78,7 +78,6 @@ function InitializeModel(m::MpcModel,mpcParams::MpcParams,modelParams::ModelPara
     @NLexpression(m.mdl, m.c[i = 1:N],    sum{m.coeff[j]*m.z_Ol[i,1]^(n_poly_curv-j+1),j=1:n_poly_curv} + m.coeff[n_poly_curv+1]) #??  last value x^0  poly to appxo cuvature syntax? what is this,approx of states?
     @NLexpression(m.mdl, m.bta[i = 1:N],  atan( L_a / (L_a + L_b) * ( m.u_Ol[i,2] ) ) )
     @NLexpression(m.mdl, m.dsdt[i = 1:N], m.z_Ol[i,4]*cos(m.z_Ol[i,3]+m.bta[i])/(1-m.z_Ol[i,2]*m.c[i]))
-
     # System dynamics
     for i=1:N
        

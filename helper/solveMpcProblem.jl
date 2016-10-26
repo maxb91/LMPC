@@ -43,7 +43,7 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
 
     # Update current initial condition
     setvalue(mdl.z0,zCurr')
-    setvalue(mdl.z0[1],zCurr[1]-s_start)
+    #setvalue(mdl.z0[1],zCurr[1])
     #setvalue(mdl.s_startC, s_start)
 
     # Update curvature

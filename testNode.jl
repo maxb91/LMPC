@@ -40,8 +40,8 @@ function run_sim()
     buffersize                  = 700
 
     z_Init = zeros(4)
-    z_Init[1] = 18.1 # x = 1.81 for s = 32     14 in curve
-    z_Init[2] = 25.05 # y = 2.505 for s = 32  12.6
+    z_Init[1] = 140 # x = 1.81 for s = 32     14 in curve
+    z_Init[2] = 126 # y = 2.505 for s = 32  12.6
     z_Init[3] = 0.9
     z_Init[4]  = 2 
 
@@ -76,8 +76,8 @@ function run_sim()
         #T
       
         #changeMetersforBARC
-        zCurr_x[1,1] = 18.1 # x = 1.81 for s = 32     14 in curve
-        zCurr_x[1,2] = 25.05 # y = 2.505 for s = 32  12.6
+        zCurr_x[1,1] = 140 # x = 1.81 for s = 32     14 in curve
+        zCurr_x[1,2] = 126 # y = 2.505 for s = 32  12.6
         zCurr_x[1,3] = 0.9
 
         zCurr_x[1,4]  = 2  #?? initialize with v_ref v_pathfollowing ?
@@ -85,8 +85,8 @@ function run_sim()
         if j>1                                  # if we are in the second or higher lap
             zCurr_x[1,:] = z_final_x
             # because the track is not closed we always set up the car at the same place each round
-            zCurr_x[1,1] = 18.1 # x = 1.81 for s = 32     14 in curve
-            zCurr_x[1,2] = 25.05 # y = 2.505 for s = 32  12.6
+            zCurr_x[1,1] = 140 # x = 1.81 for s = 32     14 in curve
+            zCurr_x[1,2] = 126 # y = 2.505 for s = 32  12.6
             zCurr_x[1,3] = 0.9
             uCurr[1,:] = u_final
             
@@ -102,7 +102,7 @@ function run_sim()
             # to make it work s start has to grow over time actual it is just always at 0
            #!!see what is defined in mpc params arguments vall there?
              # the argument i in localizeVehicleCurvAbs  is solely used for debugging purposes plots not needed for control
-            zCurr_s[i,:], trackCoeff.coeffCurvature, posInfo.s_start = localizeVehicleCurvAbs(zCurr_x[i,:],x_track,y_track,trackCoeff, i)
+            zCurr_s[i,:], trackCoeff.coeffCurvature = localizeVehicleCurvAbs(zCurr_x[i,:],x_track,y_track,trackCoeff, i)
             #if the car has crossed the finish line
             if zCurr_s[i,1] >= posInfo.s_target
                 println("Reached finish line at step $i")
