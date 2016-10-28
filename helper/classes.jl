@@ -23,9 +23,10 @@ end
 
 type OldTrajectory      # information about previous trajectories
     oldTraj::Array{Float64}
+    oldTrajXY::Array{Float64}
     oldInput::Array{Float64}
     oldCost::Array{Int64}
-    OldTrajectory(oldTraj=Float64[],oldInput=Float64[],oldCost=Float64[]) = new(oldTraj,oldInput,oldCost)
+    OldTrajectory(oldTraj=Float64[],oldTrajXY=Float64[],oldInput=Float64[],oldCost=Float64[]) = new(oldTraj,oldTrajXY,oldInput,oldCost)
 end
 
 type MpcParams          # parameters for MPC solver

@@ -5,7 +5,7 @@ function simModel_s(z::Array{Float64},u::Array{Float64},dt::Float64,coeff::Array
     L_b = modelParams.l_B
     c = ([z[1]^4 z[1]^3 z[1]^2 z[1] 1]*coeff)[1]        # Polynomial to approximate curvature kappa
 
-    bta = atan(L_a/(L_a+L_b)*tan(u[2]+abs(u[2])*u[2])) #?? warum to abs ^2 is nich in formel
+    bta = atan(L_a/(L_a+L_b)*tan(u[2])) #?? warum to abs ^2 is nich in formel
     dsdt = z[4]*cos(z[3]+bta)/(1-z[2]*c)
 
     zNext = z

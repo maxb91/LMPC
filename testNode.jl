@@ -41,8 +41,8 @@ function run_sim()
 
     z_Init = zeros(4)
     z_Init[1] = 140 # x = 1.81 for s = 32     14 in curve
-    z_Init[2] = 126 # y = 2.505 for s = 32  12.6
-    z_Init[3] = 0.9
+    z_Init[2] = 126# y = 2.505 for s = 32  12.6
+    z_Init[3] = -0.9
     z_Init[4]  = 2 
 
     InitializeParameters(mpcParams,trackCoeff,modelParams,posInfo,oldTraj,mpcCoeff,lapStatus,buffersize)
@@ -66,10 +66,15 @@ function run_sim()
     z_final_x = zeros(1,4)::Array{Float64,2}
     u_final = zeros(1,2)::Array{Float64,2}
 
-    #T
-     figure(1)
-     plot(x_track',y_track')
-    for j=1:2 #10
+     #T
+    z_log = zeros(11,4,length(t))
+    u_log = zeros(10,2,length(t))
+    i_final_1st = 0
+   
+    
+     # figure(1)
+     # plot(x_track',y_track')
+    for j=1:4 #10
         lapStatus.currentLap = j
         tt          = zeros(length(t),1)
         zCurr_x       = zeros(length(t)+1,4)
@@ -78,8 +83,8 @@ function run_sim()
         #changeMetersforBARC
         zCurr_x[1,1] = 140 # x = 1.81 for s = 32     14 in curve
         zCurr_x[1,2] = 126 # y = 2.505 for s = 32  12.6
-        zCurr_x[1,3] = 0.9
-
+        zCurr_x[1,3] = -0.9
+        
         zCurr_x[1,4]  = 2  #?? initialize with v_ref v_pathfollowing ?
         uCurr       = zeros(length(t),2)
         if j>1                                  # if we are in the second or higher lap
@@ -87,7 +92,7 @@ function run_sim()
             # because the track is not closed we always set up the car at the same place each round
             zCurr_x[1,1] = 140 # x = 1.81 for s = 32     14 in curve
             zCurr_x[1,2] = 126 # y = 2.505 for s = 32  12.6
-            zCurr_x[1,3] = 0.9
+            zCurr_x[1,3] = -0.9
             uCurr[1,:] = u_final
             
         end
@@ -133,6 +138,8 @@ function run_sim()
             tt[i]       = toq()
             cost[i,:]   = mpcSol.cost
             uCurr[i,:]  = [mpcSol.a_x mpcSol.d_f]
+            z_log[:,:,i] = mpcSol.z
+            u_log[:,:,i] = mpcSol.u
             #!!todo sim model with xy cur
             #have Zcurr as states XY and simulate from there return XY values of states 
             @show zCurr_x[i+1,:]  = simModel_x(zCurr_x[i,:],uCurr[i,:],modelParams.dt,modelParams)
@@ -140,18 +147,18 @@ function run_sim()
               
 
            #T
-            if i%20 == 0 
+            # if i%20 == 0 
               
-            #   plot(xs,ys) # tangent to current point  
-               if j == 1
-                figure(1)
-                scatter(zCurr_x[i+1,1], zCurr_x[i+1,2], color = "red")
-            end
-            if j > 1
-                figure(1)
-                scatter(zCurr_x[i+1,1], zCurr_x[i+1,2], color = "green")
-            end
-            end 
+            # #   plot(xs,ys) # tangent to current point  
+            #    if j == 1
+            #     figure(1)
+            #     scatter(zCurr_x[i+1,1], zCurr_x[i+1,2], color = "red")
+            # end
+            # if j > 1
+            #     figure(1)
+            #     scatter(zCurr_x[i+1,1], zCurr_x[i+1,2], color = "green")
+            # end
+            # end 
             
 
             i = i + 1
@@ -173,10 +180,9 @@ function run_sim()
         # Save states in oldTraj:
         # --------------------------------
         #?? might be problematic with the s[i+1] issue above which we should aclculate at the end
-        saveOldTraj(oldTraj,zCurr_s,uCurr,lapStatus,buffersize,modelParams.dt)
+        saveOldTraj(oldTraj,zCurr_s, zCurr_x,uCurr,lapStatus,buffersize,modelParams.dt)
 
-
-        # Print results
+          # Print results
         # --------------------------------
 
         # figure()
@@ -184,6 +190,8 @@ function run_sim()
         # grid(1)
         # legend(["eY","ePsi","v"])
         # title("States over s")
+
+        #### plot states and cost
         figure(2)
         ax1=subplot(311)
         plot(t,zCurr_s[1:end-1,1],"y",t,zCurr_s[1:end-1,2],"r",t,zCurr_s[1:end-1,3],"g",t,zCurr_s[1:end-1,4],"b")
@@ -200,10 +208,99 @@ function run_sim()
         grid(1)
         title("Cost distribution")
         legend(["z","z_Term","z_Term_const","deriv","control","lane"])
-        println("Press Enter to continue")
-        readline()
+
+  
+        i_final = i
+        #plot u
+        if j == 1
+            i_final_1st = i
+            # ####T
+            # figure(4)
+            # for i = 1:i_final
+            #     clf()
+            #     ax1=subplot(311)
+            #     plot(zCurr_s[1:i_final,1],zCurr_s[1:i_final,4])
+            #     ax1=subplot(312)
+            #     plot(zCurr_s[1:i_final,1],zCurr_s[1:i_final,2])
+            #     ax1=subplot(313)
+            #     plot(zCurr_s[1:i_final,1],zCurr_s[1:i_final,3])
+            #     subplot(311)
+            #     plot(z_log[:,1,i], z_log[:,4,i] ,marker="o")
+            #     subplot(312)
+            #     plot(z_log[:,1,i], z_log[:,2,i] ,marker="o")
+            #     subplot(313)
+            #     plot(z_log[:,1,i], z_log[:,3,i] ,marker="o")
+            #     i = i+1
+            #     println("Press Enter for next plot step")
+            #     println("Press c to cancel plot")
+            #     a = ' '
+            #     a = readline()
+            #     if a == "c\r\n" 
+            #         break
+            #     end
+            # end
+        ####endT
+        end
+
+
+        if j >= 2
+            
+            for i = 1:i_final
+
+                figure(4)   
+                clf()
+                ax1=subplot(311)
+                plot(oldTraj.oldTraj[1:i_final,1,1], oldTraj.oldTraj[1:i_final,4,1], color= "blue")
+                plot(oldTraj.oldTraj[1:i_final_1st,1,2], oldTraj.oldTraj[1:i_final_1st,4,2], color= "yellow")
+                legend(["v 2nd round","v 1st round"])
+
+                ax1=subplot(312)
+                plot(oldTraj.oldTraj[1:i_final,1,1], oldTraj.oldTraj[1:i_final,2,1], color= "blue")
+                plot(oldTraj.oldTraj[1:i_final_1st,1,2], oldTraj.oldTraj[1:i_final_1st,2,2], color= "yellow")
+                legend(["e_y 2nd round","e_y 1st round"])
+                ax1=subplot(313)
+                plot(oldTraj.oldTraj[1:i_final,1,1], oldTraj.oldTraj[1:i_final,3,1], color= "blue")
+                plot(oldTraj.oldTraj[1:i_final_1st,1,2], oldTraj.oldTraj[1:i_final_1st,3,2], color= "yellow")
+                legend(["e_psi 2nd round","e_psi 1st round"])
+                subplot(311)
+                plot(z_log[:,1,i], z_log[:,4,i] ,marker="o")
+                subplot(312)
+                plot(z_log[:,1,i], z_log[:,2,i] ,marker="o")
+                 subplot(313)
+                plot(z_log[:,1,i], z_log[:,3,i] ,marker="o")
+
+                figure(5)
+                clf()
+                subplot(211) 
+                plot(oldTraj.oldTraj[1:i_final-1,1,1], oldTraj.oldInput[1:i_final-1,1,1], color= "green")
+                plot(z_log[1:end-1,1,i], u_log[:,1,i] ,marker="o")
+                legend(["applied acceleration","predicted acceleration"])
+                subplot(212)
+                 plot(oldTraj.oldTraj[1:i_final-1,1,1], oldTraj.oldInput[1:i_final-1,2,1], color= "green")  
+                plot(z_log[1:end-1,1,i], u_log[:,2,i] ,marker="o")  
+                legend(["applied steering angle","predicted steering angle"]) 
+                i = i+1
+                println("Press Enter for next plot step")
+                println("Press c to cancel plot")
+                a = ' '
+                a = readline()
+                if a == "c\r\n" 
+                     break
+                end
+            end
+            
+        end
+
+        println("*************************************************************************")
+        println("Press Enter for next round solving")
+        println("Press c to cancel MPC")
+        a = ' '
+        a = readline()
+        if a == "c\r\n" 
+                break
+        end
     end
 
 end
 
-end
+end # end of module. we declare the main fail as a module to reduce warnings when including the file again

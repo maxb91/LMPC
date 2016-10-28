@@ -1,4 +1,4 @@
-function saveOldTraj(oldTraj::OldTrajectory,zCurr::Array{Float64},uCurr::Array{Float64},lapStatus::LapStatus,buffersize::Int64,dt::Float64)
+function saveOldTraj(oldTraj::OldTrajectory,zCurr::Array{Float64}, zCurr_x::Array{Float64},uCurr::Array{Float64},lapStatus::LapStatus,buffersize::Int64,dt::Float64)
     
     i               = lapStatus.currentIt           # current iteration number, just to make notation shorter
     zCurr_export    = zeros(buffersize,4)
@@ -6,6 +6,7 @@ function saveOldTraj(oldTraj::OldTrajectory,zCurr::Array{Float64},uCurr::Array{F
     
     println(size(ones(buffersize-i+1,1)))
     println(zCurr[i-1,2:4])
+
     #we just take i-1 beacuse the last s value is already the begining ogf the new round and we jsut coun from 0 <= s < s_target
     #why bufferisze because length t is not in ros 
     #why do we need the extrapolated values to use them for the mpc if we are close to the finish line in the foloowing round
@@ -17,17 +18,21 @@ function saveOldTraj(oldTraj::OldTrajectory,zCurr::Array{Float64},uCurr::Array{F
     if lapStatus.currentLap == 1                        # if it's the first lap
         oldTraj.oldTraj[:,:,1]  = zCurr_export          # ... just save everything
         oldTraj.oldInput[:,:,1] = uCurr_export
+        oldTraj.oldTrajXY[1:size(zCurr_x)[1],:,1] = zCurr_x
         oldTraj.oldTraj[:,:,2]  = zCurr_export
         oldTraj.oldInput[:,:,2] = uCurr_export
+        oldTraj.oldTrajXY[1:size(zCurr_x)[1],:,2] = zCurr_x
         oldTraj.oldCost = [costLap,costLap]
     else                                                # idea: always copy the new trajectory in the first array!
         if oldTraj.oldCost[1] < oldTraj.oldCost[2]      # if the first old traj is better than the second
             oldTraj.oldTraj[:,:,2]  = oldTraj.oldTraj[:,:,1]    # ... copy the first in the second
             oldTraj.oldInput[:,:,2] = oldTraj.oldInput[:,:,1]   # ... same for the input
+            oldTraj.oldTrajXY[:,:,2]  = oldTraj.oldTrajXY[:,:,1]   
             oldTraj.oldCost[2] = oldTraj.oldCost[1]
         end
         oldTraj.oldTraj[:,:,1]  = zCurr_export                 # ... and write the new traj in the first
         oldTraj.oldInput[:,:,1] = uCurr_export
+        oldTraj.oldTrajXY[1:size(zCurr_x)[1],:,1] = zCurr_x
         oldTraj.oldCost[1] = costLap
     end
     
@@ -48,7 +53,7 @@ function InitializeModel(m::MpcModel,mpcParams::MpcParams,modelParams::ModelPara
 
     n_poly_curv = trackCoeff.nPolyCurvature         # polynomial degree of curvature approximation
     
-    m.mdl = Model(solver = IpoptSolver(print_level=0,max_cpu_time=0.05))#,linear_solver="ma57",print_user_options="yes"))
+    m.mdl = Model(solver = IpoptSolver(print_level=0,max_cpu_time=0.5))#,linear_solver="ma57",print_user_options="yes"))
 
     @variable( m.mdl, m.z_Ol[1:(N+1),1:4])      # z = s, ey, epsi, v
     @variable( m.mdl, m.u_Ol[1:N,1:2])          #?? different dim then in classes.jl?
@@ -79,13 +84,17 @@ function InitializeModel(m::MpcModel,mpcParams::MpcParams,modelParams::ModelPara
     @NLexpression(m.mdl, m.bta[i = 1:N],  atan( L_a / (L_a + L_b) * ( m.u_Ol[i,2] ) ) )
     @NLexpression(m.mdl, m.dsdt[i = 1:N], m.z_Ol[i,4]*cos(m.z_Ol[i,3]+m.bta[i])/(1-m.z_Ol[i,2]*m.c[i]))
     # System dynamics
-    for i=1:N
+    @NLconstraint(m.mdl, [i=1:N], m.z_Ol[i+1,1]  == m.z_Ol[i,1] + dt*m.dsdt[i]  )
+    @NLconstraint(m.mdl, [i=1:N], m.z_Ol[i+1,2]  == m.z_Ol[i,2] + dt*m.z_Ol[i,4]*sin(m.z_Ol[i,3]+m.bta[i])  )                     # ey
+    @NLconstraint(m.mdl, [i=1:N], m.z_Ol[i+1,3]  == m.z_Ol[i,3] + dt*(m.z_Ol[i,4]/L_a*sin(m.bta[i])-m.dsdt[i]*m.c[i])  )            # epsi
+    @NLconstraint(m.mdl, [i=1:N], m.z_Ol[i+1,4]  == m.z_Ol[i,4] + dt*(m.u_Ol[i,1] - 0.03*abs(m.z_Ol[i,4]) * m.z_Ol[i,4]))#0.63  # v
+    # for i=1:N
        
-        @NLconstraint(m.mdl, m.z_Ol[i+1,1]  == m.z_Ol[i,1] + dt*m.dsdt[i]  )                                             # s
-        @NLconstraint(m.mdl, m.z_Ol[i+1,2]  == m.z_Ol[i,2] + dt*m.z_Ol[i,4]*sin(m.z_Ol[i,3]+m.bta[i])  )                     # ey
-        @NLconstraint(m.mdl, m.z_Ol[i+1,3]  == m.z_Ol[i,3] + dt*(m.z_Ol[i,4]/L_a*sin(m.bta[i])-m.dsdt[i]*m.c[i])  )            # epsi
-        @NLconstraint(m.mdl, m.z_Ol[i+1,4]  == m.z_Ol[i,4] + dt*(m.u_Ol[i,1] - 0.03*abs(m.z_Ol[i,4]) * m.z_Ol[i,4]))#0.63  # v
-    end
+    #     #@NLconstraint(m.mdl, m.z_Ol[i+1,1]  == m.z_Ol[i,1] + dt*m.dsdt[i]  )                                             # s
+    #     @NLconstraint(m.mdl, m.z_Ol[i+1,2]  == m.z_Ol[i,2] + dt*m.z_Ol[i,4]*sin(m.z_Ol[i,3]+m.bta[i])  )                     # ey
+    #     @NLconstraint(m.mdl, m.z_Ol[i+1,3]  == m.z_Ol[i,3] + dt*(m.z_Ol[i,4]/L_a*sin(m.bta[i])-m.dsdt[i]*m.c[i])  )            # epsi
+    #     @NLconstraint(m.mdl, m.z_Ol[i+1,4]  == m.z_Ol[i,4] + dt*(m.u_Ol[i,1] - 0.03*abs(m.z_Ol[i,4]) * m.z_Ol[i,4]))#0.63  # v
+    # end
 
 end
 
@@ -94,17 +103,17 @@ function InitializeParameters(mpcParams::MpcParams,trackCoeff::TrackCoeff,modelP
     mpcParams.N                 = 10                        #lenght of prediction horizon
     mpcParams.nz                = 4                         #number of States
     mpcParams.Q                 = [0.0,10.0,1.0,1.0]  #0 10 0 1    # put weights on ey, epsi and v, just for first round of PathFollowing
-    mpcParams.Q_term            = 10*[1.0,1.0,1.0]           # weights for terminal constraints (LMPC, for e_y, e_psi, and v)
+    mpcParams.Q_term            = 100*[1.0,1.0,0.1]           # weights for terminal constraints (LMPC, for e_y, e_psi, and v)
     mpcParams.R                 = 0*[1.0,1.0]             # put weights on a and d_f
-    mpcParams.QderivZ           = 0.0*[0,0.0,0.1,0]             # cost matrix for derivative cost of states
-    mpcParams.QderivU           = 0.1*[1,1]                 # cost matrix for derivative cost of inputs
-    mpcParams.vPathFollowing    = 7#!!was 0.6                   # reference speed for first lap of path following
+    mpcParams.QderivZ           = 1.0*[0,0.0,0.1,0.1]             # cost matrix for derivative cost of states
+    mpcParams.QderivU           = 0.1*[1,10]               # cost matrix for derivative cost of inputs
+    mpcParams.vPathFollowing    = 4#!!was 0.6                   # reference speed for first lap of path following
 
     trackCoeff.nPolyCurvature   = 4                       # 4th order polynomial for curvature approximation
     trackCoeff.coeffCurvature   = zeros(trackCoeff.nPolyCurvature+1)         # polynomial coefficients for curvature approximation (zeros for straight line)
-    trackCoeff.width            = 2.0                   # width of the track (0.6m)
+    trackCoeff.width            = 1.0                   # width of the track (0.6m)
 
-    modelParams.u_lb            = ones(mpcParams.N,1) * [-0.1  -pi/6]                    # lower bounds on steering
+    modelParams.u_lb            = ones(mpcParams.N,1) * [-2.0  -pi/6]                    # lower bounds on steering
     modelParams.u_ub            = ones(mpcParams.N,1) * [7.0  pi/6]       #1.2           # upper bounds
     modelParams.z_lb            = ones(mpcParams.N+1,1)*[-Inf -Inf -Inf -0.1]                    # lower bounds on states
     #changeMetersforBARC
@@ -120,6 +129,7 @@ function InitializeParameters(mpcParams::MpcParams,trackCoeff::TrackCoeff,modelP
     oldTraj.oldTraj             = zeros(buffersize,4,2)
     # oldTraj.oldTraj[:,1,1]      = 0.1:0.1:buffersize/10 # are these necessarxy?
     # oldTraj.oldTraj[:,1,2]      = 1:buffersize
+    oldTraj.oldTrajXY           = zeros(buffersize,4,2)
     oldTraj.oldInput            = zeros(buffersize,2,2)
     oldTraj.oldCost             = 100*ones(Int64,2)                   # dummies for initialization
 

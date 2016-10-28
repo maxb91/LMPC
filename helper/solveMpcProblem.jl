@@ -116,6 +116,7 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
     #println("curvature = $(getvalue(mdl.c))")
 
     # COST PRINTS: ********************************************************
+    # print("************************COSTS*****************")
     # println("coeff: $(getvalue(mdl.coeff))")
     # println("z0: $(getvalue(mdl.z0))")
     # println("Solution status: $sol_status")
