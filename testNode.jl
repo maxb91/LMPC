@@ -77,7 +77,7 @@ function run_sim()
     
     # figure(1)
     # plot(x_track',y_track')
-    for j=1:1 #10
+    for j=1:4 #10
         lapStatus.currentLap = j
         tt          = zeros(length(t),1)
         zCurr_s                     = zeros(length(t)+1,4)          # s, ey, epsi, v
@@ -254,36 +254,34 @@ function run_sim()
             
             for i = 1:i_final
 
-                # figure(4)   
-                # clf()
-                # ax1=subplot(311)
-                # plot(oldTraj.oldTraj[1:i_final,1,1], oldTraj.oldTraj[1:i_final,4,1], color= "blue")
-                # plot(oldTraj.oldTraj[1:i_final_old,1,2], oldTraj.oldTraj[1:i_final_old,4,2], color= "yellow")
-                # xlabel("s in [m]")
-                # ylabel("v in [m/s]")
-                # legend(["v current round","v old round"])
+                figure(4)   
+                clf()
+                ax1=subplot(311)
+                plot(oldTraj.oldTraj[1:i_final,1,1], oldTraj.oldTraj[1:i_final,4,1], color= "blue")
+                plot(oldTraj.oldTraj[1:i_final_old,1,2], oldTraj.oldTraj[1:i_final_old,4,2], color= "yellow")
+                xlabel("s in [m]")
+                ylabel("v in [m/s]")
+                legend(["v current round","v old round"])
+                ax1=subplot(312)
+                plot(oldTraj.oldTraj[1:i_final,1,1], oldTraj.oldTraj[1:i_final,2,1], color= "blue")
+                plot(oldTraj.oldTraj[1:i_final_old,1,2], oldTraj.oldTraj[1:i_final_old,2,2], color= "yellow")
+                xlabel("s in [m]")
+                ylabel("e_y in [m]")
+                legend(["e_y current round","e_y old round"])
+                ax1=subplot(313)
+                plot(oldTraj.oldTraj[1:i_final,1,1], oldTraj.oldTraj[1:i_final,3,1], color= "blue")
+                plot(oldTraj.oldTraj[1:i_final_old,1,2], oldTraj.oldTraj[1:i_final_old,3,2], color= "yellow")
+                xlabel("s in [m]")
+                ylabel("e_psi in [rad]")
+                legend(["e_psi current round","e_psi old round"])
+                subplot(311)
+                plot(z_log[:,1,i], z_log[:,4,i] ,marker="o")
+                subplot(312)
+                plot(z_log[:,1,i], z_log[:,2,i] ,marker="o")
+                 subplot(313)
+                plot(z_log[:,1,i], z_log[:,3,i] ,marker="o")
 
-
-                # ax1=subplot(312)
-                # plot(oldTraj.oldTraj[1:i_final,1,1], oldTraj.oldTraj[1:i_final,2,1], color= "blue")
-                # plot(oldTraj.oldTraj[1:i_final_old,1,2], oldTraj.oldTraj[1:i_final_old,2,2], color= "yellow")
-                # xlabel("s in [m]")
-                # ylabel("e_y in [m]")
-                # legend(["e_y current round","e_y old round"])
-                # ax1=subplot(313)
-                # plot(oldTraj.oldTraj[1:i_final,1,1], oldTraj.oldTraj[1:i_final,3,1], color= "blue")
-                # plot(oldTraj.oldTraj[1:i_final_old,1,2], oldTraj.oldTraj[1:i_final_old,3,2], color= "yellow")
-                # xlabel("s in [m]")
-                # ylabel("e_psi in [rad]")
-                # legend(["e_psi current round","e_psi old round"])
-                # subplot(311)
-                # plot(z_log[:,1,i], z_log[:,4,i] ,marker="o")
-                # subplot(312)
-                # plot(z_log[:,1,i], z_log[:,2,i] ,marker="o")
-                #  subplot(313)
-                # plot(z_log[:,1,i], z_log[:,3,i] ,marker="o")
-
-                # #plot u
+                # #plot inputs
                 # figure(5)
                 # clf()
                 # subplot(211) 
@@ -311,25 +309,26 @@ function run_sim()
 
 
 
-                # println("Press Enter for next plot step")
-                # println("Press c to cancel plot")
-                # a = ' '
-                # a = readline()
-                # if a == "c\r\n" 
-                #      break
-                # end
+                println("Press Enter for next plot step")
+                println("Press c to cancel plot")
+                a = ' '
+                a = readline()
+                if a == "c\r\n" 
+                     break
+                end
             end
             
         end
 
         println("*************************************************************************")
-        # println("Press Enter for next round solving")
-        # println("Press c to cancel MPC")
-        # a = ' '
-        # a = readline()
-        # if a == "c\r\n" 
-        #         break
-        # end
+        println("Press c to cancel MPC")
+        println("Press Enter for next round solving")
+        
+        a = ' '
+        a = readline()
+        if a == "c\r\n" 
+                break
+        end
     end
 
 end
