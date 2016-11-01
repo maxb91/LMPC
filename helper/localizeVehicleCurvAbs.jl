@@ -158,7 +158,7 @@ function localizeVehicleCurvAbs(states_x,x_track,y_track,TrackCoeff, itercount)
     s=S_Value[idx_min_Dist] #s is always between 29 and 31 have to ad s start for real position
 
     # Find the sign of ey #?? how does this work?
-    if s >= 1111111111.01*ds
+    if s >= 0.01*ds
         s0 = s-0.01*ds
         s0_vec = zeros(OrderXY+1,1)
         s_vec = zeros(OrderXY+1,1)
