@@ -75,9 +75,9 @@ function run_sim()
     i_final= 100000000 # high value so real values will be smaller
    
     
-    figure(1)
-    plot(x_track',y_track')
-    for j=1:4 #10
+    # figure(1)
+    # plot(x_track',y_track')
+    for j=1:1 #10
         lapStatus.currentLap = j
         tt          = zeros(length(t),1)
         zCurr_s                     = zeros(length(t)+1,4)          # s, ey, epsi, v
@@ -89,7 +89,7 @@ function run_sim()
         zCurr_x[1,1] = 0 # x = 1.81 for s = 32     14 in curve
         zCurr_x[1,2] = 0 # y = 2.505 for s = 32  12.6
         zCurr_x[1,3] = 0.94
-        zCurr_x[1,4]  =0.4  #?? initialize with v_ref v_pathfollowing ?
+        zCurr_x[1,4] = 0.4  #?? initialize with v_ref v_pathfollowing ?
         
         if j>1               #setup point for vehicle after first round                   # if we are in the second or higher lap
             zCurr_x[1,:] = z_final_x
@@ -192,11 +192,6 @@ function run_sim()
           # Print results
         # --------------------------------
 
-        # figure()
-        # plot(zCurr[:,1],zCurr[:,2],"r",zCurr[:,1],zCurr[:,3],"g",zCurr[:,1],zCurr[:,4],"b")
-        # grid(1)
-        # legend(["eY","ePsi","v"])
-        # title("States over s")
 
         #### plot states and cost
         figure(2)
@@ -259,50 +254,50 @@ function run_sim()
             
             for i = 1:i_final
 
-                figure(4)   
-                clf()
-                ax1=subplot(311)
-                plot(oldTraj.oldTraj[1:i_final,1,1], oldTraj.oldTraj[1:i_final,4,1], color= "blue")
-                plot(oldTraj.oldTraj[1:i_final_old,1,2], oldTraj.oldTraj[1:i_final_old,4,2], color= "yellow")
-                xlabel("s in [m]")
-                ylabel("v in [m/s]")
-                legend(["v current round","v old round"])
+                # figure(4)   
+                # clf()
+                # ax1=subplot(311)
+                # plot(oldTraj.oldTraj[1:i_final,1,1], oldTraj.oldTraj[1:i_final,4,1], color= "blue")
+                # plot(oldTraj.oldTraj[1:i_final_old,1,2], oldTraj.oldTraj[1:i_final_old,4,2], color= "yellow")
+                # xlabel("s in [m]")
+                # ylabel("v in [m/s]")
+                # legend(["v current round","v old round"])
 
 
-                ax1=subplot(312)
-                plot(oldTraj.oldTraj[1:i_final,1,1], oldTraj.oldTraj[1:i_final,2,1], color= "blue")
-                plot(oldTraj.oldTraj[1:i_final_old,1,2], oldTraj.oldTraj[1:i_final_old,2,2], color= "yellow")
-                xlabel("s in [m]")
-                ylabel("e_y in [m]")
-                legend(["e_y current round","e_y old round"])
-                ax1=subplot(313)
-                plot(oldTraj.oldTraj[1:i_final,1,1], oldTraj.oldTraj[1:i_final,3,1], color= "blue")
-                plot(oldTraj.oldTraj[1:i_final_old,1,2], oldTraj.oldTraj[1:i_final_old,3,2], color= "yellow")
-                xlabel("s in [m]")
-                ylabel("e_psi in [rad]")
-                legend(["e_psi current round","e_psi old round"])
-                subplot(311)
-                plot(z_log[:,1,i], z_log[:,4,i] ,marker="o")
-                subplot(312)
-                plot(z_log[:,1,i], z_log[:,2,i] ,marker="o")
-                 subplot(313)
-                plot(z_log[:,1,i], z_log[:,3,i] ,marker="o")
+                # ax1=subplot(312)
+                # plot(oldTraj.oldTraj[1:i_final,1,1], oldTraj.oldTraj[1:i_final,2,1], color= "blue")
+                # plot(oldTraj.oldTraj[1:i_final_old,1,2], oldTraj.oldTraj[1:i_final_old,2,2], color= "yellow")
+                # xlabel("s in [m]")
+                # ylabel("e_y in [m]")
+                # legend(["e_y current round","e_y old round"])
+                # ax1=subplot(313)
+                # plot(oldTraj.oldTraj[1:i_final,1,1], oldTraj.oldTraj[1:i_final,3,1], color= "blue")
+                # plot(oldTraj.oldTraj[1:i_final_old,1,2], oldTraj.oldTraj[1:i_final_old,3,2], color= "yellow")
+                # xlabel("s in [m]")
+                # ylabel("e_psi in [rad]")
+                # legend(["e_psi current round","e_psi old round"])
+                # subplot(311)
+                # plot(z_log[:,1,i], z_log[:,4,i] ,marker="o")
+                # subplot(312)
+                # plot(z_log[:,1,i], z_log[:,2,i] ,marker="o")
+                #  subplot(313)
+                # plot(z_log[:,1,i], z_log[:,3,i] ,marker="o")
 
-                #plot u
-                figure(5)
-                clf()
-                subplot(211) 
-                plot(oldTraj.oldTraj[1:i_final-1,1,1], oldTraj.oldInput[1:i_final-1,1,1], color= "green")
-                plot(z_log[1:end-1,1,i], u_log[:,1,i] ,marker="o")
-                xlabel("s in [m]")
-                ylabel("acceleration in [m/s^2]")
-                legend(["applied acceleration","predicted acceleration"])
-                subplot(212)
-                 plot(oldTraj.oldTraj[1:i_final-1,1,1], oldTraj.oldInput[1:i_final-1,2,1], color= "green")  
-                plot(z_log[1:end-1,1,i], u_log[:,2,i] ,marker="o")  
-                 xlabel("s in [m]")
-                ylabel("steering angle in [rad]")
-                legend(["applied steering angle","predicted steering angle"]) 
+                # #plot u
+                # figure(5)
+                # clf()
+                # subplot(211) 
+                # plot(oldTraj.oldTraj[1:i_final-1,1,1], oldTraj.oldInput[1:i_final-1,1,1], color= "green")
+                # plot(z_log[1:end-1,1,i], u_log[:,1,i] ,marker="o")
+                # xlabel("s in [m]")
+                # ylabel("acceleration in [m/s^2]")
+                # legend(["applied acceleration","predicted acceleration"])
+                # subplot(212)
+                #  plot(oldTraj.oldTraj[1:i_final-1,1,1], oldTraj.oldInput[1:i_final-1,2,1], color= "green")  
+                # plot(z_log[1:end-1,1,i], u_log[:,2,i] ,marker="o")  
+                #  xlabel("s in [m]")
+                # ylabel("steering angle in [rad]")
+                # legend(["applied steering angle","predicted steering angle"]) 
 
 
             
@@ -313,25 +308,28 @@ function run_sim()
                 # legend(["absolute angle psi plotted over s"]) 
 
                 i = i+1
-                println("Press Enter for next plot step")
-                println("Press c to cancel plot")
-                a = ' '
-                a = readline()
-                if a == "c\r\n" 
-                     break
-                end
+
+
+
+                # println("Press Enter for next plot step")
+                # println("Press c to cancel plot")
+                # a = ' '
+                # a = readline()
+                # if a == "c\r\n" 
+                #      break
+                # end
             end
             
         end
 
         println("*************************************************************************")
-        println("Press Enter for next round solving")
-        println("Press c to cancel MPC")
-        a = ' '
-        a = readline()
-        if a == "c\r\n" 
-                break
-        end
+        # println("Press Enter for next round solving")
+        # println("Press c to cancel MPC")
+        # a = ' '
+        # a = readline()
+        # if a == "c\r\n" 
+        #         break
+        # end
     end
 
 end

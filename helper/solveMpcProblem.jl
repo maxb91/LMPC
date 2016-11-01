@@ -147,7 +147,7 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
     mpcSol.z   = sol_z
     mpcSol.solverStatus = sol_status
     mpcSol.cost = zeros(6)
-    mpcSol.cost = [getvalue(costZ),getvalue(costZTerm),getvalue(constZTerm),getvalue(derivCost),getvalue(controlCost),getvalue(laneCost)]
+    ###mpcSol.cost = [getvalue(costZ),getvalue(costZTerm),getvalue(constZTerm),getvalue(derivCost),getvalue(controlCost),getvalue(laneCost)]
     #mpcSol = MpcSol(sol_u[1,1],sol_u[2,1]) # Fast version without logging
     #println(getvalue(costZTerm))
     #println(getvalue(mdl.z_Ol[1,N+1]))

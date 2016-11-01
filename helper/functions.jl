@@ -53,7 +53,7 @@ function InitializeModel(m::MpcModel,mpcParams::MpcParams,modelParams::ModelPara
 
     n_poly_curv = trackCoeff.nPolyCurvature         # polynomial degree of curvature approximation
     
-    m.mdl = Model(solver = IpoptSolver(print_level=3,max_cpu_time=0.5))#,linear_solver="ma57",print_user_options="yes"))
+    m.mdl = Model(solver = IpoptSolver(print_level=0,max_cpu_time=0.5))#,linear_solver="ma57",print_user_options="yes"))
 
     @variable( m.mdl, m.z_Ol[1:(N+1),1:4])      # z = s, ey, epsi, v
     @variable( m.mdl, m.u_Ol[1:N,1:2])          #?? different dim then in classes.jl?
