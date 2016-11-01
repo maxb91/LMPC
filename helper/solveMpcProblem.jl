@@ -14,6 +14,7 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
     N               = mpcParams.N
     Q               = mpcParams.Q #Cost of states just for path following
     Q_term          = mpcParams.Q_term
+    Q_cost          = mpcParams.Q_cost
     R               = mpcParams.R # cost for control is always used but curently 0
     coeffTermCost   = mpcCoeff.coeffCost::Array{Float64,2}
     coeffTermConst  = mpcCoeff.coeffConst::Array{Float64,3}
@@ -48,8 +49,8 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
 
     # Update curvature
     setvalue(mdl.coeff,coeffCurvature)
-    println("z0 = $(getvalue(mdl.z0))")
-    println("coeffCurvature = $(getvalue(mdl.coeff))")
+    #println("z0 = $(getvalue(mdl.z0))")
+    #println("coeffCurvature = $(getvalue(mdl.coeff))")
 
     @NLexpression(mdl.mdl, costZ,       0)
     @NLexpression(mdl.mdl, costZTerm,   0)
@@ -87,10 +88,10 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
     # ---------------------------------
     # The value of this cost determines how fast the algorithm learns. The higher this cost, the faster the control tries to reach the finish line.
     if lapStatus.currentLap > 2     # if at least in the 3rd lap
-        @NLexpression(mdl.mdl, costZTerm, mdl.ParInt[1]*sum{coeffTermCost[i,1]*mdl.z_Ol[N+1,1]^(order+1-i),i=1:order+1}+
-                                  (1-mdl.ParInt[1])*sum{coeffTermCost[i,2]*mdl.z_Ol[N+1,1]^(order+1-i),i=1:order+1})
+        @NLexpression(mdl.mdl, costZTerm, Q_cost*(mdl.ParInt[1]*sum{coeffTermCost[i,1]*mdl.z_Ol[N+1,1]^(order+1-i),i=1:order+1}+
+                                  (1-mdl.ParInt[1])*sum{coeffTermCost[i,2]*mdl.z_Ol[N+1,1]^(order+1-i),i=1:order+1}))
     elseif lapStatus.currentLap == 2         # if we're in the second second lap
-        @NLexpression(mdl.mdl, costZTerm, sum{coeffTermCost[i,1]*mdl.z_Ol[N+1,1]^(order+1-i),i=1:order+1})
+        @NLexpression(mdl.mdl, costZTerm, Q_cost*sum{coeffTermCost[i,1]*mdl.z_Ol[N+1,1]^(order+1-i),i=1:order+1})
     end
 
     # State cost
@@ -109,9 +110,12 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
     #println("Model formulation:")
     #println(mdl.mdl)
     # Solve Problem and return solution
+    tic()
     sol_status  = solve(mdl.mdl)
+    ttt= toq()
     sol_u       = getvalue(mdl.u_Ol)
     sol_z       = getvalue(mdl.z_Ol)
+    println("pure solver time: $ttt")
     println("Predicting until s = $(sol_z[end,1])") #?? predicting until s = 
     #println("curvature = $(getvalue(mdl.c))")
 
@@ -128,7 +132,7 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
     # println("costZTerm:    $(getvalue(costZTerm))")
     # println("constZTerm:   $(getvalue(constZTerm))")
 
-    # println("cost_ey:      $(0.5*sum(sol_z[2,:].^2)*Q[2])") #?? sum with () or {} difference?
+    # println("cost_ey:      $(0.5*sum(sol_z[2,:].^2)*Q[2])")
     # println("cost_ePsi:    $(0.5*sum(sol_z[3,:].^2)*Q[3])")
     # println("cost_V:       $(0.5*sum((sol_z[4,:]-z_Ref[:,4]').^2)*Q[4])")
 

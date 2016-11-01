@@ -5,6 +5,7 @@ function localizeVehicleCurvAbs(states_x,x_track,y_track,TrackCoeff, itercount)
 
     OrderXY = TrackCoeff.nPolyXY
     OrderThetaCurv = TrackCoeff.nPolyCurvature
+    ds = TrackCoeff.ds
 
     # grab current states of the vehicle
     x       = states_x[1]
@@ -45,33 +46,42 @@ function localizeVehicleCurvAbs(states_x,x_track,y_track,TrackCoeff, itercount)
     if idx_min <= N_nodes_poly_back #if the nearest point is less meters away from the start of the track then we need to change the structure and interpolate just from 1 to the future
         ind_start   = 1     #this has to be tested at the moment we just start at s= 30 to prevetn this part
         ind_end     = nPoints+1
-        error("too close to start") #because this does not work yet we set an error msg
+        nodes_near = nodes_center[:,ind_start:ind_end]
+    elseif idx_min+N_nodes_poly_front>= N_nodes_center
+              # then stack the end and beginning of the lap together
+        nodes_near = append!(nodes_center[:,idx_start:N_nodes_center],nodes_center[:,0:idx_min+N_nodes_poly_front+1-N_nodes_center])
+        ind_start   = idx_min-N_nodes_poly_back 
+        ind_end     = idx_min+N_nodes_poly_front
+        error("stacking nodes form beginning of track not yet implemented")
     else 
         ind_start   = idx_min-N_nodes_poly_back #max(1,idx_min-N_nodes_poly_back)
         ind_end     = idx_min+N_nodes_poly_front #min(N_nodes_center,idx_min+N_nodes_poly_front)
+        nodes_near = nodes_center[:,ind_start:ind_end]
     end
-    nodes_near = nodes_center[:,ind_start:ind_end]
+    
 
-    s_interp_start = ind_start-1 # in the first index s is equal 0. (always one less)
-    s_interp_end = ind_end-1
-    s_nearest = idx_min-1
+    s_interp_start = (ind_start-1)*ds # in the first index s is equal 0. (always one less)
+    s_interp_end = (ind_end-1)*ds
+    s_nearest = (idx_min-1)*ds
     # Select node for X Y
     nodes_near_X = vec(nodes_near[1,:])
     nodes_near_Y = vec(nodes_near[2,:])
 
-
+    index = 0 
 #this just works because s = 1 m between points
         Matrix = zeros(nPoints+1,OrderXY+1)
-    for i = s_interp_start:s_interp_end
+    for i = s_interp_start:ds:s_interp_end
         for k = 0:OrderXY
-            Matrix[i+1-s_interp_start,OrderXY+1-k] = i^k
+            index = convert(Int,(i-s_interp_start)/ds+1)
+            Matrix[index,OrderXY+1-k] = i^k
         end
     end
 
     Matrix4th = zeros(nPoints+1,OrderThetaCurv+1) #generate a matrix of 4th order to approximate Theta and the curvature
-    for i = s_interp_start:s_interp_end
+    for i = s_interp_start:ds:s_interp_end
         for k = 0:OrderThetaCurv
-            Matrix4th[i+1-s_interp_start,OrderThetaCurv+1-k] = i^k
+            index = convert(Int,(i-s_interp_start)/ds+1)
+            Matrix4th[index,OrderThetaCurv+1-k] = i^k
         end
     end
 
@@ -81,26 +91,25 @@ function localizeVehicleCurvAbs(states_x,x_track,y_track,TrackCoeff, itercount)
     coeffY = Matrix\nodes_near_Y
     coeffX = Matrix\nodes_near_X  
 
+
+
     # now compute (s,y) needed for the MPC
     Counter = 1
-    Discretization = 0.01
+    Discretization = 0.01*ds
+    j_vec = zeros(OrderXY+1) 
     # Initializate the values to find exact s look 1 meter in front and 1 meter in the back of nearest point no track
-    S_Value = zeros(0:Discretization:2) #create an vector for the elements 1 meter before and after the nearest point of the track 
-    DistanceNew = zeros(0:Discretization:2)
-
+   
     #T those were just to test
     # XCurve_t = zeros(0:Discretization:2)
     # YCurve_t = zeros(0:Discretization:2)
 
     # Evaluate all points to find the current s cloesest to vehicle
-    j_vec = zeros(OrderXY+1)                     
 
     #!! this is only correct if the car is at a as greater 30  we need to adjust a if statement
-    if idx_min <= N_nodes_poly_back #if the nearest point is less meters away from the start of the track then we need to change the structure and interpolate just from 1 to the future
-    #use point from end of track or make some points up
-    error("not implemeted")
-    else   
-        for j=(s_nearest-1):Discretization:(s_nearest+1) #?? j between 29 and 31 should be between idx_min+-1?
+    if s_nearest >= ds
+        S_Value = zeros(0:Discretization:2*ds) #create an vector for the elements 1 meter before and after the nearest point of the track 
+        DistanceNew = zeros(0:Discretization:2*ds)
+        for j=(s_nearest-ds):Discretization:(s_nearest+ds) #?? j between 29 and 31 should be between idx_min+-1?
             # j does not stand for the id of the node but for the length of s in meters so j = 29 means node number 30
             for i = 1:OrderXY+1
                 j_vec[i] =j^(OrderXY+1-i)
@@ -108,11 +117,24 @@ function localizeVehicleCurvAbs(states_x,x_track,y_track,TrackCoeff, itercount)
             XCurve = dot(coeffX, j_vec)
             YCurve = dot(coeffY, j_vec)
 
-
             #T just test
             # XCurve_t[Counter] = dot(coeffX, j_vec)
             # YCurve_t[Counter] = dot(coeffY, j_vec)
 
+            S_Value[Counter] = j
+            DistanceNew[Counter] = sqrt((x-XCurve).^2+(y-YCurve).^2) #distance of vehicle to every interpolated node
+            Counter = Counter + 1
+        end
+    else # just active while the car is nearest to the starting point as we cannot evaluate functon for negative s
+        S_Value = zeros(0:Discretization:1*ds) #create an vector for the elements 1 after the nearest point of the track 
+        DistanceNew = zeros(0:Discretization:1*ds)
+        for j=s_nearest:Discretization:(s_nearest+ds) #?? j between 29 and 31 should be between idx_min+-1?
+            # j does not stand for the id of the node but for the length of s in meters so j = 29 means node number 30
+            for i = 1:OrderXY+1
+                j_vec[i] =j^(OrderXY+1-i)
+            end
+            XCurve = dot(coeffX, j_vec)
+            YCurve = dot(coeffY, j_vec)
 
             S_Value[Counter] = j
             DistanceNew[Counter] = sqrt((x-XCurve).^2+(y-YCurve).^2) #distance of vehicle to every interpolated node
@@ -129,41 +151,68 @@ function localizeVehicleCurvAbs(states_x,x_track,y_track,TrackCoeff, itercount)
   
 
     # from the evaluated points get the best as [s, y] ---> use the as Feedback
+    #!!@show 
     eyabs, idx_min_Dist = findmin(DistanceNew)
 
     # Extract the current s
     s=S_Value[idx_min_Dist] #s is always between 29 and 31 have to ad s start for real position
 
     # Find the sign of ey #?? how does this work?
-    s0 = s-0.01 
-    s0_vec = zeros(OrderXY+1,1)
-    s_vec = zeros(OrderXY+1,1)
-    sdot_vec = zeros(OrderXY+1,1)::Array{Float64,2}
+    if s >= 1111111111.01*ds
+        s0 = s-0.01*ds
+        s0_vec = zeros(OrderXY+1,1)
+        s_vec = zeros(OrderXY+1,1)
+        sdot_vec = zeros(OrderXY+1,1)::Array{Float64,2}
 
-    for i = 1:OrderXY+1
-            s_vec[i] =s^(OrderXY+1-i)
-            s0_vec[i] =s0^(OrderXY+1-i)
-            sdot_vec[i] = (OrderXY+1-i)*s^(OrderXY-i)
+        for i = 1:OrderXY+1
+                s_vec[i] =s^(OrderXY+1-i)
+                s0_vec[i] =s0^(OrderXY+1-i)
+                sdot_vec[i] = (OrderXY+1-i)*s^(OrderXY-i)
+        end
+
+        XCurve0 = coeffX'*s0_vec
+        YCurve0 = coeffY'*s0_vec
+
+        XCurve = coeffX'*s_vec
+        YCurve = coeffY'*s_vec
+        dX = coeffX'*sdot_vec #[6*s^5 5*s^4 4*s^3 3*s^2 2*s^1 1 0]' comment can be deleted if sdot_vec is verified for all polynomials
+        dY = coeffY'*sdot_vec      
+
+        xyVectorAngle = atan2(y-YCurve0,x-XCurve0)
+        xyPathAngle = atan2(dY,dX)
+    else
+        s0 = s+0.01*ds
+        s0_vec = zeros(OrderXY+1,1)
+        s_vec = zeros(OrderXY+1,1)
+        sdot_vec = zeros(OrderXY+1,1)::Array{Float64,2}
+
+        for i = 1:OrderXY+1
+                s_vec[i] =s^(OrderXY+1-i)
+                s0_vec[i] =s0^(OrderXY+1-i)
+               #sdot_vec = (OrderXY+1-i)*s^(OrderXY-i) #!!!problems with NaN last i  gives 0 *Inf =NaN
+        end
+        sdot_vec = [6*s^5 5*s^4 4*s^3 3*s^2 2*s^1 1 0]'
+
+        XCurve0 = coeffX'*s0_vec
+        YCurve0 = coeffY'*s0_vec
+
+        XCurve = coeffX'*s_vec
+        YCurve = coeffY'*s_vec
+        dX = coeffX'*sdot_vec #[6*s^5 5*s^4 4*s^3 3*s^2 2*s^1 1 0]' comment can be deleted if sdot_vec is verified for all polynomials
+        dY = coeffY'*sdot_vec      
+
+        xyVectorAngle = atan2(y-YCurve0,x-XCurve0)
+        xyPathAngle = atan2(dY,dX)
     end
-
-    XCurve0 = coeffX'*s0_vec
-    YCurve0 = coeffY'*s0_vec
-
-    XCurve = coeffX'*s_vec
-    YCurve = coeffY'*s_vec
-    dX = coeffX'*sdot_vec #[6*s^5 5*s^4 4*s^3 3*s^2 2*s^1 1 0]' comment can be deleted if sdot_vec is verified for all polynomials
-    dY = coeffY'*sdot_vec      
-
-    xyVectorAngle = atan2(y-YCurve0,x-XCurve0)
-    xyPathAngle = atan2(dY,dX)
     #?? calculate epsi here?
 
-   @show ey = eyabs*sign(sin(xyVectorAngle-xyPathAngle))
+    ey = eyabs*sign(sin(xyVectorAngle-xyPathAngle))
 
-    # Calcuate the error due to the conversion in the curvilinear abscissa #?? what does it do and how
-    yBack = YCurve + ey*cos(xyPathAngle)
-    xBack = XCurve - ey*sin(xyPathAngle)
-    @show Error = sqrt((y-yBack)^2 + (x-xBack)^2)
+    #T Calcuate the error due to the conversion in the curvilinear abscissa #?? what does it do and how
+    # yBack = YCurve + ey*cos(xyPathAngle)
+    # xBack = XCurve - ey*sin(xyPathAngle)
+    # Error = sqrt((y-yBack)^2 + (x-xBack)^2)
+    #endT
 
     # now compute the angle and the curvature needed for the interpolation
 
@@ -176,7 +225,7 @@ function localizeVehicleCurvAbs(states_x,x_track,y_track,TrackCoeff, itercount)
     jd_vec = zeros(OrderXY+1,1)::Array{Float64,2}
     jdd_vec = zeros(OrderXY+1,1)::Array{Float64,2}
     #we go from s = 0 because s is 0 at s_start and then we interpolate over the interval we defined above 
-    for j=s_interp_start:s_interp_end #j must be 0.0 to be initialized as a float to be able to do j^-1 in for loop
+    for j=s_interp_start:ds:s_interp_end #j must be 0.0 to be initialized as a float to be able to do j^-1 in for loop
     
        
         #this generic approach did not work because last elements become NaN

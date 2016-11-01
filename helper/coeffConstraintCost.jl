@@ -17,8 +17,8 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     # coeffCost
 
     # Read Inputs
-   @show  s_start         = posInfo.s_start #currently start alqys 0 , normally start current postion and s till beginn of pred horizon
-   @show  s               = posInfo.s #?? current meter on track? what is s_start?
+    s_start         = posInfo.s_start #currently start alqys 0 , normally start current postion and s till beginn of pred horizon
+    s               = posInfo.s #?? current meter on track? what is s_start?
     s_target        = posInfo.s_target
 
 
@@ -58,7 +58,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     # Compute the index
     DistS = ( s_total - oldS ).^2
 
-    @show idx_s = findmin(DistS,1)[2]              # contains both indices for the closest distances for both oldS !!
+    idx_s = findmin(DistS,1)[2]              # contains both indices for the closest distances for both oldS !!
     vec_range = (idx_s[1]:idx_s[1]+pLength,idx_s[2]:idx_s[2]+pLength)
 
     # Create the vectors used for the interpolation

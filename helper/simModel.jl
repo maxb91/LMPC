@@ -12,7 +12,7 @@ function simModel_s(z::Array{Float64},u::Array{Float64},dt::Float64,coeff::Array
     zNext[1] = z[1] + dt*dsdt
     zNext[2] = z[2] + dt*z[4] * sin(z[3] + bta)
     zNext[3] = z[3] + dt*(z[4]/L_b*sin(bta)-dsdt*c)
-    zNext[4] = z[4] + dt*(u[1] - 0.03*abs(z[4])*z[4])#sign)=
+    zNext[4] = z[4] + dt*(u[1] - 0.63*abs(z[4])*z[4])#sign)=
 
     return zNext
 end
@@ -34,7 +34,7 @@ function simModel_x(z::Array{Float64},u::Array{Float64},dt::Float64,modelParams:
     zNext[1] = z[1] + dt*(z[4]*cos(z[3]+bta))       # x
     zNext[2] = z[2] + dt*(z[4]*sin(z[3] + bta))      # y
     zNext[3] = z[3] + dt*(z[4]/l_B*sin(bta))        # psi
-    zNext[4] = z[4] + dt*(u[1] - 0.03 * z[4]^2 * sign(z[4]))                #0.63     # v
+    zNext[4] = z[4] + dt*(u[1])# - 0.63 * z[4]^2 * sign(z[4]))                #0.63     # v
 
     return zNext
 end

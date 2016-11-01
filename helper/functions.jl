@@ -53,7 +53,7 @@ function InitializeModel(m::MpcModel,mpcParams::MpcParams,modelParams::ModelPara
 
     n_poly_curv = trackCoeff.nPolyCurvature         # polynomial degree of curvature approximation
     
-    m.mdl = Model(solver = IpoptSolver(print_level=0,max_cpu_time=0.5))#,linear_solver="ma57",print_user_options="yes"))
+    m.mdl = Model(solver = IpoptSolver(print_level=3,max_cpu_time=0.5))#,linear_solver="ma57",print_user_options="yes"))
 
     @variable( m.mdl, m.z_Ol[1:(N+1),1:4])      # z = s, ey, epsi, v
     @variable( m.mdl, m.u_Ol[1:N,1:2])          #?? different dim then in classes.jl?
@@ -87,7 +87,7 @@ function InitializeModel(m::MpcModel,mpcParams::MpcParams,modelParams::ModelPara
     @NLconstraint(m.mdl, [i=1:N], m.z_Ol[i+1,1]  == m.z_Ol[i,1] + dt*m.dsdt[i]  )
     @NLconstraint(m.mdl, [i=1:N], m.z_Ol[i+1,2]  == m.z_Ol[i,2] + dt*m.z_Ol[i,4]*sin(m.z_Ol[i,3]+m.bta[i])  )                     # ey
     @NLconstraint(m.mdl, [i=1:N], m.z_Ol[i+1,3]  == m.z_Ol[i,3] + dt*(m.z_Ol[i,4]/L_a*sin(m.bta[i])-m.dsdt[i]*m.c[i])  )            # epsi
-    @NLconstraint(m.mdl, [i=1:N], m.z_Ol[i+1,4]  == m.z_Ol[i,4] + dt*(m.u_Ol[i,1] - 0.03*abs(m.z_Ol[i,4]) * m.z_Ol[i,4]))#0.63  # v
+    @NLconstraint(m.mdl, [i=1:N], m.z_Ol[i+1,4]  == m.z_Ol[i,4] + dt*(m.u_Ol[i,1]))# - 0.63*abs(m.z_Ol[i,4]) * m.z_Ol[i,4]))#0.63  # v
     # for i=1:N
        
     #     #@NLconstraint(m.mdl, m.z_Ol[i+1,1]  == m.z_Ol[i,1] + dt*m.dsdt[i]  )                                             # s
@@ -104,20 +104,22 @@ function InitializeParameters(mpcParams::MpcParams,trackCoeff::TrackCoeff,modelP
     mpcParams.nz                = 4                         #number of States
     mpcParams.Q                 = [0.0,10.0,1.0,1.0]  #0 10 0 1    # put weights on ey, epsi and v, just for first round of PathFollowing
     mpcParams.Q_term            = 100*[1.0,1.0,0.1]           # weights for terminal constraints (LMPC, for e_y, e_psi, and v)
+    mpcParams.Q_cost            = 0.04
     mpcParams.R                 = 0*[1.0,1.0]             # put weights on a and d_f
     mpcParams.QderivZ           = 1.0*[0,0.0,0.1,0.1]             # cost matrix for derivative cost of states
     mpcParams.QderivU           = 0.1*[1,10]               # cost matrix for derivative cost of inputs
-    mpcParams.vPathFollowing    = 4#!!was 0.6                   # reference speed for first lap of path following
+    mpcParams.vPathFollowing    = 0.6#!!was 0.6                   # reference speed for first lap of path following
 
     trackCoeff.nPolyCurvature   = 4                       # 4th order polynomial for curvature approximation
     trackCoeff.coeffCurvature   = zeros(trackCoeff.nPolyCurvature+1)         # polynomial coefficients for curvature approximation (zeros for straight line)
-    trackCoeff.width            = 1.0                   # width of the track (0.6m)
+    trackCoeff.width            = 0.6                   # width of the track (0.6m)
+    trackCoeff.ds               =1//10 # is defined as a rational number so we can use it to calculate indices in matrix. with float becomes error
 
-    modelParams.u_lb            = ones(mpcParams.N,1) * [-2.0  -pi/6]                    # lower bounds on steering
-    modelParams.u_ub            = ones(mpcParams.N,1) * [7.0  pi/6]       #1.2           # upper bounds
+    modelParams.u_lb            = ones(mpcParams.N,1) * [-1.0  -pi/6]                    # lower bounds on steering
+    modelParams.u_ub            = ones(mpcParams.N,1) * [1.0  pi/6]       #1.2           # upper bounds
     modelParams.z_lb            = ones(mpcParams.N+1,1)*[-Inf -Inf -Inf -0.1]                    # lower bounds on states
     #changeMetersforBARC
-    modelParams.z_ub            = ones(mpcParams.N+1,1)*[ Inf  Inf  Inf  12.0]       #!! was 2             # upper bounds
+    modelParams.z_ub            = ones(mpcParams.N+1,1)*[ Inf  Inf  Inf  2.0]       #!! was 2             # upper bounds
     modelParams.l_A             = 0.125
     modelParams.l_B             = 0.125 #0.125
 

@@ -35,11 +35,12 @@ type MpcParams          # parameters for MPC solver
     OrderCostCons::Int64
     Q::Array{Float64,1}
     Q_term::Array{Float64,1}
+    Q_cost::Float64
     R::Array{Float64,1}
     vPathFollowing::Float64
     QderivZ::Array{Float64,1}
     QderivU::Array{Float64,1}
-    MpcParams(N=0,nz=0,OrderCostCons=0,Q=Float64[],Q_term=Float64[],R=Float64[],vPathFollowing=1.0,QderivZ=Float64[],QderivU=Float64[]) = new(N,nz,OrderCostCons,Q,Q_term,R,vPathFollowing)
+    MpcParams(N=0,nz=0,OrderCostCons=0,Q=Float64[],Q_term=Float64[],Q_cost=1.0,R=Float64[],vPathFollowing=1.0,QderivZ=Float64[],QderivU=Float64[]) = new(N,nz,OrderCostCons,Q,Q_term,Q_cost,R,vPathFollowing)
 end
 
 type PosInfo            # current position information
@@ -65,7 +66,8 @@ type TrackCoeff         # coefficients of track
     nPolyCurvature::Int64      # order of the interpolation polynom
     nPolyXY::Int64              # order of the interpolation polynom of the x y coordinates
     width::Float64               # lane width -> is used in cost function as soft constraints (to stay on track)
-    TrackCoeff(coeffAngle=Float64[], coeffCurvature=Float64[], nPolyCurvature=4, nPolyXY = 6, width=1.0) = new(coeffAngle,coeffCurvature,nPolyCurvature,nPolyXY)
+    ds::Rational{Int}
+    TrackCoeff(coeffAngle=Float64[], coeffCurvature=Float64[], nPolyCurvature=4, nPolyXY = 6, width=1.0, ds=1//10) = new(coeffAngle,coeffCurvature,nPolyCurvature,nPolyXY,ds)
 end
 
 type ModelParams
