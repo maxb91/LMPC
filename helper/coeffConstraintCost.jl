@@ -59,6 +59,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     DistS = ( s_total - oldS ).^2
 
     idx_s = findmin(DistS,1)[2]              # contains both indices for the closest distances for both oldS !!
+    
     vec_range = (idx_s[1]:idx_s[1]+pLength,idx_s[2]:idx_s[2]+pLength)
 
     # Create the vectors used for the interpolation
@@ -89,10 +90,10 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     for k = 0:Order
         MatrixInterp[:,Order+1-k,:] = s_forinterpy[:,:].^k
     end
-    
     # Compute the constraint coefficients for both old trajectories
     #?? this is used to calculate the values of ey epsi and v to be reached which lie on the safe set. all values of s can be introduced for different i ?
     coeffConst = zeros(Order+1,2,3)
+
     for i=1:2
         coeffConst[:,i,1]    = MatrixInterp[:,:,i]\oldeY[vec_range[i]]
         coeffConst[:,i,2]    = MatrixInterp[:,:,i]\oldePsi[vec_range[i]]
@@ -111,9 +112,9 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     for i=1:2   
         # in this part we construct a polynomial for the cost associated at each s value. the s value at the curent postion is used to calculate the cost of the old round at this postion
         #we know that each following s has a cost value which is exactl 1 less thne the one before. so we can easiyl do the least squares to get the coeficients for approximation
-            iter_to_s_target  = oldTraj.oldCost[i] - (idx_s[i]-N_points*(i-1))  # number of iterations from idx_s to s_target #?? this has sth todo with the count in the array as we look at values in second row
-            bQfunction_Vector = collect(linspace(iter_to_s_target,iter_to_s_target-pLength,pLength+1))    # build a vector that starts at the distance and decreases in equal steps
-            coeffCost[:,i]    = MatrixInterp[:,:,i]\bQfunction_Vector           # interpolate this vector with the given s
+        iter_to_s_target  = oldTraj.oldCost[i] - (idx_s[i]-N_points*(i-1))  # number of iterations from idx_s to s_target #?? this has sth todo with the count in the array as we look at values in second row
+        bQfunction_Vector = collect(linspace(iter_to_s_target,iter_to_s_target-pLength,pLength+1))    # build a vector that starts at the distance and decreases in equal steps
+        coeffCost[:,i]    = MatrixInterp[:,:,i]\bQfunction_Vector           # interpolate this vector with the given s
     end
 
     mpcCoeff.coeffCost  = coeffCost #this value goes into the variable mpcCoeff in testNode.jl as well variables by reference

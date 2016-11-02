@@ -56,8 +56,9 @@ type MpcSol             # MPC solution output
     solverStatus::Symbol
     u::Array{Float64}
     z::Array{Float64}
+    ParInt::Array{Float64}
     cost::Array{Float64}
-    MpcSol(a_x=0.0,d_f=0.0,solverStatus=Symbol(),u=Float64[],z=Float64[],cost=Float64[]) = new(a_x,d_f,solverStatus,u,z,cost)
+    MpcSol(a_x=0.0,d_f=0.0,solverStatus=Symbol(),u=Float64[],z=Float64[], ParInt= Float64[],cost=Float64[]) = new(a_x,d_f,solverStatus,u,z,ParInt,cost)
 end
 
 type TrackCoeff         # coefficients of track

@@ -67,8 +67,8 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
 
     # Lane cost
     # ---------------------------------
-   # @NLexpression(mdl.mdl, laneCost, 10*sum{mdl.z_Ol[i,2]^2*((0.5+0.5*tanh(10*(mdl.z_Ol[i,2]-ey_max))) + (0.5-0.5*tanh(10*(mdl.z_Ol[i,2]+ey_max)))),i=1:N+1})
-   #??why lane costs deactivated
+   @NLexpression(mdl.mdl, laneCost, 10*sum{mdl.z_Ol[i,2]^2*((0.5+0.5*tanh(10*(mdl.z_Ol[i,2]-ey_max))) + (0.5-0.5*tanh(10*(mdl.z_Ol[i,2]+ey_max)))),i=1:N+1})
+   
     # Control Input cost
     # ---------------------------------
     @NLexpression(mdl.mdl, controlCost, 0.5*sum{R[j]*sum{(mdl.u_Ol[i,j]-u_Ref[i,j])^2,i=1:N},j=1:2})
@@ -118,6 +118,7 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
     println("pure solver time: $ttt")
     println("Predicting until s = $(sol_z[end,1])") #?? predicting until s = 
     #println("curvature = $(getvalue(mdl.c))")
+    mpcSol.ParInt = getvalue(mdl.ParInt)
 
     # COST PRINTS: ********************************************************
     # print("************************COSTS*****************")

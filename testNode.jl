@@ -61,7 +61,7 @@ function run_sim()
 
     #changeMetersforBARC
     posInfo.s_start             = 0.0 #?? should be changed probably in the localizeabs function
-    posInfo.s_target            = 25.2 #has to be fitted to track , current test track form ugo has 113.2 meters
+    posInfo.s_target            = 10.2 #has to be fitted to track , current test track form ugo has 113.2 meters
     trackCoeff.coeffCurvature   = [0.0;0.0;0.0;0.0;0.0]        # polynomial coefficients for curvature approximation (zeros for straight line)
     trackCoeff.nPolyCurvature = 4 # has to be 4 cannot be changed freely at the moment orders are still hardcoded in some parts of localizeVehicleCurvAbslizeVehicleCurvAbs
     trackCoeff.nPolyXY = 6  # has to be 6 cannot be changed freely at the moment orders are still hardcoded in some parts of localizeVehicleCurvAbslizeVehicleCurvAbs
@@ -70,6 +70,7 @@ function run_sim()
     u_final = zeros(1,2)::Array{Float64,2}
 
      #T
+    
     z_log = zeros(11,4,length(t))
     u_log = zeros(10,2,length(t))
     i_final= 100000000 # high value so real values will be smaller
@@ -83,6 +84,7 @@ function run_sim()
         zCurr_s                     = zeros(length(t)+1,4)          # s, ey, epsi, v
         zCurr_x                     = zeros(length(t)+1,4)          # x, y, psi, v
         uCurr       = zeros(length(t),2)
+        ParIntLog = zeros(length(t))
         #T
       
         #setup point for vehicle on track in first round. gets overwritten in other rounds
@@ -105,11 +107,11 @@ function run_sim()
 
         i = 1
         while i<=length(t) && !finished # as long as we have not reached the maximal iteration time for one round or ended the round? #?? error if i > length(t)?
-            #!! set coeff according to a track elsewhere
+        
            
-            #!!todo func z curr oaut of xy
+            
             # to make it work s start has to grow over time actual it is just always at 0
-           #!!see what is defined in mpc params arguments vall there?
+       
              # the argument i in localizeVehicleCurvAbs  is solely used for debugging purposes plots not needed for control
             zCurr_s[i,:], trackCoeff.coeffCurvature = localizeVehicleCurvAbs(zCurr_x[i,:],x_track,y_track,trackCoeff, i)
             #if the car has crossed the finish line
@@ -133,17 +135,18 @@ function run_sim()
             
             tic()
 	      
-          #!!solve with zCurr_s containing s ey values 
+          #solve with zCurr_s containing s ey values 
             
             solveMpcProblem(mdl,mpcSol,mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr_s[i,:]',uCurr[i,:]')
         
                 
             tt[i]       = toq()
             cost[i,:]   = mpcSol.cost
+            ParIntLog[i] = mpcSol.ParInt[1]
             uCurr[i,:]  = [mpcSol.a_x mpcSol.d_f]
             z_log[:,:,i] = mpcSol.z
             u_log[:,:,i] = mpcSol.u
-            #!!todo sim model with xy cur
+          
             #have Zcurr as states XY and simulate from there return XY values of states 
             zCurr_x[i+1,:]  = simModel_x(zCurr_x[i,:],uCurr[i,:],modelParams.dt,modelParams) #!! @show
             println("Solving step $i of $(length(t)) - Status: $(mpcSol.solverStatus), Time: $(tt[i]) s")
@@ -252,6 +255,13 @@ function run_sim()
 
         if j >= 2
             
+            if j >= 3
+                figure(7)
+                clf()
+                plot(t,ParIntLog)
+                xlabel("t in [s]")
+                ylabel("ParInt")
+            end
             for i = 1:i_final
 
                 figure(4)   

@@ -105,7 +105,7 @@ function localizeVehicleCurvAbs(states_x,x_track,y_track,TrackCoeff, itercount)
 
     # Evaluate all points to find the current s cloesest to vehicle
 
-    #!! this is only correct if the car is at a as greater 30  we need to adjust a if statement
+   
     if s_nearest >= ds
         S_Value = zeros(0:Discretization:2*ds) #create an vector for the elements 1 meter before and after the nearest point of the track 
         DistanceNew = zeros(0:Discretization:2*ds)
@@ -151,7 +151,7 @@ function localizeVehicleCurvAbs(states_x,x_track,y_track,TrackCoeff, itercount)
   
 
     # from the evaluated points get the best as [s, y] ---> use the as Feedback
-    #!!@show 
+    #@show 
     eyabs, idx_min_Dist = findmin(DistanceNew)
 
     # Extract the current s
@@ -189,7 +189,7 @@ function localizeVehicleCurvAbs(states_x,x_track,y_track,TrackCoeff, itercount)
         for i = 1:OrderXY+1
                 s_vec[i] =s^(OrderXY+1-i)
                 s0_vec[i] =s0^(OrderXY+1-i)
-               #sdot_vec = (OrderXY+1-i)*s^(OrderXY-i) #!!!problems with NaN last i  gives 0 *Inf =NaN
+               #sdot_vec = (OrderXY+1-i)*s^(OrderXY-i) #this calucaltion does not work: problems with NaN last i  gives 0 *Inf =NaN
         end
         sdot_vec = [6*s^5 5*s^4 4*s^3 3*s^2 2*s^1 1 0]'
 
