@@ -38,26 +38,31 @@ function saveOldTraj(oldTraj::OldTrajectory,zCurr::Array{Float64}, zCurr_x::Arra
     
 end
 
-function InitializeModel(m::MpcModel,mpcParams::MpcParams,modelParams::ModelParams,trackCoeff::TrackCoeff,z_Init::Array{Float64,1})
+function InitializeModel(m::MpcModel,mpcParams::MpcParams,modelParams::ModelParams,trackCoeff::TrackCoeff,z_Init::Array{Float64,1}, obstacle::Obstacle)
 
-    dt   = modelParams.dt
-    L_a  = modelParams.l_A
-    L_b  = modelParams.l_B
-    c0   = modelParams.c0
-    u_lb = modelParams.u_lb
-    u_ub = modelParams.u_ub
-    z_lb = modelParams.z_lb
-    z_ub = modelParams.z_ub
+    dt        = modelParams.dt
+    L_a       = modelParams.l_A
+    L_b       = modelParams.l_B
+    c0        = modelParams.c0
+    u_lb      = modelParams.u_lb
+    u_ub      = modelParams.u_ub
+    z_lb      = modelParams.z_lb
+    z_ub      = modelParams.z_ub
+    s_obst    = obstacle.s_obstacle
+    sy_obst    = obstacle.sy_obstacle
 
-    N    = mpcParams.N
+    N         = mpcParams.N
 
     n_poly_curv = trackCoeff.nPolyCurvature         # polynomial degree of curvature approximation
     
-    m.mdl = Model(solver = IpoptSolver(print_level=0,max_cpu_time=0.8))#,linear_solver="ma57",print_user_options="yes"))
+    m.mdl = Model(solver = IpoptSolver(print_level=0, max_cpu_time=0.08))#,linear_solver="ma57",max_iter=500, print_user_options="yes",max_cpu_time=2.0,))
 
     @variable( m.mdl, m.z_Ol[1:(N+1),1:4])      # z = s, ey, epsi, v
     @variable( m.mdl, m.u_Ol[1:N,1:2])          #?? different dim then in classes.jl?
     @variable( m.mdl, 0 <= m.ParInt[1:1] <= 1)
+
+    #!!
+    #@variable( m.mdl, m.t[1:N+1])
 
     for i=1:2       # I don't know why but somehow the short method returns errors sometimes #?? short method
         for j=1:N
@@ -76,9 +81,11 @@ function InitializeModel(m::MpcModel,mpcParams::MpcParams,modelParams::ModelPara
     @NLparameter(m.mdl, m.z0[i=1:4] == z_Init[i])
     @NLconstraint(m.mdl, [i=1:4], m.z_Ol[1,i] == m.z0[i])
 
-
-    #!! object constraint
-    @NLconstraint(m.mdl, [i=1:2], m.z_Ol[1,i] == m.z0[i])
+   
+    #!! object avoidance constraint
+    # set s and y obst as nlparamter
+    #@NLconstraint(m.mdl, [i=1:N+1], ((m.z_Ol[i,1]-s_obst)/0.3)^2+((m.z_Ol[i,2]-sy_obst)/0.2)^2 == 1+m.t[i]^2)
+   #1/m.t
 
     @NLparameter(m.mdl, m.coeff[i=1:n_poly_curv+1] == trackCoeff.coeffCurvature[i])
 
@@ -106,7 +113,7 @@ function InitializeParameters(mpcParams::MpcParams,trackCoeff::TrackCoeff,modelP
                                 posInfo::PosInfo,oldTraj::OldTrajectory,mpcCoeff::MpcCoeff,lapStatus::LapStatus,buffersize::Int64)
     mpcParams.N                 = 10                        #lenght of prediction horizon
     mpcParams.nz                = 4                         #number of States
-    mpcParams.Q                 = [0.0,10.0,1.0,1.0]  #0 10 0 1    # put weights on ey, epsi and v, just for first round of PathFollowing
+    mpcParams.Q                 = [0.0,10.0,1.0,5.0]  #0 10 0 1    # put weights on ey, epsi and v, just for first round of PathFollowing
     mpcParams.Q_term            = 100*[1.0,1.0,0.1]           # weights for terminal constraints (LMPC, for e_y, e_psi, and v)
     mpcParams.Q_cost            = 0.04
     mpcParams.R                 = 0*[1.0,1.0]             # put weights on a and d_f

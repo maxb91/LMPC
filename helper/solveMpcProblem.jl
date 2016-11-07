@@ -7,7 +7,7 @@
 # i = 3 -> epsi
 # i = 4 -> v
 
-function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcParams::MpcParams,trackCoeff::TrackCoeff,lapStatus::LapStatus,posInfo::PosInfo,modelParams::ModelParams,zCurr::Array{Float64},uCurr::Array{Float64})
+function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcParams::MpcParams,trackCoeff::TrackCoeff,lapStatus::LapStatus,posInfo::PosInfo,modelParams::ModelParams,zCurr::Array{Float64},uCurr::Array{Float64},  obstacle::Obstacle)
 
     # Load Parameters
     coeffCurvature  = trackCoeff.coeffCurvature::Array{Float64,1}
@@ -22,6 +22,12 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
     s_start         = posInfo.s_start
     s_target        = posInfo.s_target
     ey_max          = trackCoeff.width/2
+
+    s_obst     = obstacle.s_obstacle
+    sy_obst    = obstacle.sy_obstacle
+    rs  = obstacle.rs
+    ry  = obstacle.ry
+
 
     QderivZ         = mpcParams.QderivZ::Array{Float64,1}
     QderivU         = mpcParams.QderivU::Array{Float64,1}
@@ -57,6 +63,7 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
     @NLexpression(mdl.mdl, constZTerm,  0)
     @NLexpression(mdl.mdl, derivCost,   0)
     @NLexpression(mdl.mdl, laneCost,    0)
+    @NLexpression(mdl.mdl, costObstacle,    0)
 
     #n_poly_curv = trackCoeff.nPolyCurvature 
         #@NLexpression(mdl.mdl, mdl.c[i = 1:N],    sum{mdl.coeff[j]*(mdl.z_Ol[i,1]-s_start)^(n_poly_curv-j+1),j=1:n_poly_curv} + mdl.coeff[n_poly_curv+1])
@@ -105,7 +112,9 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
         @NLexpression(mdl.mdl, costZ, 1)
     end
    
-    @NLobjective(mdl.mdl, Min, costZ + costZTerm + constZTerm + derivCost + controlCost + laneCost)
+    @NLexpression(mdl.mdl, costObstacle, sum{0.02*1/(0.1+ ( (mdl.z_Ol[i,1]-s_obst)/rs )^2 + ( (mdl.z_Ol[i,2]-sy_obst)/ry )^2 - 1 )^2,i=1:N+1})
+
+    @NLobjective(mdl.mdl, Min, costZ + costZTerm + constZTerm + derivCost + controlCost + laneCost + costObstacle)
 
     #println("Model formulation:")
     #println(mdl.mdl)
@@ -115,10 +124,14 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
     ttt= toq()
     sol_u       = getvalue(mdl.u_Ol)
     sol_z       = getvalue(mdl.z_Ol)
-    println("pure solver time: $ttt")
-    println("Predicting until s = $(sol_z[end,1])") #?? predicting until s = 
-    #println("curvature = $(getvalue(mdl.c))")
     mpcSol.ParInt = getvalue(mdl.ParInt)
+
+
+    #println("pure solver time: $ttt")
+    #println("Predicting until s = $(sol_z[end,1])") #?? predicting until s = 
+    #println("curvature = $(getvalue(mdl.c))")
+    
+
 
     # COST PRINTS: ********************************************************
     # print("************************COSTS*****************")
@@ -147,8 +160,10 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
     mpcSol.u   = sol_u
     mpcSol.z   = sol_z
     mpcSol.solverStatus = sol_status
-    mpcSol.cost = zeros(6)
-    mpcSol.cost = [getvalue(costZ),getvalue(costZTerm),getvalue(constZTerm),getvalue(derivCost),getvalue(controlCost),getvalue(laneCost)]
+    mpcSol.cost = zeros(7)
+    mpcSol.cost = [getvalue(costZ),getvalue(costZTerm),getvalue(constZTerm),getvalue(derivCost),getvalue(controlCost),getvalue(laneCost), getvalue(costObstacle)]
+    
+
     #mpcSol = MpcSol(sol_u[1,1],sol_u[2,1]) # Fast version without logging
     #println(getvalue(costZTerm))
     #println(getvalue(mdl.z_Ol[1,N+1]))

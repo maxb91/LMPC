@@ -61,6 +61,18 @@ type MpcSol             # MPC solution output
     MpcSol(a_x=0.0,d_f=0.0,solverStatus=Symbol(),u=Float64[],z=Float64[], ParInt= Float64[],cost=Float64[]) = new(a_x,d_f,solverStatus,u,z,ParInt,cost)
 end
 
+type Obstacle
+    x_obstacle::Float64
+    xy_obstacle::Float64
+    s_obstacle::Float64
+    sy_obstacle::Float64
+    rs::Float64
+    ry::Float64
+    index:: Int64
+    xy_vector::Array{Float64,1}
+    Obstacle(x_obstacle = 0.0, xy_obstacle =0.0, s_obstacle = 0.0, sy_obstacle = 0.0, rs = 0.0, ry = 0.0, index = 1, xy_vector=Float64[])= new(x_obstacle, xy_obstacle,s_obstacle,sy_obstacle,rs,ry,index, xy_vector)
+end
+
 type TrackCoeff         # coefficients of track
     coeffAngle::Array{Float64,1}
     coeffCurvature::Array{Float64,1}
@@ -93,6 +105,7 @@ type MpcModel
     z_Ol::Array{JuMP.Variable,2}
     u_Ol::Array{JuMP.Variable,2}
     ParInt::Array{JuMP.Variable,1}
+    #t::Array{JuMP.Variable,1}
 
     dsdt::Array{JuMP.NonlinearExpression,1}
     bta::Array{JuMP.NonlinearExpression,1}
@@ -105,6 +118,7 @@ type MpcModel
                 z_Ol=@variable(mdl,[1:11, 1:4]),
                 u_Ol=@variable(mdl,[1:10, 1:2]),
                 ParInt=@variable(mdl,[1:1]),
+                #t=@variable(mdl,[1:11]),
                 dsdt=@NLexpression(mdl,dsdt[1:10],0), #?? ,0
                 bta=@NLexpression(mdl,bta[1:10],0),
                 c=@NLexpression(mdl,c[1:10],0)) = new(mdl,
@@ -114,6 +128,7 @@ type MpcModel
                                                         z_Ol,
                                                         u_Ol,
                                                         ParInt,
+                                                        #t,
                                                         dsdt,
                                                         bta,
                                                         c)
