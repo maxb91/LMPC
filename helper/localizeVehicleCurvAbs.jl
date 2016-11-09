@@ -1,11 +1,11 @@
-function localizeVehicleCurvAbs(states_x,x_track,y_track,TrackCoeff, itercount)
+function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64},y_track::Array{Float64},trackCoeff::TrackCoeff, itercount::Int64)
     # Outputs: zCurr_s, coeffCurv 
     # zCurr_s = [s, ey, epsi, states_x[4]]
     # itercount is solely used for debugging purposes plots
 
-    OrderXY = TrackCoeff.nPolyXY
-    OrderThetaCurv = TrackCoeff.nPolyCurvature
-    ds = TrackCoeff.ds
+    OrderXY = trackCoeff.nPolyXY
+    OrderThetaCurv = trackCoeff.nPolyCurvature
+    ds = trackCoeff.ds
 
     # grab current states of the vehicle
     x       = states_x[1]
@@ -44,7 +44,7 @@ function localizeVehicleCurvAbs(states_x,x_track,y_track,TrackCoeff, itercount)
     N_nodes_center  = size(nodes_center,2) # how many nodes define the track 
 
     if idx_min <= N_nodes_poly_back #if the nearest point is less meters away from the start of the track then we need to change the structure and interpolate just from 1 to the future
-        ind_start   = 1     #this has to be tested at the moment we just start at s= 30 to prevetn this part
+        ind_start   = 1  #!!sometimes cars turns weird at start hasnt found optimal solution maybe interpolation plays a role in this
         ind_end     = nPoints+1
         nodes_near = nodes_center[:,ind_start:ind_end]
     elseif idx_min+N_nodes_poly_front>= N_nodes_center
@@ -109,7 +109,7 @@ function localizeVehicleCurvAbs(states_x,x_track,y_track,TrackCoeff, itercount)
     if s_nearest >= ds
         S_Value = zeros(0:Discretization:2*ds) #create an vector for the elements 1 meter before and after the nearest point of the track 
         DistanceNew = zeros(0:Discretization:2*ds)
-        for j=(s_nearest-ds):Discretization:(s_nearest+ds) #?? j between 29 and 31 should be between idx_min+-1?
+        for j=(s_nearest-ds):Discretization:(s_nearest+ds) 
             # j does not stand for the id of the node but for the length of s in meters so j = 29 means node number 30
             for i = 1:OrderXY+1
                 j_vec[i] =j^(OrderXY+1-i)
@@ -128,7 +128,7 @@ function localizeVehicleCurvAbs(states_x,x_track,y_track,TrackCoeff, itercount)
     else # just active while the car is nearest to the starting point as we cannot evaluate functon for negative s
         S_Value = zeros(0:Discretization:1*ds) #create an vector for the elements 1 after the nearest point of the track 
         DistanceNew = zeros(0:Discretization:1*ds)
-        for j=s_nearest:Discretization:(s_nearest+ds) #?? j between 29 and 31 should be between idx_min+-1?
+        for j=s_nearest:Discretization:(s_nearest+ds) 
             # j does not stand for the id of the node but for the length of s in meters so j = 29 means node number 30
             for i = 1:OrderXY+1
                 j_vec[i] =j^(OrderXY+1-i)
@@ -157,7 +157,7 @@ function localizeVehicleCurvAbs(states_x,x_track,y_track,TrackCoeff, itercount)
     # Extract the current s
     s=S_Value[idx_min_Dist] #s is always between 29 and 31 have to ad s start for real position
 
-    # Find the sign of ey #?? how does this work?
+    # Find the sign of ey
     if s >= 0.01*ds
         s0 = s-0.01*ds
         s0_vec = zeros(OrderXY+1,1)
@@ -208,7 +208,7 @@ function localizeVehicleCurvAbs(states_x,x_track,y_track,TrackCoeff, itercount)
 
     ey = eyabs*sign(sin(xyVectorAngle-xyPathAngle))
 
-    #T Calcuate the error due to the conversion in the curvilinear abscissa #?? what does it do and how
+    #T Calcuate the error due to the conversion in the curvilinear abscissa
     # yBack = YCurve + ey*cos(xyPathAngle)
     # xBack = XCurve - ey*sin(xyPathAngle)
     # Error = sqrt((y-yBack)^2 + (x-xBack)^2)
@@ -242,24 +242,24 @@ function localizeVehicleCurvAbs(states_x,x_track,y_track,TrackCoeff, itercount)
 
         psi
         if Counter > 1 #what do we do here? do we normalize angle when we drive against "Lane direction"
-            DummyVar = angle-(b_theta_vector[Counter-1,1]) #?? angle(1)
+            DummyVar = angle-(b_theta_vector[Counter-1,1]) 
             if (DummyVar > pi)
                 angle = angle - 2*pi
             elseif DummyVar < -pi
                 angle = angle + 2*pi
             end
         else
-            if (angle-psi) > pi #?? angle(1)
-                angle = angle - 2*pi #?? angle(1)
-            elseif (angle-psi) < -pi #?? angle(1)
-                angle = angle + 2*pi #?? angle(1)
+            if (angle-psi) > pi
+                angle = angle - 2*pi
+            elseif (angle-psi) < -pi 
+                angle = angle + 2*pi 
             end
         end
             
-        b_theta_vector[Counter,1] = angle #?? angle(1)
+        b_theta_vector[Counter,1] = angle 
             
         curvature = (dX*ddY-dY*ddX)/(dX^2+dY^2)^(3/2) #standard curvature formula
-        b_curvature_vector[Counter,1] = curvature #?? curvature(1)
+        b_curvature_vector[Counter,1] = curvature
            
         Counter = Counter + 1
     end
@@ -301,14 +301,14 @@ function localizeVehicleCurvAbs(states_x,x_track,y_track,TrackCoeff, itercount)
     #####endT
 
 
-    XConvertedBackS=coeffX'*[s^6 s^5 s^4 s^3 s^2 s 1]' #?? what means convertedbackS?
+    XConvertedBackS=coeffX'*[s^6 s^5 s^4 s^3 s^2 s 1]' 
     YConvertedBackS=coeffY'*[s^6 s^5 s^4 s^3 s^2 s 1]'   
         
-    angle=coeffTheta'*[s^4 s^3 s^2 s 1]'; #Make the sketch to understand why #??
+    angle=coeffTheta'*[s^4 s^3 s^2 s 1]'; #Make the sketch to understand why 
 
         
 
-    XConvertedBack = XConvertedBackS - sin(angle)*ey #??
+    XConvertedBack = XConvertedBackS - sin(angle)*ey 
     YConvertedBack = YConvertedBackS + cos(angle)*ey
     ErrorConvertedBack = sqrt((x-XConvertedBack[1])^2+((y-YConvertedBack[1])^2))
         
@@ -326,7 +326,7 @@ function localizeVehicleCurvAbs(states_x,x_track,y_track,TrackCoeff, itercount)
 
     epsi = psi - angle
 
-    if abs(epsi)>(pi/2)#?? what do we normalize?
+    if abs(epsi)>(pi/2)
         if epsi<(pi/2)
             epsi = psi - (angle - 2*pi)  
         else

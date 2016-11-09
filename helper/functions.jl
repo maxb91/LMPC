@@ -9,9 +9,8 @@ function saveOldTraj(oldTraj::OldTrajectory,zCurr::Array{Float64}, zCurr_x::Arra
 
     #we just take i-1 beacuse the last s value is already the begining ogf the new round and we jsut coun from 0 <= s < s_target
     #why bufferisze because length t is not in ros 
-    #why do we need the extrapolated values to use them for the mpc if we are close to the finish line in the foloowing round
-    zCurr_export    = cat(1,zCurr[1:i-1,:], [zCurr[i-1,1]+collect(1:buffersize-i+1)*dt*zCurr[i-1,4] ones(buffersize-i+1,1)*zCurr[i-1,2:4]']) #?? werte nach zeillinie wofür? doppelt beschriebB?
-    uCurr_export    = cat(1,uCurr[1:i-1,:], zeros(buffersize-i+1,2)) #?? do we need the i-1 we alredy counted it down outisde the loop should just be i ?
+    zCurr_export    = cat(1,zCurr[1:i-1,:], [zCurr[i-1,1]+collect(1:buffersize-i+1)*dt*zCurr[i-1,4] ones(buffersize-i+1,1)*zCurr[i-1,2:4]']) # extrapolate values for after the finish line so that the old trjectory has feasible vlaues for the interpolation in the next round 
+    uCurr_export    = cat(1,uCurr[1:i-1,:], zeros(buffersize-i+1,2)) # we need the i-1 as we do not want to keep the last vlaues which is s >= s_target
     costLap         = lapStatus.currentIt               # the cost of the current lap is the time it took to reach the finish line
     
     # Save all data in oldTrajectory:
@@ -55,16 +54,16 @@ function InitializeModel(m::MpcModel,mpcParams::MpcParams,modelParams::ModelPara
 
     n_poly_curv = trackCoeff.nPolyCurvature         # polynomial degree of curvature approximation
     
-    m.mdl = Model(solver = IpoptSolver(print_level=0, max_cpu_time=0.08))#,linear_solver="ma57",max_iter=500, print_user_options="yes",max_cpu_time=2.0,))
+    m.mdl = Model(solver = IpoptSolver(print_level=0))#, max_cpu_time=0.08))#,linear_solver="ma57",max_iter=500, print_user_options="yes",max_cpu_time=2.0,))
 
     @variable( m.mdl, m.z_Ol[1:(N+1),1:4])      # z = s, ey, epsi, v
-    @variable( m.mdl, m.u_Ol[1:N,1:2])          #?? different dim then in classes.jl?
+    @variable( m.mdl, m.u_Ol[1:N,1:2])          # overwrtie dim of in classes.jl?
     @variable( m.mdl, 0 <= m.ParInt[1:1] <= 1)
 
     #!!
     #@variable( m.mdl, m.t[1:N+1])
 
-    for i=1:2       # I don't know why but somehow the short method returns errors sometimes #?? short method
+    for i=1:2       # I don't know why but somehow the short method returns errors sometimes
         for j=1:N
             setlowerbound(m.u_Ol[j,i], modelParams.u_lb[j,i])
             setupperbound(m.u_Ol[j,i], modelParams.u_ub[j,i])
@@ -91,7 +90,7 @@ function InitializeModel(m::MpcModel,mpcParams::MpcParams,modelParams::ModelPara
 
 
     #@NLexpression(m.mdl, m.c[i = 1:N],    m.coeff[1]*m.z_Ol[1,i]^4+m.coeff[2]*m.z_Ol[1,i]^3+m.coeff[3]*m.z_Ol[1,i]^2+m.coeff[4]*m.z_Ol[1,i]+m.coeff[5])
-    @NLexpression(m.mdl, m.c[i = 1:N],    sum{m.coeff[j]*m.z_Ol[i,1]^(n_poly_curv-j+1),j=1:n_poly_curv} + m.coeff[n_poly_curv+1]) #??  last value x^0  poly to appxo cuvature syntax? what is this,approx of states?
+    @NLexpression(m.mdl, m.c[i = 1:N],    sum{m.coeff[j]*m.z_Ol[i,1]^(n_poly_curv-j+1),j=1:n_poly_curv} + m.coeff[n_poly_curv+1]) 
     @NLexpression(m.mdl, m.bta[i = 1:N],  atan( L_a / (L_a + L_b) * tan(m.u_Ol[i,2]) ) )
     @NLexpression(m.mdl, m.dsdt[i = 1:N], m.z_Ol[i,4]*cos(m.z_Ol[i,3]+m.bta[i])/(1-m.z_Ol[i,2]*m.c[i]))
     # System dynamics
@@ -110,10 +109,10 @@ function InitializeModel(m::MpcModel,mpcParams::MpcParams,modelParams::ModelPara
 end
 
 function InitializeParameters(mpcParams::MpcParams,trackCoeff::TrackCoeff,modelParams::ModelParams,
-                                posInfo::PosInfo,oldTraj::OldTrajectory,mpcCoeff::MpcCoeff,lapStatus::LapStatus,buffersize::Int64)
+                                posInfo::PosInfo,oldTraj::OldTrajectory,mpcCoeff::MpcCoeff,lapStatus::LapStatus,obstacle::Obstacle,buffersize::Int64)
     mpcParams.N                 = 10                        #lenght of prediction horizon
     mpcParams.nz                = 4                         #number of States
-    mpcParams.Q                 = [0.0,10.0,1.0,5.0]  #0 10 0 1    # put weights on ey, epsi and v, just for first round of PathFollowing
+    mpcParams.Q                 = [0.0,10.0,1.0,20.0]  #0 10 0 1    # put weights on ey, epsi and v, just for first round of PathFollowing
     mpcParams.Q_term            = 100*[1.0,1.0,0.1]           # weights for terminal constraints (LMPC, for e_y, e_psi, and v)
     mpcParams.Q_cost            = 0.04
     mpcParams.R                 = 0*[1.0,1.0]             # put weights on a and d_f
@@ -124,13 +123,12 @@ function InitializeParameters(mpcParams::MpcParams,trackCoeff::TrackCoeff,modelP
     trackCoeff.nPolyCurvature   = 4                       # 4th order polynomial for curvature approximation
     trackCoeff.coeffCurvature   = zeros(trackCoeff.nPolyCurvature+1)         # polynomial coefficients for curvature approximation (zeros for straight line)
     trackCoeff.width            = 0.6                   # width of the track (0.6m)
-    trackCoeff.ds               =1//10 # is defined as a rational number so we can use it to calculate indices in matrix. with float becomes error
+    trackCoeff.ds               = 1//10 # is defined as a rational number so we can use it to calculate indices in matrix. with float becomes error
 
     modelParams.u_lb            = ones(mpcParams.N,1) * [-1.0  -pi/6]                    # lower bounds on steering
-    modelParams.u_ub            = ones(mpcParams.N,1) * [1.0  pi/6]       #1.2           # upper bounds
-    modelParams.z_lb            = ones(mpcParams.N+1,1)*[-Inf -Inf -Inf -0.1]                    # lower bounds on states
-    #changeMetersforBARC
-    modelParams.z_ub            = ones(mpcParams.N+1,1)*[ Inf  Inf  Inf  2.0]                 # upper bounds
+    modelParams.u_ub            = ones(mpcParams.N,1) * [ 1.0   pi/6]       #1.2           # upper bounds
+    modelParams.z_lb            = ones(mpcParams.N+1,1) * [-Inf -Inf -Inf -0.1]                    # lower bounds on states
+    modelParams.z_ub            = ones(mpcParams.N+1,1) * [ Inf  Inf  Inf  2.0]                 # upper bounds
     modelParams.l_A             = 0.125
     modelParams.l_B             = 0.125 #0.125
 
@@ -153,4 +151,15 @@ function InitializeParameters(mpcParams::MpcParams,trackCoeff::TrackCoeff,modelP
 
     lapStatus.currentLap        = 1         # initialize lap number
     lapStatus.currentIt         = 0         # current iteration in lap #?? why not 1?
+
+    obstacle.s_obstacle = zeros(buffersize)
+    obstacle.sy_obstacle = zeros(buffersize)
+    obstacle.rs = 0
+    obstacle.ry = 0
+    obstacle.index = zeros(buffersize)
+    obstacle.xy_vector = zeros(buffersize,2)
+    obstacle.axis_y_up = zeros(buffersize,2)
+    obstacle.axis_y_down = zeros(buffersize,2)
+    obstacle.axis_s_up = zeros(buffersize,2)
+    obstacle.axis_s_down = zeros(buffersize,2)
 end

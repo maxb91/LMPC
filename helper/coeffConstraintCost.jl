@@ -9,7 +9,7 @@
 
 # structure of oldTrajectory: 1st dimension = state number, 2nd dimension = step number (time equiv.), 3rd dimennsion = lap number
 
-function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo::PosInfo, mpcParams::MpcParams)
+function coeffConstraintCost!(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo::PosInfo, mpcParams::MpcParams)
     # this computes the coefficients for the cost and constraints
 
     # Outputs: 
@@ -18,7 +18,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
 
     # Read Inputs
     s_start         = posInfo.s_start #currently start alqys 0 , normally start current postion and s till beginn of pred horizon
-    s               = posInfo.s #?? current meter on track? what is s_start?
+    s               = posInfo.s 
     s_target        = posInfo.s_target
 
 
@@ -79,8 +79,8 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     # The states are parametrized with resprect to the curvilinear abscissa,
     # so we select the point used for the interpolation. Need to subtract an
     # offset to be coherent with the MPC formulation
-    s_forinterpy   = bS_Vector - s_start #?? s_start moves to zcurr at each sim? doesnt this always create a vector with s_forinterpy =
-    if s_total - s_start < 0 #?? what is s_total
+    s_forinterpy   = bS_Vector - s_start 
+    if s_total - s_start < 0
         s_forinterpy += s_target
     end
     # println("s_forinterpy[:,1,1]' = $(s_forinterpy[:,1,1]')")
@@ -91,7 +91,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
         MatrixInterp[:,Order+1-k,:] = s_forinterpy[:,:].^k
     end
     # Compute the constraint coefficients for both old trajectories
-    #?? this is used to calculate the values of ey epsi and v to be reached which lie on the safe set. all values of s can be introduced for different i ?
+    
     coeffConst = zeros(Order+1,2,3)
 
     for i=1:2
@@ -112,7 +112,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     for i=1:2   
         # in this part we construct a polynomial for the cost associated at each s value. the s value at the curent postion is used to calculate the cost of the old round at this postion
         #we know that each following s has a cost value which is exactl 1 less thne the one before. so we can easiyl do the least squares to get the coeficients for approximation
-        iter_to_s_target  = oldTraj.oldCost[i] - (idx_s[i]-N_points*(i-1))  # number of iterations from idx_s to s_target #?? this has sth todo with the count in the array as we look at values in second row
+        iter_to_s_target  = oldTraj.oldCost[i] - (idx_s[i]-N_points*(i-1))  # number of iterations from idx_s to s_target, this has sth todo with the count in the array as we look at values in second row
         bQfunction_Vector = collect(linspace(iter_to_s_target,iter_to_s_target-pLength,pLength+1))    # build a vector that starts at the distance and decreases in equal steps
         coeffCost[:,i]    = MatrixInterp[:,:,i]\bQfunction_Vector           # interpolate this vector with the given s
     end

@@ -58,19 +58,21 @@ type MpcSol             # MPC solution output
     z::Array{Float64}
     ParInt::Array{Float64}
     cost::Array{Float64}
-    MpcSol(a_x=0.0,d_f=0.0,solverStatus=Symbol(),u=Float64[],z=Float64[], ParInt= Float64[],cost=Float64[]) = new(a_x,d_f,solverStatus,u,z,ParInt,cost)
+    MpcSol(a_x=0.0, d_f=0.0, solverStatus=Symbol(), u=Float64[], z=Float64[], ParInt= Float64[],cost=Float64[]) = new(a_x,d_f,solverStatus,u,z,ParInt,cost)
 end
 
 type Obstacle
-    x_obstacle::Float64
-    xy_obstacle::Float64
-    s_obstacle::Float64
-    sy_obstacle::Float64
+    s_obstacle::Array{Float64,1}
+    sy_obstacle::Array{Float64,1}
     rs::Float64
     ry::Float64
-    index:: Int64
-    xy_vector::Array{Float64,1}
-    Obstacle(x_obstacle = 0.0, xy_obstacle =0.0, s_obstacle = 0.0, sy_obstacle = 0.0, rs = 0.0, ry = 0.0, index = 1, xy_vector=Float64[])= new(x_obstacle, xy_obstacle,s_obstacle,sy_obstacle,rs,ry,index, xy_vector)
+    index::Array{Int64,1} #!!currently not used , if that stay like this delete it
+    xy_vector::Array{Float64}
+    axis_y_up::Array{Float64}
+    axis_y_down::Array{Float64}
+    axis_s_up::Array{Float64}
+    axis_s_down::Array{Float64}
+    Obstacle(s_obstacle = Float64[], sy_obstacle = Float64[], rs = 0.0, ry = 0.0, index=Int64[], xy_vector=Float64[], axis_y_up=Float64[], axis_y_down=Float64[], axis_s_up=Float64[], axis_s_down=Float64[])= new(s_obstacle,sy_obstacle,rs,ry,index, xy_vector,axis_y_up, axis_y_down, axis_s_up, axis_s_down)
 end
 
 type TrackCoeff         # coefficients of track
@@ -112,14 +114,14 @@ type MpcModel
     c::Array{JuMP.NonlinearExpression,1}
 
     MpcModel(mdl=JuMP.Model(),
-                z0=@NLparameter(mdl,z0[i=1:4]==0), #?? ==
+                z0=@NLparameter(mdl,z0[i=1:4]==0),
                 coeff=@NLparameter(mdl,coeff[i=1:5]==0),
                 #s_startC=@NLparameter(mdl, s_startC==0),
                 z_Ol=@variable(mdl,[1:11, 1:4]),
                 u_Ol=@variable(mdl,[1:10, 1:2]),
                 ParInt=@variable(mdl,[1:1]),
                 #t=@variable(mdl,[1:11]),
-                dsdt=@NLexpression(mdl,dsdt[1:10],0), #?? ,0
+                dsdt=@NLexpression(mdl,dsdt[1:10],0), 
                 bta=@NLexpression(mdl,bta[1:10],0),
                 c=@NLexpression(mdl,c[1:10],0)) = new(mdl,
                                                         z0,

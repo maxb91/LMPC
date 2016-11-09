@@ -7,7 +7,7 @@
 # i = 3 -> epsi
 # i = 4 -> v
 
-function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcParams::MpcParams,trackCoeff::TrackCoeff,lapStatus::LapStatus,posInfo::PosInfo,modelParams::ModelParams,zCurr::Array{Float64},uCurr::Array{Float64},  obstacle::Obstacle)
+function solveMpcProblem!(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcParams::MpcParams,trackCoeff::TrackCoeff,lapStatus::LapStatus,posInfo::PosInfo,modelParams::ModelParams,zCurr::Array{Float64},uCurr::Array{Float64}, obstacle::Obstacle, iter::Int64)
 
     # Load Parameters
     coeffCurvature  = trackCoeff.coeffCurvature::Array{Float64,1}
@@ -23,10 +23,10 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
     s_target        = posInfo.s_target
     ey_max          = trackCoeff.width/2
 
-    s_obst     = obstacle.s_obstacle
-    sy_obst    = obstacle.sy_obstacle
-    rs  = obstacle.rs
-    ry  = obstacle.ry
+    s_obst     = obstacle.s_obstacle[iter]
+    sy_obst    = obstacle.sy_obstacle[iter]
+    rs         = obstacle.rs
+    ry         = obstacle.ry
 
 
     QderivZ         = mpcParams.QderivZ::Array{Float64,1}
@@ -34,7 +34,7 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
 
     v_ref           = mpcParams.vPathFollowing
 
-   local sol_u::Array{Float64,2} #??
+   local sol_u::Array{Float64,2} 
    local sol_z::Array{Float64,2}
 
     # println("************************************** MPC SOLVER **************************************")
@@ -81,8 +81,9 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
     @NLexpression(mdl.mdl, controlCost, 0.5*sum{R[j]*sum{(mdl.u_Ol[i,j]-u_Ref[i,j])^2,i=1:N},j=1:2})
 
 
-    #?? write down the cost funciton here to be clear what they mean
-    # Terminal constraints (soft), starting from 2nd lap #?? explain diff between terminal contrains and cost, cost is Q function?constraitns force to be on ss but how?
+
+    # Terminal constraints (soft), starting from 2nd lap
+    #constraints force trajectory to end up on ss
     # ---------------------------------
     if lapStatus.currentLap > 2    # if at least in the 3rd lap, as of the third round we have two old trajectories between which we can interpolate
         @NLexpression(mdl.mdl, constZTerm, (sum{Q_term[j]*(mdl.ParInt[1]*sum{coeffTermConst[i,1,j]*mdl.z_Ol[N+1,1]^(order+1-i),i=1:order+1}+
@@ -112,8 +113,12 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
         @NLexpression(mdl.mdl, costZ, 1)
     end
    
+
+    ## Cost to avoid obstacle. increases when car is near obstacle currently implemented as : a *1/(0.1+cost)
     @NLexpression(mdl.mdl, costObstacle, sum{0.02*1/(0.1+ ( (mdl.z_Ol[i,1]-s_obst)/rs )^2 + ( (mdl.z_Ol[i,2]-sy_obst)/ry )^2 - 1 )^2,i=1:N+1})
 
+
+    #objective formulation, minimize the sum of all parts of the objective
     @NLobjective(mdl.mdl, Min, costZ + costZTerm + constZTerm + derivCost + controlCost + laneCost + costObstacle)
 
     #println("Model formulation:")
@@ -128,7 +133,7 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
 
 
     #println("pure solver time: $ttt")
-    #println("Predicting until s = $(sol_z[end,1])") #?? predicting until s = 
+    #println("Predicting until s = $(sol_z[end,1])") 
     #println("curvature = $(getvalue(mdl.c))")
     
 

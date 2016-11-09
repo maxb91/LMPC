@@ -10,6 +10,8 @@ include("helper/coeffConstraintCost.jl")
 include("helper/solveMpcProblem.jl")
 include("helper/simModel.jl")
 include("helper/localizeVehicleCurvAbs.jl")
+include("helper/computeObstaclePos.jl")
+include("helper/calculateObstacleXY.jl")
 
 #just loads one specified track with distances betwwen points =1 m and returnx x and y coordinatates
 println("loadMap.......")
@@ -21,9 +23,6 @@ println("loaded")
 #println("Loading and defining variables...")
 #include("helper/createModel.jl")
 
-# Initialize model by solving it once #?? why don do the initial solve?
-#println("Initial solve...")
-#solve(mdl)
 
 function run_sim()
     # DEFINE PARAMETERS
@@ -43,7 +42,7 @@ function run_sim()
     buffersize                  = 800
     close("all")
 
-    z_Init = zeros(4)# used in InitializeModel function
+    z_Init = zeros(4)# used in InitializeModel function not to setup problem
     z_Init[1] = 0 # x = 1.81 for s = 32     14 in curve
     z_Init[2] = 0# y = 2.505 for s = 32  12.6
     z_Init[3] = 0.94
@@ -51,32 +50,16 @@ function run_sim()
 
     
   
-    InitializeParameters(mpcParams,trackCoeff,modelParams,posInfo,oldTraj,mpcCoeff,lapStatus,buffersize)
+    InitializeParameters(mpcParams,trackCoeff,modelParams,posInfo,oldTraj,mpcCoeff,lapStatus,obstacle,buffersize)
     ##define obstacle x and xy vlaues not used at the moment 
     #for a clean definition of the x,y points the value of s_obstacle has to be the same as one of the points of the source map. 
     # the end semi axes are approximated over the secant of the points of the track. drawing might not be 100% accurate
-    obstacle.s_obstacle = 25
-    obstacle.sy_obstacle = 0.1
+    s_obst_init = 5.0 
+    sy_obst_init = 0.1
+    obstacle.s_obstacle[1] = s_obst_init#gets overwritten in loop (moving)
+    obstacle.sy_obstacle[1]  = sy_obst_init#gets overwritten in loop (moving)
     obstacle.rs = 0.5
     obstacle.ry = 0.2
-
-    # all thes values are currently just used for plotting the semi axes of the obstacle
-    obstacle.index = obstacle.s_obstacle/trackCoeff.ds+1 
-    obstacle.xy_vector = [x_track[obstacle.index]; y_track[obstacle.index]]
-    x_secant = x_track[obstacle.index+1] - x_track[obstacle.index-1]   
-    y_secant = y_track[obstacle.index+1] - y_track[obstacle.index-1]
-    secant_vec = [ x_secant ; y_secant]/norm([ x_secant ; y_secant])
-    normal_vec = [-y_secant ; x_secant]/norm([-y_secant ; x_secant])
-    vector_sy = normal_vec*obstacle.sy_obstacle
-    obstacle.xy_vector = obstacle.xy_vector + vector_sy
-    #points to plot the ry semi axis of the ellipsis
-    vector_ry = normal_vec*obstacle.ry
-    ey_up = obstacle.xy_vector + vector_ry
-    ey_down = obstacle.xy_vector - vector_ry
-    #points to plot the rs semi axis of the ellipsis
-    vector_rs = secant_vec*obstacle.rs
-    es_up = obstacle.xy_vector + vector_rs
-    es_down = obstacle.xy_vector - vector_rs
 
     ##this part is to calculate the tracks boundaries and plot them later
     xy_track  = [x_track; y_track]
@@ -119,8 +102,8 @@ function run_sim()
     cost                        = zeros(length(t),6)
 
 
-    posInfo.s_start             = 0.0 #?? should be changed probably in the localizeabs function
-    posInfo.s_target            = 30.2 #has to be fitted to track , current test track form ugo has 113.2 meters
+    posInfo.s_start             = 0.0 #does not get changed with the current version
+    posInfo.s_target            = 25.2 #has to be fitted to track , current test track form ugo has 113.2 meters
     trackCoeff.coeffCurvature   = [0.0;0.0;0.0;0.0;0.0]        # polynomial coefficients for curvature approximation (zeros for straight line)
     trackCoeff.nPolyCurvature = 4 # has to be 4 cannot be changed freely at the moment orders are still hardcoded in some parts of localizeVehicleCurvAbslizeVehicleCurvAbs
     trackCoeff.nPolyXY = 6  # has to be 6 cannot be changed freely at the moment orders are still hardcoded in some parts of localizeVehicleCurvAbslizeVehicleCurvAbs
@@ -137,22 +120,25 @@ function run_sim()
     i_final= 100000000 # high value so real values will be smaller
    
     
-    # figure(1)
-    # plot(x_track',y_track')
-    for j=1:2 #10
+
+    for j=1:10 #10
+        
+
         lapStatus.currentLap = j
         tt          = zeros(length(t),1)
-        zCurr_s                     = zeros(length(t)+1,4)          # s, ey, epsi, v
-        zCurr_x                     = zeros(length(t)+1,4)          # x, y, psi, v
+        zCurr_s     = zeros(length(t)+1,4)          # s, ey, epsi, v
+        zCurr_x     = zeros(length(t)+1,4)          # x, y, psi, v
         uCurr       = zeros(length(t),2)
         ParIntLog = zeros(length(t))
         #T
       
+        obstacle.s_obstacle[1] = s_obst_init
+        obstacle.sy_obstacle[1] = sy_obst_init
         #setup point for vehicle on track in first round. gets overwritten in other rounds
         zCurr_x[1,1] = 0 # x = 1.81 for s = 32     14 in curve
         zCurr_x[1,2] = 0 # y = 2.505 for s = 32  12.6
         zCurr_x[1,3] = 0.94
-        zCurr_x[1,4] = 0.4  #?? initialize with v_ref v_pathfollowing ?
+        zCurr_x[1,4] = 0.4  # compare value to v_pathfollowing
         
         if j>1               #setup point for vehicle after first round                   # if we are in the second or higher lap
             zCurr_x[1,:] = z_final_x
@@ -167,7 +153,18 @@ function run_sim()
         finished    = false
 
         i = 1
-        while i<=length(t) && !finished # as long as we have not reached the maximal iteration time for one round or ended the round? #?? error if i > length(t)?
+        #############plot
+        # figure(8)
+        # clf()
+        # ax10= subplot(1,1,1)
+        # ax10[:plot](x_track',y_track', linestyle="--", color = "yellow", linewidth = 0.5)#plot the racetrack
+        # car_plot = ax10[:plot](zCurr_x[i,1], zCurr_x[i,2], color = "blue")
+        # obstacle_plot = ax10[:plot](obstacle.xy_vector[i,1], obstacle.xy_vector[i,2], color = "white")
+        # ax10[:plot](boundary_up[1,:], boundary_up[2,:],color="green",linestyle="--")
+        # ax10[:plot](boundary_down[1,:], boundary_down[2,:],color="green",linestyle="--")
+        # grid()
+        ##################
+        while i<=length(t) && !finished # as long as we have not reached the maximal iteration time for one round or ended the round
         
            
             
@@ -180,6 +177,7 @@ function run_sim()
             if zCurr_s[i,1] >= posInfo.s_target
                 println("Reached finish line at step $i")
                 finished = true
+                calculateObstacleXY!(obstacle, trackCoeff, xy_track, i)# caluclate the postion of the obstacle at the end
                 #we count up here as the first round ends just as we would do if the loop get terminiated because i is >= length(t). we count it down later on again to get right index
                 i = i + 1
                 lapStatus.currentIt = i
@@ -190,16 +188,17 @@ function run_sim()
             posInfo.s   = zCurr_s[i,1]
             if j > 1
                        tic()
-                coeffConstraintCost(oldTraj,mpcCoeff,posInfo,mpcParams)
+                coeffConstraintCost!(oldTraj,mpcCoeff,posInfo,mpcParams)
                 tt1 = toq()
                 #println("coeffConstr: $tt1 s")
             end
+
+
             
             tic()
 	      
             #solve with zCurr_s containing s ey values 
-            
-            solveMpcProblem(mdl,mpcSol,mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr_s[i,:]',uCurr[i,:]', obstacle)
+            solveMpcProblem!(mdl,mpcSol,mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr_s[i,:]',uCurr[i,:]', obstacle,i)
         
                 
             tt[i]       = toq()
@@ -211,27 +210,28 @@ function run_sim()
           
             #have Zcurr as states XY and simulate from there return XY values of states 
             zCurr_x[i+1,:]  = simModel_x(zCurr_x[i,:],uCurr[i,:],modelParams.dt,modelParams) #!! @show
+
+            #update Position of the Obstacle car
+            #!!
+            #the computation in the XY plane is in a seperate function as these values are just used for the visualization and could be calculated in post procssing if necessary for real time
+            calculateObstacleXY!(obstacle, trackCoeff, xy_track, i) #this funciton computes values for row i
+            computeObstaclePos!(obstacle, dt, i)#this funciton computes values for row i+1
+            
             
             if i%50 == 0 
                 println("Solving step $i of $(length(t)) - Status: $(mpcSol.solverStatus), Time: $(tt[i]) s")
             end
 
            ###T
-            # if i%20 == 0 
-              
-            # #   plot(xs,ys) # tangent to current point  
-            #     if j == 1
-            #         figure(1)
-            #         scatter(zCurr_x[i+1,1], zCurr_x[i+1,2], color = "red")
-            #     end
-            #     if j == 2
-            #         figure(1)
-            #         scatter(zCurr_x[i+1,1], zCurr_x[i+1,2], color = "green")
-            #     end
-            #     if j >= 3
-            #         figure(1)
-            #         scatter(zCurr_x[i+1,1], zCurr_x[i+1,2], color = "blue")
-            #     end
+            # N_plot = 20
+            # if i%N_plot == 0 
+               
+            #     car_plot[1][:remove]()
+            #     obstacle_plot[1][:remove]()
+            #     ax10[:plot](zCurr_x[i-N_plot+1:i,1], zCurr_x[i-N_plot+1:i,2], color = "blue")
+            #     car_plot = ax10[:plot](zCurr_x[i,1], zCurr_x[i,2], color = "blue", marker="o")
+            #     ax10[:plot](obstacle.xy_vector[i-N_plot+1:i,1], obstacle.xy_vector[i-N_plot+1:i,2], color = "red")
+            #     obstacle_plot = ax10[:plot](obstacle.xy_vector[i,1], obstacle.xy_vector[i,2], color = "red", marker="o")          
             # end 
             ###endT
 
@@ -256,12 +256,20 @@ function run_sim()
 
         saveOldTraj(oldTraj,zCurr_s, zCurr_x,uCurr,lapStatus,buffersize,modelParams.dt)
 
+
+        i_final_old = i_final
+        i_final = i
+        if i_final_old <= i_final
+            println("round was not faster. no learning")
+            println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+        end
+
           # Print results
         # --------------------------------
-
-
+        #########################################################
+        #########################################################
         #### plot states and cost
-        figure(2)
+        figure(1)
         ax1=subplot(311)
         plot(t,zCurr_s[1:end-1,1],"y",t,zCurr_s[1:end-1,2],"r",t,zCurr_s[1:end-1,3],"g",t,zCurr_s[1:end-1,4],"b")
         grid(1)
@@ -273,18 +281,30 @@ function run_sim()
         title("Control input")
         legend(["a","d_f"])
         ax3=subplot(313,sharex=ax1)
-        plot(t,cost[:,1],"r",t,cost[:,2],"g",t,cost[:,3],"b",t,cost[:,4],"y",t,cost[:,5],"m",t,cost[:,6],"c", t, cost[:,7])
+        plot(t,cost[:,1],"r",t,cost[:,3],"b",t,cost[:,4],"y",t,cost[:,5],"m",t,cost[:,6],"c", t, cost[:,7])
         grid(1)
         title("Cost distribution")
-        legend(["z","z_Term","z_Term_const","deriv","control","lane"])
+        legend(["z","z_Term_const","deriv","control","lane", "Obstacle"])
 
-        i_final_old = i_final
-        i_final = i
-        if i_final_old <= i_final
-            println("round was not faster. no learning")
-            println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-        end
-       
+        
+        figure(2)
+        clf()
+        ax9= subplot(3,1,1)
+        ax9[:plot](oldTraj.oldTraj[1:i_final,1,1],cost[1:i_final,2])  
+        grid()
+        xlabel("s in [m]")
+        ylabel("Terminal cost ") 
+
+        ax7= subplot(3,1,2,sharex=ax9)
+        ax7[:plot](oldTraj.oldTraj[1:i_final,1,1],cost[1:i_final,3])  
+        grid()
+        xlabel("s in [m]")
+        ylabel("cost constraint")    
+        ax8= subplot(3,1,3,sharex=ax9)
+        ax8[:plot](oldTraj.oldTraj[1:i_final,1,1],cost[1:i_final,7])  
+        grid()
+        xlabel("s in [m]")
+        ylabel("cost Obstacle")     
 
          # ####T
         if j == 1
@@ -316,24 +336,42 @@ function run_sim()
         ####endT
         end
 
-        #x-y Plot of the racetrack and obstacle
+        #x-y Plot of the racetrack noundaries and initilaize obstacle and car
         figure(8)
         clf()
-        plot(x_track',y_track', linestyle="--", color = "yellow", linewidth = 0.5)#plot the racetrack
-        plot(zCurr_x[1:i_final,1], zCurr_x[1:i_final,2], color = "blue", linewidth = 1)# plot the trajectory of the car
-        scatter(obstacle.xy_vector[1], obstacle.xy_vector[2],color = "red")#plot the center of the obstacle
+        ax10= subplot(1,1,1)
+        ax10[:plot](x_track',y_track', linestyle="--", color = "yellow", linewidth = 0.5)#plot the racetrack
+        car_plot = ax10[:plot](zCurr_x[1,1], zCurr_x[1,2], color = "blue",marker="o")
+        obstacle_plot = ax10[:plot](obstacle.xy_vector[1,1], obstacle.xy_vector[1,2], color = "red",marker="o")
+        y_obst_plot = ax10[:plot]([obstacle.axis_y_up[1,1],obstacle.axis_y_down[1,1]],[obstacle.axis_y_up[1,2],obstacle.axis_y_down[1,2]],color = "red")#plot the y semi axis
+        s_obst_plot = ax10[:plot]([obstacle.axis_s_up[1,1],obstacle.axis_s_down[1,1]],[obstacle.axis_s_up[1,2],obstacle.axis_s_down[1,2]],color = "red")# plot the s semi axis
+        ax10[:plot](boundary_up[1,:], boundary_up[2,:],color="green",linestyle="--")
+        ax10[:plot](boundary_down[1,:], boundary_down[2,:],color="green",linestyle="--")
+        grid()     
+        ##########
+        
+       #not everything necessary if we do the live plot
+       #plot of trajectory of car and obstacle
+        # ax10[:plot](zCurr_x[1:i_final,1], zCurr_x[1:i_final,2], color = "blue", linewidth = 1)# plot the trajectory of the car
+        # ax10[:plot](obstacle.xy_vector[1:i_final,1], obstacle.xy_vector[1:i_final,2], color = "red")
+        # car_plot[1][:remove]()
+        # obstacle_plot[1][:remove]()
+        # car_plot = ax10[:plot](zCurr_x[i_final,1], zCurr_x[i_final,2], color = "blue", marker="o")
+        # obstacle_plot = ax10[:plot](obstacle.xy_vector[i_final,1], obstacle.xy_vector[i_final,2], color = "red", marker="o")  
+        
         # plot the two boundary lines
-        plot(boundary_up[1,:], boundary_up[2,:],color="black",linestyle="--")
-        plot(boundary_down[1,:], boundary_down[2,:],color="black",linestyle="--")
+        # ax10[:plot](boundary_up[1,:], boundary_up[2,:],color="green",linestyle="--")
+        # ax10[:plot](boundary_down[1,:], boundary_down[2,:],color="green",linestyle="--")
         #plot the obstacle  semi axes
-        ax4= gca()
-        plot([ey_up[1],ey_down[1]],[ey_up[2],ey_down[2]],color = "red")
-        plot([es_up[1],es_down[1]],[es_up[2],es_down[2]],color = "red")
-        #ax4[:set_xlim]([5.7,5.9])
-        #ax4[:set_ylim]([8.0,8.2])
-        grid(0.5)
+        # ax4 = gca()
+        # scatter(obstacle.xy_vector[1,1], obstacle.xy_vector[1,2],color = "red")#plot the center of the obstacle
+        # plot([ey_up[1,1],ey_down[1,1]],[ey_up[1,2],ey_down[1,2]],color = "red")#plot the y semi axis
+        # plot([es_up[1,1],es_down[1,1]],[es_up[1,2],es_down[1,2]],color = "red")# plot the s semi axis
+        # #ax4[:set_xlim]([5.7,5.9])
+        # #ax4[:set_ylim]([8.0,8.2])
+        # grid(0.5)
 
-        if j >= 2
+        if j >= 5
             
             if j >= 3
                 figure(7)
@@ -342,38 +380,68 @@ function run_sim()
                 xlabel("t in [s]")
                 ylabel("ParInt")
             end
+
+            figure(4)   
+            clf()
+            ax4 = subplot(311)
+            plot(oldTraj.oldTraj[1:i_final,1,1], oldTraj.oldTraj[1:i_final,4,1], color= "blue")
+            plot(oldTraj.oldTraj[1:i_final_old,1,2], oldTraj.oldTraj[1:i_final_old,4,2], color= "yellow")
+            grid()
+            xlabel("s in [m]")
+            ylabel("v in [m/s]")
+            legend(["v current round","v old round"])
+            p1 = plot(1,1)
+
+            ax5 = subplot(312, sharex=ax4)
+            plot(oldTraj.oldTraj[1:i_final,1,1], oldTraj.oldTraj[1:i_final,2,1], color= "blue")
+            plot(oldTraj.oldTraj[1:i_final_old,1,2], oldTraj.oldTraj[1:i_final_old,2,2], color= "yellow")
+            grid()
+            xlabel("s in [m]")
+            ylabel("e_y in [m]")
+            legend(["e_y current round","e_y old round"])
+            p2 = ax5[:plot](1,1)
+
+            ax6 = subplot(313, sharex=ax4)
+            hold(true)
+            plot(oldTraj.oldTraj[1:i_final,1,1], oldTraj.oldTraj[1:i_final,3,1], color= "blue")
+            plot(oldTraj.oldTraj[1:i_final_old,1,2], oldTraj.oldTraj[1:i_final_old,3,2], color= "yellow")
+            grid()
+            xlabel("s in [m]")
+            ylabel("e_psi in [rad]")
+            legend(["e_psi current round","e_psi old round"])
+            p3 = ax6[:plot](1,1)
+
+            
+            
+            
             for i = 1:i_final
 
 
                 #plot predicted states over s
-                figure(4)   
-                clf()
-                ax4=subplot(311)
-                plot(oldTraj.oldTraj[1:i_final,1,1], oldTraj.oldTraj[1:i_final,4,1], color= "blue")
-                plot(oldTraj.oldTraj[1:i_final_old,1,2], oldTraj.oldTraj[1:i_final_old,4,2], color= "yellow")
-                grid()
-                xlabel("s in [m]")
-                ylabel("v in [m/s]")
-                legend(["v current round","v old round"])
-                plot(z_log[:,1,i], z_log[:,4,i] ,marker="o")
-                ax5=subplot(312, sharex=ax4)
-                plot(oldTraj.oldTraj[1:i_final,1,1], oldTraj.oldTraj[1:i_final,2,1], color= "blue")
-                plot(oldTraj.oldTraj[1:i_final_old,1,2], oldTraj.oldTraj[1:i_final_old,2,2], color= "yellow")
-                grid()
-                xlabel("s in [m]")
-                ylabel("e_y in [m]")
-                legend(["e_y current round","e_y old round"])
-                plot(z_log[:,1,i], z_log[:,2,i] ,marker="o")
-                ax6=subplot(313, sharex=ax4)
-                plot(oldTraj.oldTraj[1:i_final,1,1], oldTraj.oldTraj[1:i_final,3,1], color= "blue")
-                plot(oldTraj.oldTraj[1:i_final_old,1,2], oldTraj.oldTraj[1:i_final_old,3,2], color= "yellow")
-                grid()
-                xlabel("s in [m]")
-                ylabel("e_psi in [rad]")
-                legend(["e_psi current round","e_psi old round"])
-                plot(z_log[:,1,i], z_log[:,3,i] ,marker="o")
+              
+                p1[1][:remove]()
+                p1 = ax4[:plot](z_log[:,1,i], z_log[:,4,i] ,marker="o") #plot predicted velocity
+
+
+                p2[1][:remove]()
+                p2 = ax5[:plot](z_log[:,1,i], z_log[:,2,i] ,marker="o") #plot predicted e_y
+             
+                p3[1][:remove]()
+                p3 = ax6[:plot](z_log[:,1,i], z_log[:,3,i] ,marker="o")  #plot predicted e_psi
                 
                
+               #x-y plot
+                car_plot[1][:remove]()
+                obstacle_plot[1][:remove]()
+                y_obst_plot[1][:remove]()
+                s_obst_plot[1][:remove]()
+                ax10[:plot](zCurr_x[1:i,1], zCurr_x[1:i,2], color = "blue")
+                car_plot = ax10[:plot](zCurr_x[i,1], zCurr_x[i,2], color = "blue", marker="o")
+                ax10[:plot](obstacle.xy_vector[1:i,1], obstacle.xy_vector[1:i,2], color = "red")
+                obstacle_plot = ax10[:plot](obstacle.xy_vector[i,1], obstacle.xy_vector[i,2], color = "red", marker="o")  
+                y_obst_plot = ax10[:plot]([obstacle.axis_y_up[i,1],obstacle.axis_y_down[i,1]],[obstacle.axis_y_up[i,2],obstacle.axis_y_down[i,2]],color = "red")#plot the y semi axis
+                s_obst_plot = ax10[:plot]([obstacle.axis_s_up[i,1],obstacle.axis_s_down[i,1]],[obstacle.axis_s_up[i,2],obstacle.axis_s_down[i,2]],color = "red")# plot the s semi axis
+
 
                 # #plot inputs
                 # figure(5)
@@ -399,7 +467,7 @@ function run_sim()
                 # ylabel("absolute angle psi in [rad]")
                 # legend(["absolute angle psi plotted over s"]) 
 
-                i = i+1
+                i = i+10
 
 
 
