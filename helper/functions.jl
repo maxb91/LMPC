@@ -58,7 +58,7 @@ function InitializeModel(m::MpcModel,mpcParams::MpcParams,modelParams::ModelPara
 
     @variable( m.mdl, m.z_Ol[1:(N+1),1:4])      # z = s, ey, epsi, v
     @variable( m.mdl, m.u_Ol[1:N,1:2])          # overwrtie dim of in classes.jl?
-    @variable( m.mdl, 0 <= m.ParInt[1:1] <= 1)
+    @variable( m.mdl, 0 <= m.lambda[1:2] <= 1)
 
     #!!
     #@variable( m.mdl, m.t[1:N+1])
@@ -75,10 +75,11 @@ function InitializeModel(m::MpcModel,mpcParams::MpcParams,modelParams::ModelPara
             setupperbound(m.z_Ol[j,i], modelParams.z_ub[j,i])
         end
     end
-    #@variable( m.mdl, 1 >= m.ParInt >= 0 ) #?? better like above with [1:1]?
 
     @NLparameter(m.mdl, m.z0[i=1:4] == z_Init[i])
     @NLconstraint(m.mdl, [i=1:4], m.z_Ol[1,i] == m.z0[i])
+
+    @constraint(m.mdl, m.lambda[1]+m.lambda[2]== 1)
 
    
     #!! object avoidance constraint

@@ -86,8 +86,8 @@ function solveMpcProblem!(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPar
     #constraints force trajectory to end up on ss
     # ---------------------------------
     if lapStatus.currentLap > 2    # if at least in the 3rd lap, as of the third round we have two old trajectories between which we can interpolate
-        @NLexpression(mdl.mdl, constZTerm, (sum{Q_term[j]*(mdl.ParInt[1]*sum{coeffTermConst[i,1,j]*mdl.z_Ol[N+1,1]^(order+1-i),i=1:order+1}+
-                                        (1-mdl.ParInt[1])*sum{coeffTermConst[i,2,j]*mdl.z_Ol[N+1,1]^(order+1-i),i=1:order+1}-mdl.z_Ol[N+1,j+1])^2,j=1:3}))
+        @NLexpression(mdl.mdl, constZTerm, (sum{Q_term[j]*(mdl.lambda[1]*sum{coeffTermConst[i,1,j]*mdl.z_Ol[N+1,1]^(order+1-i),i=1:order+1}+
+                                        mdl.lambda[2]*sum{coeffTermConst[i,2,j]*mdl.z_Ol[N+1,1]^(order+1-i),i=1:order+1}-mdl.z_Ol[N+1,j+1])^2,j=1:3}))
     elseif lapStatus.currentLap == 2        # if in the 2nd lap
         @NLexpression(mdl.mdl, constZTerm, sum{Q_term[j]*(sum{coeffTermConst[i,1,j]*mdl.z_Ol[N+1,1]^(order+1-i),i=1:order+1}-mdl.z_Ol[N+1,j+1])^2,j=1:3})
     end
@@ -96,8 +96,8 @@ function solveMpcProblem!(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPar
     # ---------------------------------
     # The value of this cost determines how fast the algorithm learns. The higher this cost, the faster the control tries to reach the finish line.
     if lapStatus.currentLap > 2     # if at least in the 3rd lap
-        @NLexpression(mdl.mdl, costZTerm, Q_cost*(mdl.ParInt[1]*sum{coeffTermCost[i,1]*mdl.z_Ol[N+1,1]^(order+1-i),i=1:order+1}+
-                                  (1-mdl.ParInt[1])*sum{coeffTermCost[i,2]*mdl.z_Ol[N+1,1]^(order+1-i),i=1:order+1}))
+        @NLexpression(mdl.mdl, costZTerm, Q_cost*(mdl.lambda[1]*sum{coeffTermCost[i,1]*mdl.z_Ol[N+1,1]^(order+1-i),i=1:order+1}+
+                                  mdl.lambda[2]*sum{coeffTermCost[i,2]*mdl.z_Ol[N+1,1]^(order+1-i),i=1:order+1}))
     elseif lapStatus.currentLap == 2         # if we're in the second second lap
         @NLexpression(mdl.mdl, costZTerm, Q_cost*sum{coeffTermCost[i,1]*mdl.z_Ol[N+1,1]^(order+1-i),i=1:order+1})
     end
@@ -129,7 +129,7 @@ function solveMpcProblem!(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPar
     ttt= toq()
     sol_u       = getvalue(mdl.u_Ol)
     sol_z       = getvalue(mdl.z_Ol)
-    mpcSol.ParInt = getvalue(mdl.ParInt)
+    mpcSol.lambda = getvalue(mdl.lambda)
 
 
     #println("pure solver time: $ttt")

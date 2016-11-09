@@ -129,7 +129,7 @@ function run_sim()
         zCurr_s     = zeros(length(t)+1,4)          # s, ey, epsi, v
         zCurr_x     = zeros(length(t)+1,4)          # x, y, psi, v
         uCurr       = zeros(length(t),2)
-        ParIntLog = zeros(length(t))
+        lambdaLog = zeros(2,length(t))
         #T
       
         obstacle.s_obstacle[1] = s_obst_init
@@ -203,7 +203,7 @@ function run_sim()
                 
             tt[i]       = toq()
             cost[i,:]   = mpcSol.cost
-            ParIntLog[i] = mpcSol.ParInt[1]
+            lambdaLog[:,i] = mpcSol.lambda
             uCurr[i,:]  = [mpcSol.a_x mpcSol.d_f]
             z_log[:,:,i] = mpcSol.z
             u_log[:,:,i] = mpcSol.u
@@ -271,17 +271,17 @@ function run_sim()
         #### plot states and cost
         figure(1)
         ax1=subplot(311)
-        plot(t,zCurr_s[1:end-1,1],"y",t,zCurr_s[1:end-1,2],"r",t,zCurr_s[1:end-1,3],"g",t,zCurr_s[1:end-1,4],"b")
+        plot(t[1:i_final],zCurr_s[1:i_final,1],"y",t[1:i_final],zCurr_s[1:i_final,2],"r",t[1:i_final],zCurr_s[1:i_final,3],"g",t[1:i_final],zCurr_s[1:i_final,4],"b")
         grid(1)
         legend(["s","eY","ePsi","v"])
         title("States")
         ax2=subplot(312,sharex=ax1)
-        plot(t,uCurr[:,1],"r",t,uCurr[:,2],"g")
+        plot(t[1:i_final-1],uCurr[1:i_final-1,1],"r",t[1:i_final-1],uCurr[1:i_final-1,2],"g")
         grid(1)
         title("Control input")
         legend(["a","d_f"])
         ax3=subplot(313,sharex=ax1)
-        plot(t,cost[:,1],"r",t,cost[:,3],"b",t,cost[:,4],"y",t,cost[:,5],"m",t,cost[:,6],"c", t, cost[:,7])
+        plot(t[1:i_final-1],cost[1:i_final-1,1],"r",t[1:i_final-1],cost[1:i_final-1,3],"b",t[1:i_final-1],cost[1:i_final-1,4],"y",t[1:i_final-1],cost[1:i_final-1,5],"m",t[1:i_final-1],cost[1:i_final-1,6],"c", t[1:i_final-1], cost[1:i_final-1,7])
         grid(1)
         title("Cost distribution")
         legend(["z","z_Term_const","deriv","control","lane", "Obstacle"])
@@ -290,18 +290,18 @@ function run_sim()
         figure(2)
         clf()
         ax9= subplot(3,1,1)
-        ax9[:plot](oldTraj.oldTraj[1:i_final,1,1],cost[1:i_final,2])  
+        ax9[:plot](oldTraj.oldTraj[1:i_final-1,1,1],cost[1:i_final-1,2])  
         grid()
         xlabel("s in [m]")
         ylabel("Terminal cost ") 
 
         ax7= subplot(3,1,2,sharex=ax9)
-        ax7[:plot](oldTraj.oldTraj[1:i_final,1,1],cost[1:i_final,3])  
+        ax7[:plot](oldTraj.oldTraj[1:i_final-1,1,1],cost[1:i_final-1,3])  
         grid()
         xlabel("s in [m]")
         ylabel("cost constraint")    
         ax8= subplot(3,1,3,sharex=ax9)
-        ax8[:plot](oldTraj.oldTraj[1:i_final,1,1],cost[1:i_final,7])  
+        ax8[:plot](oldTraj.oldTraj[1:i_final-1,1,1],cost[1:i_final-1,7])  
         grid()
         xlabel("s in [m]")
         ylabel("cost Obstacle")     
@@ -371,14 +371,17 @@ function run_sim()
         # #ax4[:set_ylim]([8.0,8.2])
         # grid(0.5)
 
-        if j >= 5
+        if j >= 2
             
             if j >= 3
                 figure(7)
                 clf()
-                plot(t,ParIntLog)
+                plot(t[1:i_final-1],lambdaLog[1,1:i_final-1])
+                plot(t[1:i_final-1],lambdaLog[2,1:i_final-1])
                 xlabel("t in [s]")
-                ylabel("ParInt")
+                ylabel("lambda")
+                grid()
+                legend(["lambda1","lambda2"])
             end
 
             figure(4)   
