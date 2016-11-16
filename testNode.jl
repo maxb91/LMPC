@@ -255,7 +255,7 @@
     n_rounds = j #update n_rounds to represent actual number of simualated rounds
 ########save date
           println("Save data to file.......")
-    filename = string(".../"string(Dates.today()),"-Data.jld")
+    filename = string("../LMPCdata/"string(Dates.today()),"-Data.jld")
     jldopen(filename, "w") do file
         addrequire(file, classes) #ensures that custom data types are working when loaded
         
