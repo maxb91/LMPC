@@ -9,7 +9,7 @@
 
 # structure of oldTrajectory: 1st dimension = state number, 2nd dimension = step number (time equiv.), 3rd dimennsion = lap number
 
-function coeffConstraintCost!(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo::PosInfo, mpcParams::MpcParams)
+function coeffConstraintCost!(oldTraj::classes.OldTrajectory, mpcCoeff::classes.MpcCoeff, posInfo::classes.PosInfo, mpcParams::classes.MpcParams)
     # this computes the coefficients for the cost and constraints
 
     # Outputs: 
@@ -30,8 +30,8 @@ function coeffConstraintCost!(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInf
 
     pLength         = mpcCoeff.pLength              # interpolation length for polynomials
 
-    coeffCost       = zeros(Order+1,2)            # polynomial coefficients for cost, second dimension for number of old trajectories
-    coeffConst      = zeros(Order+1,2,3)          # nz-1 beacuse no coeff for s
+    coeffCost       = zeros(Order+1,5)            # polynomial coefficients for cost, second dimension for number of old trajectories
+    coeffConst      = zeros(Order+1,5,3)          # nz-1 beacuse no coeff for s
 
     # Select the old data
     oldS            = oldTraj.oldTraj[:,1,:]::Array{Float64,2}
@@ -47,7 +47,8 @@ function coeffConstraintCost!(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInf
     idx_s_target        = 0
     dist_to_s_target    = 0
     qLength             = 0
-    local vec_range::Tuple{UnitRange{Int64},UnitRange{Int64}}
+    #local vec_range::Tuple{UnitRange{Int64},UnitRange{Int64},UnitRange{Int64},UnitRange{Int64},UnitRange{Int64}}
+    local vec_range::Array{Int64,2}
     local bS_Vector::Array{Float64}
     local s_forinterpy::Array{Float64}
 
@@ -58,15 +59,22 @@ function coeffConstraintCost!(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInf
     # Compute the index
     DistS = ( s_total - oldS ).^2
 
-    idx_s = findmin(DistS,1)[2]              # contains both indices for the closest distances for both oldS !!
+    idx_s = findmin(DistS,1)[2]              # contains both indices for the closest distances for all oldS !! just get the second dimension with is the index, first would be the distance
     
-    vec_range = (idx_s[1]:idx_s[1]+pLength,idx_s[2]:idx_s[2]+pLength)
+    #@show vec_range = (idx_s[1]:idx_s[1]+pLength,idx_s[2]:idx_s[2]+pLength)
+    vec_range = zeros(5,pLength+1)
+    for j = 1:5
+        for i = 1:pLength+1
+            vec_range[j,i] = idx_s[j]+(i-1)
+        end
+    end
 
     # Create the vectors used for the interpolation
-    bS_Vector       = zeros(pLength+1,2)
-    for i=1:pLength+1
-        bS_Vector[i,1] = oldS[vec_range[1][i]]
-        bS_Vector[i,2] = oldS[vec_range[2][i]]
+    bS_Vector       = zeros(pLength+1,5)
+    for j=1:5
+        for i=1:pLength+1
+            bS_Vector[i,j] = oldS[vec_range[j,i]]
+        end
     end
     # bS_Vector       = cat(2, oldS[vec_range[1]],    oldS[vec_range[2]])
     
@@ -85,19 +93,17 @@ function coeffConstraintCost!(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInf
     end
     # println("s_forinterpy[:,1,1]' = $(s_forinterpy[:,1,1]')")
     # Create the Matrices for the interpolation
-    MatrixInterp = zeros(pLength+1,Order+1,2)
+    MatrixInterp = zeros(pLength+1,Order+1,5)
 
     for k = 0:Order
         MatrixInterp[:,Order+1-k,:] = s_forinterpy[:,:].^k
     end
     # Compute the constraint coefficients for both old trajectories
-    
-    coeffConst = zeros(Order+1,2,3)
 
-    for i=1:2
-        coeffConst[:,i,1]    = MatrixInterp[:,:,i]\oldeY[vec_range[i]]
-        coeffConst[:,i,2]    = MatrixInterp[:,:,i]\oldePsi[vec_range[i]]
-        coeffConst[:,i,3]    = MatrixInterp[:,:,i]\oldV[vec_range[i]]
+    for i=1:5
+        coeffConst[:,i,1]    = MatrixInterp[:,:,i]\oldeY[vec_range[i,:]]
+        coeffConst[:,i,2]    = MatrixInterp[:,:,i]\oldePsi[vec_range[i,:]]
+        coeffConst[:,i,3]    = MatrixInterp[:,:,i]\oldV[vec_range[i,:]]
     end
 
     # Finished with calculating the constraint coefficients
@@ -108,8 +114,8 @@ function coeffConstraintCost!(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInf
     # These values are calculated for both old trajectories
     # The vector bQfunction_Vector contains the cost at each point in the interpolated area to reach the finish line
     # From this vector, polynomial coefficients coeffCost are calculated to approximate this cost
-
-    for i=1:2   
+  
+    for i=1:5   
         # in this part we construct a polynomial for the cost associated at each s value. the s value at the curent postion is used to calculate the cost of the old round at this postion
         #we know that each following s has a cost value which is exactl 1 less thne the one before. so we can easiyl do the least squares to get the coeficients for approximation
         iter_to_s_target  = oldTraj.oldCost[i] - (idx_s[i]-N_points*(i-1))  # number of iterations from idx_s to s_target, this has sth todo with the count in the array as we look at values in second row
@@ -118,7 +124,7 @@ function coeffConstraintCost!(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInf
     end
 
     mpcCoeff.coeffCost  = coeffCost #this value goes into the variable mpcCoeff in testNode.jl as well variables by reference
-    mpcCoeff.coeffConst = coeffConst #this way we dont need to return anything #??speed advantage ? looks weird
-    
+    mpcCoeff.coeffConst = coeffConst #this way we dont need to return anything 
+
     nothing
 end

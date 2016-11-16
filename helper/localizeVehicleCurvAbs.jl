@@ -1,4 +1,4 @@
-function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64},y_track::Array{Float64},trackCoeff::TrackCoeff, itercount::Int64)
+function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64},y_track::Array{Float64},trackCoeff::classes.TrackCoeff, itercount::Int64)
     # Outputs: zCurr_s, coeffCurv 
     # zCurr_s = [s, ey, epsi, states_x[4]]
     # itercount is solely used for debugging purposes plots
@@ -52,7 +52,7 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
         nodes_near = append!(nodes_center[:,idx_start:N_nodes_center],nodes_center[:,0:idx_min+N_nodes_poly_front+1-N_nodes_center])
         ind_start   = idx_min-N_nodes_poly_back 
         ind_end     = idx_min+N_nodes_poly_front
-        error("stacking nodes form beginning of track not yet implemented")
+        error("stacking nodes from beginning of track not yet implemented")
     else 
         ind_start   = idx_min-N_nodes_poly_back #max(1,idx_min-N_nodes_poly_back)
         ind_end     = idx_min+N_nodes_poly_front #min(N_nodes_center,idx_min+N_nodes_poly_front)

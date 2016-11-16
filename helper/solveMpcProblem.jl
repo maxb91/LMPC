@@ -7,7 +7,7 @@
 # i = 3 -> epsi
 # i = 4 -> v
 
-function solveMpcProblem!(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcParams::MpcParams,trackCoeff::TrackCoeff,lapStatus::LapStatus,posInfo::PosInfo,modelParams::ModelParams,zCurr::Array{Float64},uCurr::Array{Float64}, obstacle::Obstacle, iter::Int64)
+function solveMpcProblem!(mdl::classes.MpcModel,mpcSol::classes.MpcSol,mpcCoeff::classes.MpcCoeff,mpcParams::classes.MpcParams,trackCoeff::classes.TrackCoeff,lapStatus::classes.LapStatus,posInfo::classes.PosInfo,modelParams::classes.ModelParams,zCurr::Array{Float64},uCurr::Array{Float64}, obstacle::classes.Obstacle, iter::Int64)
 
     # Load Parameters
     coeffCurvature  = trackCoeff.coeffCurvature::Array{Float64,1}
@@ -86,8 +86,12 @@ function solveMpcProblem!(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPar
     #constraints force trajectory to end up on ss
     # ---------------------------------
     if lapStatus.currentLap > 2    # if at least in the 3rd lap, as of the third round we have two old trajectories between which we can interpolate
-        @NLexpression(mdl.mdl, constZTerm, (sum{Q_term[j]*(mdl.lambda[1]*sum{coeffTermConst[i,1,j]*mdl.z_Ol[N+1,1]^(order+1-i),i=1:order+1}+
-                                        mdl.lambda[2]*sum{coeffTermConst[i,2,j]*mdl.z_Ol[N+1,1]^(order+1-i),i=1:order+1}-mdl.z_Ol[N+1,j+1])^2,j=1:3}))
+        @NLexpression(mdl.mdl, constZTerm, (sum{Q_term[j]*( mdl.lambda[1]*sum{coeffTermConst[i,1,j]*mdl.z_Ol[N+1,1]^(order+1-i),i=1:order+1}+
+                                                            mdl.lambda[2]*sum{coeffTermConst[i,2,j]*mdl.z_Ol[N+1,1]^(order+1-i),i=1:order+1}+
+                                                            mdl.lambda[3]*sum{coeffTermConst[i,3,j]*mdl.z_Ol[N+1,1]^(order+1-i),i=1:order+1}+
+                                                            mdl.lambda[4]*sum{coeffTermConst[i,4,j]*mdl.z_Ol[N+1,1]^(order+1-i),i=1:order+1}+
+                                                            mdl.lambda[5]*sum{coeffTermConst[i,5,j]*mdl.z_Ol[N+1,1]^(order+1-i),i=1:order+1}-
+                                                            mdl.z_Ol[N+1,j+1])^2,j=1:3}))
     elseif lapStatus.currentLap == 2        # if in the 2nd lap
         @NLexpression(mdl.mdl, constZTerm, sum{Q_term[j]*(sum{coeffTermConst[i,1,j]*mdl.z_Ol[N+1,1]^(order+1-i),i=1:order+1}-mdl.z_Ol[N+1,j+1])^2,j=1:3})
     end
@@ -96,8 +100,11 @@ function solveMpcProblem!(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPar
     # ---------------------------------
     # The value of this cost determines how fast the algorithm learns. The higher this cost, the faster the control tries to reach the finish line.
     if lapStatus.currentLap > 2     # if at least in the 3rd lap
-        @NLexpression(mdl.mdl, costZTerm, Q_cost*(mdl.lambda[1]*sum{coeffTermCost[i,1]*mdl.z_Ol[N+1,1]^(order+1-i),i=1:order+1}+
-                                  mdl.lambda[2]*sum{coeffTermCost[i,2]*mdl.z_Ol[N+1,1]^(order+1-i),i=1:order+1}))
+        @NLexpression(mdl.mdl, costZTerm, Q_cost*(  mdl.lambda[1]*sum{coeffTermCost[i,1]*mdl.z_Ol[N+1,1]^(order+1-i),i=1:order+1}+
+                                                    mdl.lambda[2]*sum{coeffTermCost[i,2]*mdl.z_Ol[N+1,1]^(order+1-i),i=1:order+1}+
+                                                    mdl.lambda[3]*sum{coeffTermCost[i,3]*mdl.z_Ol[N+1,1]^(order+1-i),i=1:order+1}+
+                                                    mdl.lambda[4]*sum{coeffTermCost[i,4]*mdl.z_Ol[N+1,1]^(order+1-i),i=1:order+1}+
+                                                    mdl.lambda[5]*sum{coeffTermCost[i,5]*mdl.z_Ol[N+1,1]^(order+1-i),i=1:order+1}))
     elseif lapStatus.currentLap == 2         # if we're in the second second lap
         @NLexpression(mdl.mdl, costZTerm, Q_cost*sum{coeffTermCost[i,1]*mdl.z_Ol[N+1,1]^(order+1-i),i=1:order+1})
     end
@@ -112,8 +119,7 @@ function solveMpcProblem!(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPar
         #@NLexpression(mdl.mdl, costZ, 1 + (costZ_h-1) * (0.5+0.5*tanh(50*(mdl.z_Ol[1,N+1]+s_start-s_target))))
         @NLexpression(mdl.mdl, costZ, 1)
     end
-   
-
+    
     ## Cost to avoid obstacle. increases when car is near obstacle currently implemented as : a *1/(0.1+cost)
     @NLexpression(mdl.mdl, costObstacle, sum{0.02*1/(0.1+ ( (mdl.z_Ol[i,1]-s_obst)/rs )^2 + ( (mdl.z_Ol[i,2]-sy_obst)/ry )^2 - 1 )^2,i=1:N+1})
 
@@ -126,11 +132,12 @@ function solveMpcProblem!(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPar
     # Solve Problem and return solution
     tic()
     sol_status  = solve(mdl.mdl)
-    ttt= toq()
+    ttt         = toq()
     sol_u       = getvalue(mdl.u_Ol)
     sol_z       = getvalue(mdl.z_Ol)
     mpcSol.lambda = getvalue(mdl.lambda)
-
+    # c_print = getvalue(mdl.c)
+    # println("curvature: $c_print")
 
     #println("pure solver time: $ttt")
     #println("Predicting until s = $(sol_z[end,1])") 
@@ -166,7 +173,7 @@ function solveMpcProblem!(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPar
     mpcSol.z   = sol_z
     mpcSol.solverStatus = sol_status
     mpcSol.cost = zeros(7)
-    mpcSol.cost = [getvalue(costZ),getvalue(costZTerm),getvalue(constZTerm),getvalue(derivCost),getvalue(controlCost),getvalue(laneCost), getvalue(costObstacle)]
+    mpcSol.cost = [getvalue(costZ);getvalue(costZTerm);getvalue(constZTerm);getvalue(derivCost);getvalue(controlCost);getvalue(laneCost); getvalue(costObstacle)]
     
 
     #mpcSol = MpcSol(sol_u[1,1],sol_u[2,1]) # Fast version without logging

@@ -1,5 +1,5 @@
-# VARIOUS TYPES FOR CALCULATIONS
-
+module classes# VARIOUS TYPES FOR CALCULATIONS
+using JuMP
 type LapStatus
     currentLap::Int64       # current lap number
     currentIt::Int64        # current iteration in current lap
@@ -62,8 +62,8 @@ type MpcSol             # MPC solution output
 end
 
 type Obstacle
-    s_obstacle::Array{Float64,1}
-    sy_obstacle::Array{Float64,1}
+    s_obstacle::Array{Float64}
+    sy_obstacle::Array{Float64}
     rs::Float64
     ry::Float64
     index::Array{Int64,1} #!!currently not used , if that stay like this delete it
@@ -119,7 +119,7 @@ type MpcModel
                 #s_startC=@NLparameter(mdl, s_startC==0),
                 z_Ol=@variable(mdl,[1:11, 1:4]),
                 u_Ol=@variable(mdl,[1:10, 1:2]),
-                lambda=@variable(mdl,[1:2]),
+                lambda=@variable(mdl,[1:5]),
                 #t=@variable(mdl,[1:11]),
                 dsdt=@NLexpression(mdl,dsdt[1:10],0), 
                 bta=@NLexpression(mdl,bta[1:10],0),
@@ -134,4 +134,5 @@ type MpcModel
                                                         dsdt,
                                                         bta,
                                                         c)
+end
 end
