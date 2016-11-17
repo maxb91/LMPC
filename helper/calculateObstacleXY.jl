@@ -62,7 +62,10 @@ function calculatePredictedXY(z_log::Array{Float64}, mpcParams, trackCoeff, xy_t
 	for j =1:mpcParams.N+1
 		if s_under[j] <0
 			s_under[j] = 0
-			warn("predicted state with negative s \n use s = 0 for plot \n s_pred = $(z_log[j,1,i])")
+			warn("predicted state with negative s \n in round: $j at iteration: $i \n use s = 0 for plot \n s_pred = $(z_log[j,1,i])")
+		end
+		if s_over[j] <0
+			s_over[j] = 0
 		end
 
 		s_over_ind[j] = convert(Int64,s_over[j]/trackCoeff.ds+1)

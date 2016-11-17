@@ -3,7 +3,8 @@ using PyPlot
 function plots(j::Int64 = 1)
     
     include("helper/classes.jl")
-    Data = load("../LMPCdata/2016-11-15-Data.jld")
+    file = "../LMPCdata/2016-11-17-12-16-Data.jld"
+    Data = load(file)
     sStates_log = Data["sStates_log"]
     xStates_log = Data["xStates_log"]
     uAppl_log = Data["uAppl_log"]
@@ -20,7 +21,7 @@ function plots(j::Int64 = 1)
     dt = Data["modelParams.dt"]
     mpcParams = Data["mpcParams"]
     buffersize = Data["buffersize"]
-
+    curv_approx = Data["curv_approx"]
     include("helper/calculateObstacleXY.jl")
 
 
@@ -29,11 +30,12 @@ function plots(j::Int64 = 1)
     xy_pred = zeros(mpcParams.N+1,2,length(t),n_rounds)
 
     println("Number of simulated rounds in data: $n_rounds")
+    println("Load File located in: $file")
 
     for k = 1:n_rounds
         for i = 1:i_final[j]
           
-            xy_pred[:,:,i,j] = calculatePredictedXY(z_pred_log[:,:,:,k], mpcParams, trackCoeff, xy_track, convert(Int64,i))
+            xy_pred[:,:,i,k] = calculatePredictedXY(z_pred_log[:,:,:,k], mpcParams, trackCoeff, xy_track, convert(Int64,i))
 
             calculateObstacleXY!(obstacle, trackCoeff, xy_track,i,k) #this funciton computes values for row i
         end
@@ -131,6 +133,9 @@ function plots(j::Int64 = 1)
     ax10= subplot(1,1,1)
     ax10[:plot](x_track',y_track', linestyle="--", color = "yellow", linewidth = 0.5)#plot the racetrack
     car_plot = ax10[:plot](xStates_log[:,1,j], xStates_log[:,2,j], color = "blue")
+    if j >1#plot last tarjectory
+        ax10[:plot](xStates_log[1:i_final[j-1],1,j-1], xStates_log[1:i_final[j-1],2,j-1], color = "green")
+    end
     pred_plot = ax10[:plot](xy_pred[:,1,1,j],xy_pred[:,2,1,j],color = "yellow", marker="o") 
     obstacle_plot = ax10[:plot](obstacle.xy_vector[1,1,j], obstacle.xy_vector[1,2,j], color = "red",marker="o")
     y_obst_plot = ax10[:plot]([obstacle.axis_y_up[1,1,j],obstacle.axis_y_down[1,1,j]],[obstacle.axis_y_up[1,2,j],obstacle.axis_y_down[1,2,j]],color = "red")#plot the y semi axis
@@ -185,41 +190,48 @@ function plots(j::Int64 = 1)
     figure(4)   
     clf()
     ax4 = subplot(311)
-    plot(sStates_log[1:i_final[j],1,1], sStates_log[1:i_final[j],4,1], color= "blue")
-    plot(sStates_log[1:i_final[j],1,2], sStates_log[1:i_final[j],4,2], color= "yellow")
-    plot(sStates_log[1:i_final[j],1,3], sStates_log[1:i_final[j],4,3], color= "green")
+    k = j
+    while k>=1
+        plot(sStates_log[1:i_final[k],1,k], sStates_log[1:i_final[k],4,k])
+        k  = k-1
+    end
     grid()
     xlabel("s in [m]")
     ylabel("v in [m/s]")
-    legend(["v current round","v old round", "3rd last round"])
-    p1 = plot(1,1)
+    legend(["v current","v 2nd", "3rd last","4th last ", "5th last"],bbox_to_anchor=(1.001, 1), loc=2, borderaxespad=0.)
+    p1 = ax4[:plot](1,1)
 
     ax5 = subplot(312, sharex=ax4)
-    plot(sStates_log[1:i_final[j],1,1], sStates_log[1:i_final[j],2,1], color= "blue")
-    plot(sStates_log[1:i_final[j],1,2], sStates_log[1:i_final[j],2,2], color= "yellow")
-    plot(sStates_log[1:i_final[j],1,3], sStates_log[1:i_final[j],2,3], color= "green")
+    k = j
+    while k>=1
+        plot(sStates_log[1:i_final[k],1,k], sStates_log[1:i_final[k],2,k])
+        k  = k-1
+    end
     grid()
     xlabel("s in [m]")
     ylabel("e_y in [m]")
-    legend(["e_y current round","e_y old round", "3rd last round"])
+    legend(["e_y current round","e_y 2nd", "3rd last","4th last ", "5th last"],bbox_to_anchor=(1.001, 1), loc=2, borderaxespad=0.)
     p2 = ax5[:plot](1,1)
 
     ax6 = subplot(313, sharex=ax4)
     hold(true)
-    plot(sStates_log[1:i_final[j],1,1], sStates_log[1:i_final[j],3,1], color= "blue")
-    plot(sStates_log[1:i_final[j],1,2], sStates_log[1:i_final[j],3,2], color= "yellow")
-    plot(sStates_log[1:i_final[j],1,3], sStates_log[1:i_final[j],3,3], color= "green")
+    k = j
+    while k>=1
+        plot(sStates_log[1:i_final[k],1,k], sStates_log[1:i_final[k],3,k])
+        k  = k-1
+    end
     grid()
     xlabel("s in [m]")
     ylabel("e_psi in [rad]")
-    legend(["e_psi current round","e_psi old round", "3rd last round"])
+    legend(["e_psi current round","e_psi 2nd", "3rd last","4th last ", "5th last"],bbox_to_anchor=(1.001, 1), loc=2, borderaxespad=0.)
     p3 = ax6[:plot](1,1)
 
+    #plot the estimated curvature for debugging
+    figure(18)
+    plot(sStates_log[1:i_final[j],1,j],curv_approx[1,1:i_final[j],j])
     
     
-    
-    for i = 1:i_final[j]
-
+    for i = 1:2:i_final[j]
 
         #plot predicted states over s
       
@@ -254,7 +266,6 @@ function plots(j::Int64 = 1)
          act_s_plot= ax9[:plot]([sStates_log[i,1,j],sStates_log[i,1,j]],[0,30])  
 
 
-
         # #plot inputs
         figure(5)
         clf()
@@ -272,12 +283,6 @@ function plots(j::Int64 = 1)
         ylabel("steering angle in [rad]")
         legend(["applied steering angle","predicted steering angle"])
         grid() 
-
-
-    
-        
-
-        i = i+20
 
 
 

@@ -8,7 +8,7 @@
 # i = 4 -> v
 
 function solveMpcProblem!(mdl::classes.MpcModel,mpcSol::classes.MpcSol,mpcCoeff::classes.MpcCoeff,mpcParams::classes.MpcParams,trackCoeff::classes.TrackCoeff,lapStatus::classes.LapStatus,posInfo::classes.PosInfo,modelParams::classes.ModelParams,zCurr::Array{Float64},uCurr::Array{Float64}, obstacle::classes.Obstacle, iter::Int64)
-
+    #tic()
     # Load Parameters
     coeffCurvature  = trackCoeff.coeffCurvature::Array{Float64,1}
     N               = mpcParams.N
@@ -74,8 +74,8 @@ function solveMpcProblem!(mdl::classes.MpcModel,mpcSol::classes.MpcSol,mpcCoeff:
 
     # Lane cost
     # ---------------------------------
-   @NLexpression(mdl.mdl, laneCost, 10*sum{mdl.z_Ol[i,2]^2*((0.5+0.5*tanh(10*(mdl.z_Ol[i,2]-ey_max))) + (0.5-0.5*tanh(10*(mdl.z_Ol[i,2]+ey_max)))),i=1:N+1})
-   
+    @NLexpression(mdl.mdl, laneCost, 1*sum{mdl.z_Ol[i,2]^2*((0.5+0.5*tanh(30*(mdl.z_Ol[i,2]-ey_max-0.1))) + (0.5-0.5*tanh(30*(mdl.z_Ol[i,2]+ey_max+0.1)))),i=1:N+1})
+
     # Control Input cost
     # ---------------------------------
     @NLexpression(mdl.mdl, controlCost, 0.5*sum{R[j]*sum{(mdl.u_Ol[i,j]-u_Ref[i,j])^2,i=1:N},j=1:2})
@@ -130,18 +130,22 @@ function solveMpcProblem!(mdl::classes.MpcModel,mpcSol::classes.MpcSol,mpcCoeff:
     #println("Model formulation:")
     #println(mdl.mdl)
     # Solve Problem and return solution
+    #t_make_mdl= toq()
+
+
     tic()
     sol_status  = solve(mdl.mdl)
-    ttt         = toq()
+    ttt= toq()
+
     sol_u       = getvalue(mdl.u_Ol)
     sol_z       = getvalue(mdl.z_Ol)
     mpcSol.lambda = getvalue(mdl.lambda)
+
     # c_print = getvalue(mdl.c)
     # println("curvature: $c_print")
-
-    #println("pure solver time: $ttt")
+    
     #println("Predicting until s = $(sol_z[end,1])") 
-    #println("curvature = $(getvalue(mdl.c))")
+    
     
 
 
@@ -149,39 +153,29 @@ function solveMpcProblem!(mdl::classes.MpcModel,mpcSol::classes.MpcSol,mpcCoeff:
     # print("************************COSTS*****************")
     # println("coeff: $(getvalue(mdl.coeff))")
     # println("z0: $(getvalue(mdl.z0))")
-    # println("Solution status: $sol_status")
-    # println("Objective value: $(getobjectivevalue(mdl.mdl))")
-    # println("Control Cost: $(getvalue(controlCost))")
-    # println("CostZ:        $(getvalue(costZ))")
-    # println("DerivCost:    $(getvalue(derivCost))")
-    # println("LaneCost:     $(getvalue(laneCost))")
-    # println("costZTerm:    $(getvalue(costZTerm))")
-    # println("constZTerm:   $(getvalue(constZTerm))")
 
-    # println("cost_ey:      $(0.5*sum(sol_z[2,:].^2)*Q[2])")
-    # println("cost_ePsi:    $(0.5*sum(sol_z[3,:].^2)*Q[3])")
-    # println("cost_V:       $(0.5*sum((sol_z[4,:]-z_Ref[:,4]').^2)*Q[4])")
-
-    #println("z:")
-    #println(getvalue(mdl.z_Ol))
-    #println("u:")
-    #println(getvalue(mdl.u_Ol))
-    #mpcSol      = MpcSol(sol_u[1,1],sol_u[2,1],sol_status,getvalue(mdl.u_Ol),getvalue(mdl.z_Ol),[getvalue(costZ),getvalue(costZTerm),getvalue(constZTerm),getvalue(derivCost),getvalue(controlCost),getvalue(laneCost)])
     mpcSol.a_x = sol_u[1,1]
     mpcSol.d_f = sol_u[1,2]
     mpcSol.u   = sol_u
     mpcSol.z   = sol_z
     mpcSol.solverStatus = sol_status
     mpcSol.cost = zeros(7)
-    mpcSol.cost = [getvalue(costZ);getvalue(costZTerm);getvalue(constZTerm);getvalue(derivCost);getvalue(controlCost);getvalue(laneCost); getvalue(costObstacle)]
-    
 
-    #mpcSol = MpcSol(sol_u[1,1],sol_u[2,1]) # Fast version without logging
-    #println(getvalue(costZTerm))
-    #println(getvalue(mdl.z_Ol[1,N+1]))
-    #println(getvalue(constZTerm))
-    #println("mdl.ParInt[1] = $(getvalue(mdl.ParInt[1]))")
-    #println("u = $(sol_u[:,1])")
+    #tic()
+    #mpcSol.cost = [getvalue(costZ);getvalue(costZTerm);getvalue(constZTerm);getvalue(derivCost);getvalue(controlCost);getvalue(laneCost); getvalue(costObstacle)]
+    objvl = getobjectivevalue(mdl.mdl)
+    #t_get2 =toq()
+
+
+    if iter%50 == 0 
+        println("$iter th iteration****************************")
+        println("pure solver time: $ttt")
+        #println("get cost time: $t_get2")
+        #println("creat model time: $t_make_mdl")
+     
+
+    end
+
 
     # if lapStatus.currentLap > 100
     #     ss = collect(zCurr[1]:.01:zCurr[1]+0.3)

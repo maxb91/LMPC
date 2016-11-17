@@ -52,7 +52,7 @@ function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelP
 
     n_poly_curv = trackCoeff.nPolyCurvature         # polynomial degree of curvature approximation
     
-    m.mdl = Model(solver = IpoptSolver(print_level=0))#, max_cpu_time=0.08))#,linear_solver="ma57",max_iter=500, print_user_options="yes",max_cpu_time=2.0,))
+    m.mdl = Model(solver = IpoptSolver(print_level=0))#,warm_start_init_point="yes"))#, max_cpu_time=0.08))#,linear_solver="ma57",max_iter=500, print_user_options="yes",max_cpu_time=2.0,))
 
     @variable( m.mdl, m.z_Ol[1:(N+1),1:4])      # z = s, ey, epsi, v
     @variable( m.mdl, m.u_Ol[1:N,1:2])          # overwrtie dim of in classes.jl?
@@ -115,7 +115,7 @@ function InitializeParameters(mpcParams::classes.MpcParams,trackCoeff::classes.T
     mpcParams.nz                = 4                         #number of States
     mpcParams.Q                 = [0.0,10.0,0.0,10.0]  #0 10 0 1    # put weights on ey, epsi and v, just for first round of PathFollowing
     mpcParams.Q_term            = 100*[1.0,1.0,0.1]           # weights for terminal constraints (LMPC, for e_y, e_psi, and v)
-    mpcParams.Q_cost            = 1.0
+    mpcParams.Q_cost            = 1
     mpcParams.R                 = 0*[1.0,1.0]             # put weights on a and d_f
     mpcParams.QderivZ           = 1.0*[0,0.0,0.1,0.1]             # cost matrix for derivative cost of states
     mpcParams.QderivU           = 0.1*[1,10]               # cost matrix for derivative cost of inputs

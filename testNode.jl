@@ -35,27 +35,27 @@
     mpcParams                   = classes.MpcParams()
     mdl                         = classes.MpcModel()
 
-    buffersize                  = 601
+    buffersize                  = 801
     close("all")
 
 
     #######################################
     z_Init = zeros(4)
-    z_Init[1] = 1.81 # x = 1.81 for s = 32     14 in curve
-    z_Init[2] = 2.505 # y = 2.505 for s = 32  12.6
+    z_Init[1] = 0.0 # x = 1.81 for s = 32     14 in curve
+    z_Init[2] = 0.0 # y = 2.505 for s = 32  12.6
     z_Init[3] = 0.94
     z_Init[4]  = 0.4
-    n_rounds = 10 
+    n_rounds = 5
     InitializeParameters(mpcParams,trackCoeff,modelParams,posInfo,oldTraj,mpcCoeff,lapStatus,obstacle,buffersize,n_rounds)
 
     posInfo.s_start             = 0.0 #does not get changed with the current version
-    posInfo.s_target            = 5.2 #has to be fitted to track , current test track form ugo has 113.2 meters
+    posInfo.s_target            = 35.2 #has to be fitted to track , current test track form ugo has 113.2 meters
      
     ##define obstacle x and xy vlaues not used at the moment 
     #for a clean definition of the x,y points the value of s_obstacle has to be the same as one of the points of the source map. 
     # the end semi axes are approximated over the secant of the points of the track. drawing might not be 100% accurate
-    s_obst_init = 80.0 
-    sy_obst_init = 0.1
+    s_obst_init = 65.0 
+    sy_obst_init = -0.1
     obstacle.s_obstacle[1,:] = s_obst_init#gets overwritten in loop (moving)
     obstacle.sy_obstacle[1,:]  = sy_obst_init#gets overwritten in loop (moving)
     obstacle.rs = 0.5
@@ -98,8 +98,9 @@
 
     xStates_log = zeros(length(t),4, n_rounds)
     sStates_log = zeros(length(t),4, n_rounds)
-    uAppl_log = zeros(length(t),2, n_rounds) 
-    j= 1
+    uAppl_log = zeros(length(t),2, n_rounds)
+    curv_approx = zeros(mpcParams.N,length(t), n_rounds)
+    j = 1
     for j=1:n_rounds #10
         
 
@@ -150,7 +151,9 @@
        
             # the argument i in localizeVehicleCurvAbs  is solely used for debugging purposes plots not needed for control
             # localize takes some time see ProfileView.view()
+            #tic()
             zCurr_s[i,:], trackCoeff.coeffCurvature = localizeVehicleCurvAbs(zCurr_x[i,:],x_track,y_track,trackCoeff, i)
+            #t_absci =toq()
             #if the car has crossed the finish line
             if zCurr_s[i,1] >= posInfo.s_target
                 println("Reached finish line at step $i")
@@ -164,21 +167,24 @@
      
             posInfo.s   = zCurr_s[i,1]
             if j > 1
-                       tic()
+                #tic()
                 coeffConstraintCost!(oldTraj,mpcCoeff,posInfo,mpcParams)
-                tt1 = toq()
-                #println("coeffConstr: $tt1 s")
+                #tt1 = toq()
+                
             end
 
 
             
             tic()
-	      
             #solve with zCurr_s containing s ey values 
             solveMpcProblem!(mdl,mpcSol,mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr_s[i,:]',[mpcSol.a_x;mpcSol.d_f], obstacle,i)
-        
-                
             tt[i]       = toq()
+
+            # tic()
+            # curv_approx[:,i,j]=getvalue(mdl.c)
+            # t_curv = toq() 
+            
+
             uCurr[i,:]  = [mpcSol.a_x mpcSol.d_f]
             cost[:,i,j]   = mpcSol.cost
 
@@ -194,21 +200,13 @@
             
             
             if i%50 == 0 
-                println("Solving step $i of $(length(t)) - Status: $(mpcSol.solverStatus), Time: $(tt[i]) s")
+                println(" Time: $(tt[i]) s, Solving step $i of $(length(t)) - Status: $(mpcSol.solverStatus)")
+                # if j > 1
+                #     println("coeffConstr: $tt1 s")
+                # end
+                # println("calculate abs: $t_absci s")
+                #println("get curve-approx = $t_curv")
             end
-
-           ###T
-            # N_plot = 20
-            # if i%N_plot == 0 
-               
-            #     car_plot[1][:remove]()
-            #     obstacle_plot[1][:remove]()
-            #     ax10[:plot](zCurr_x[i-N_plot+1:i,1], zCurr_x[i-N_plot+1:i,2], color = "blue")
-            #     car_plot = ax10[:plot](zCurr_x[i,1], zCurr_x[i,2], color = "blue", marker="o")
-            #     ax10[:plot](obstacle.xy_vector[i-N_plot+1:i,1], obstacle.xy_vector[i-N_plot+1:i,2], color = "red")
-            #     obstacle_plot = ax10[:plot](obstacle.xy_vector[i,1], obstacle.xy_vector[i,2], color = "red", marker="o")          
-            # end 
-            ###endT
 
             i = i + 1
             lapStatus.currentIt = i
@@ -238,24 +236,34 @@
         
         i_final[j] = i
         if j >1 && i_final[j-1] <= i_final[j]
-            println("round was not faster. no learning")
+            warn("round was not faster. no learning")
             println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
         end
 
         println("*************************************************************************")
-        println("Press c to cancel MPC")
-        println("Press Enter for next round solving")
-        
-        a = ' '
-        a = readline()
-        if a == "c\r\n" 
-                break
-        end
+
+
+        # println("Press c to cancel MPC")
+        # println("Press Enter for next round solving")
+        # a = ' '
+        # a = readline()
+        # if a == "c\r\n" 
+        #         break
+        # end
     end
     n_rounds = j #update n_rounds to represent actual number of simualated rounds
 ########save date
           println("Save data to file.......")
-    filename = string("../LMPCdata/"string(Dates.today()),"-Data.jld")
+          
+
+    #filename = string("../LMPCdata/"string(Dates.today()),"-Data.jld")
+    #### alternative numbering to generate results to keep 
+    filename = string("../LMPCdata/"string(Dates.today()),"-",Dates.format(now(), "HH-MM"),"-Data.jld")
+    if isfile(filename)
+        filename = string("../LMPCdata/"string(Dates.today()),"-",Dates.format(now(), "HH-MM"),"-Data-2.jld")
+        warn("File already exists. Added extension \"-2\" ")
+    end
+    @show filename
     jldopen(filename, "w") do file
         addrequire(file, classes) #ensures that custom data types are working when loaded
         
@@ -275,5 +283,6 @@
         JLD.write(file, "modelParams.dt", modelParams.dt)
         JLD.write(file, "mpcParams", mpcParams)
         JLD.write(file, "buffersize", buffersize)
+        JLD.write(file, "curv_approx", curv_approx)
     end
     println("finished")
