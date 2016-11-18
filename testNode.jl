@@ -33,7 +33,7 @@
     trackCoeff                  = classes.TrackCoeff()      # info about track (at current position, approximated)
     modelParams                 = classes.ModelParams()
     mpcParams                   = classes.MpcParams()
-    mdl                         = classes.MpcModel()
+    m                           = classes.MpcModel()
 
     buffersize                  = 801
     close("all")
@@ -45,16 +45,16 @@
     z_Init[2] = 0.0 # y = 2.505 for s = 32  12.6
     z_Init[3] = 0.94
     z_Init[4]  = 0.4
-    n_rounds = 5
+    n_rounds = 10
     InitializeParameters(mpcParams,trackCoeff,modelParams,posInfo,oldTraj,mpcCoeff,lapStatus,obstacle,buffersize,n_rounds)
-
+    
     posInfo.s_start             = 0.0 #does not get changed with the current version
     posInfo.s_target            = 35.2 #has to be fitted to track , current test track form ugo has 113.2 meters
      
     ##define obstacle x and xy vlaues not used at the moment 
     #for a clean definition of the x,y points the value of s_obstacle has to be the same as one of the points of the source map. 
     # the end semi axes are approximated over the secant of the points of the track. drawing might not be 100% accurate
-    s_obst_init = 65.0 
+    s_obst_init =80.0 
     sy_obst_init = -0.1
     obstacle.s_obstacle[1,:] = s_obst_init#gets overwritten in loop (moving)
     obstacle.sy_obstacle[1,:]  = sy_obst_init#gets overwritten in loop (moving)
@@ -63,11 +63,11 @@
 
     
     #####################################
-
+    include("helper/defModel.jl")
     println("Initialize Model........")
-    InitializeModel(mdl,mpcParams,modelParams,trackCoeff,z_Init, obstacle)
+    #costPath, costZ, costZTerm,constZTerm,derivCost,controlCost,laneCost,costObstacle= InitializeModel(mdl,mpcParams,modelParams,trackCoeff,z_Init, obstacle)
     println("Initial solve........")
-    solve(mdl.mdl)
+    solve(m.mdl)
     println("Initial solve done!")
     println("*******************************************************")
     println("*******************************************************")
@@ -127,7 +127,11 @@
             zCurr_x[1,1] = z_Init[1] # x = 1.81 for s = 32     14 in curve
             zCurr_x[1,2] = z_Init[2] # y = 2.505 for s = 32  12.6
             zCurr_x[1,3] = z_Init[3]
-            uCurr[1,:] = u_final    
+            uCurr[1,:] = u_final
+            #objective formulation, minimize the sum of all parts of the objective
+            @NLobjective(m.mdl, Min, costZ + costZTerm + constZTerm + derivCost + controlCost + laneCost + costObstacle)    
+        else
+            @NLobjective(m.mdl, Min, costPath) # path following cost in first round
         end
         
 
@@ -145,7 +149,7 @@
         # ax10[:plot](boundary_down[1,:], boundary_down[2,:],color="green",linestyle="--")
         # grid()
         ##################
-        while i<=length(t) && !finished # as long as we have not reached the maximal iteration time for one round or ended the round
+        while i<=length(t)-1 && !finished # as long as we have not reached the maximal iteration time for one round or ended the round
         
             # to make it work s start has to grow over time actual it is just always at 0
        
@@ -177,7 +181,7 @@
             
             tic()
             #solve with zCurr_s containing s ey values 
-            solveMpcProblem!(mdl,mpcSol,mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr_s[i,:]',[mpcSol.a_x;mpcSol.d_f], obstacle,i)
+            solveMpcProblem!(m,mpcSol,mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr_s[i,:]',[mpcSol.a_x;mpcSol.d_f], obstacle,i)
             tt[i]       = toq()
 
             # tic()

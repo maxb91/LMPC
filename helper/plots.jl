@@ -1,9 +1,9 @@
 using JLD
 using PyPlot
 function plots(j::Int64 = 1)
-    
+    close("all")
     include("helper/classes.jl")
-    file = "../LMPCdata/2016-11-17-12-16-Data.jld"
+    file = "../LMPCdata/2016-11-17-22-01-Data.jld"
     Data = load(file)
     sStates_log = Data["sStates_log"]
     xStates_log = Data["xStates_log"]
@@ -35,7 +35,7 @@ function plots(j::Int64 = 1)
     for k = 1:n_rounds
         for i = 1:i_final[j]
           
-            xy_pred[:,:,i,k] = calculatePredictedXY(z_pred_log[:,:,:,k], mpcParams, trackCoeff, xy_track, convert(Int64,i))
+            xy_pred[:,:,i,k] = calculatePredictedXY(z_pred_log[:,:,:,k], mpcParams, trackCoeff, xy_track, convert(Int64,i),k)
 
             calculateObstacleXY!(obstacle, trackCoeff, xy_track,i,k) #this funciton computes values for row i
         end
@@ -133,8 +133,9 @@ function plots(j::Int64 = 1)
     ax10= subplot(1,1,1)
     ax10[:plot](x_track',y_track', linestyle="--", color = "yellow", linewidth = 0.5)#plot the racetrack
     car_plot = ax10[:plot](xStates_log[:,1,j], xStates_log[:,2,j], color = "blue")
+    ax10[:plot](xStates_log[1:i_final[j],1,j], xStates_log[1:i_final[j],2,j], color = "blue" ,linestyle=":")
     if j >1#plot last tarjectory
-        ax10[:plot](xStates_log[1:i_final[j-1],1,j-1], xStates_log[1:i_final[j-1],2,j-1], color = "green")
+        ax10[:plot](xStates_log[1:i_final[j-1],1,j-1], xStates_log[1:i_final[j-1],2,j-1], color = "green",linestyle=":")
     end
     pred_plot = ax10[:plot](xy_pred[:,1,1,j],xy_pred[:,2,1,j],color = "yellow", marker="o") 
     obstacle_plot = ax10[:plot](obstacle.xy_vector[1,1,j], obstacle.xy_vector[1,2,j], color = "red",marker="o")
