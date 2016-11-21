@@ -11,7 +11,7 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
     plot_curvature_approx=0
     plot_inputs = 1
     interactive_plot_steps = 3
-    file = "../LMPCdata/2016-11-21-00-04-Data.jld"
+    file = "data/2016-11-21-00-04-Data.jld"
     close("all")
 
 

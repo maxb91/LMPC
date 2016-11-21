@@ -272,9 +272,9 @@
 
     #filename = string("../LMPCdata/"string(Dates.today()),"-Data.jld")
     #### alternative numbering to generate results to keep 
-    filename = string("../LMPCdata/"string(Dates.today()),"-",Dates.format(now(), "HH-MM"),"-Data.jld")
+    filename = string("data/"string(Dates.today()),"-",Dates.format(now(), "HH-MM"),"-Data.jld")
     if isfile(filename)
-        filename = string("../LMPCdata/"string(Dates.today()),"-",Dates.format(now(), "HH-MM"),"-Data-2.jld")
+        filename = string("data/"string(Dates.today()),"-",Dates.format(now(), "HH-MM"),"-Data-2.jld")
         warn("File already exists. Added extension \"-2\" ")
     end
     @show filename
