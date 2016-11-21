@@ -35,7 +35,7 @@ function saveOldTraj(oldTraj::classes.OldTrajectory,zCurr::Array{Float64}, zCurr
     
 end
 
-function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelParams::classes.ModelParams,trackCoeff::classes.TrackCoeff,z_Init::Array{Float64,1}, obstacle::classes.Obstacle)
+function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelParams::classes.ModelParams,trackCoeff::classes.TrackCoeff,z_Init::Array{Float64,1}, obstacle::classes.Obstacle, oldTraj::classes.OldTrajectory)
 
     dt        = modelParams.dt
     L_a       = modelParams.l_A
@@ -62,23 +62,23 @@ function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelP
     QderivU         = mpcParams.QderivU::Array{Float64,1}
     v_ref           = mpcParams.vPathFollowing
 
-    N         = mpcParams.N
-    ey_max    = trackCoeff.width/2
+    N           = mpcParams.N
+    ey_max      = trackCoeff.width/2
     n_poly_curv = trackCoeff.nPolyCurvature         # polynomial degree of curvature approximation
-
+    n_oldTraj   = oldTraj.n_oldTraj
     # Create function-specific parameters
     local z_Ref::Array{Float64,2}
     z_Ref           = cat(2,s_target*ones(N+1,1),zeros(N+1,2),v_ref*ones(N+1,1))     # Reference trajectory: path following -> stay on line and keep constant velocity
     u_Ref           = zeros(N,2)
     
     #########################################################
-    m.mdl = Model(solver = IpoptSolver(print_level=0,warm_start_init_point="yes"))#, max_cpu_time=0.08))#,linear_solver="ma57",max_iter=500, print_user_options="yes",max_cpu_time=2.0,))
+    m.mdl = Model(solver = IpoptSolver(print_level=0))#,warm_start_init_point="yes"))#, max_cpu_time=0.08))#,linear_solver="ma57",max_iter=500, print_user_options="yes",max_cpu_time=2.0,))
     #########################################################
 
 
     @variable( m.mdl, modelParams.z_lb[i,j]<= m.z_Ol[i =1:(N+1),j = 1:4]<= modelParams.z_ub[i,j])      # z = s, ey, epsi, v
     @variable( m.mdl,  modelParams.u_lb[i,j] <= m.u_Ol[i=1:N,j=1:2]<= modelParams.u_ub[i,j])          # overwrtie dim of in classes.jl?
-    @variable( m.mdl, 0 <= m.lambda[1:5] <= 1)
+    @variable( m.mdl, 0 <= m.lambda[1:n_oldTraj] <= 1)
 
     # for i=1:2      
     #     for j=1:N
@@ -96,10 +96,10 @@ function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelP
     @NLparameter(m.mdl, m.z0[i=1:4] == z_Init[i])
     @NLconstraint(m.mdl, [i=1:4], m.z_Ol[1,i] == m.z0[i])
 
-    @constraint(m.mdl, m.lambda[1]+m.lambda[2]+m.lambda[3]+m.lambda[4]+m.lambda[5]== 1)
-
+    #@constraint(m.mdl, m.lambda[1]+m.lambda[2]+m.lambda[3]+m.lambda[4]+m.lambda[5]== 1)
+    @constraint(m.mdl, sum{m.lambda[j],j=1:n_oldTraj}== 1)
    
-    #!! object avoidance constraint
+    # object avoidance constraint now done with slack cost instead slack constraint
     # set s and y obst as nlparamter
     #@NLconstraint(m.mdl, [i=1:N+1], ((m.z_Ol[i,1]-m.sCoord_obst)/0.3)^2+((m.z_Ol[i,2]-sy_obst)/0.2)^2 == 1+m.t[i]^2)
    #1/m.t
@@ -107,8 +107,8 @@ function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelP
     @NLparameter(m.mdl, m.coeff[i=1:n_poly_curv+1] == trackCoeff.coeffCurvature[i])
     @NLparameter(m.mdl, m.uCurr[i=1:2] == 0)
     @NLparameter(m.mdl, m.sCoord_obst[i=1:2] == 100)
-    @NLparameter(m.mdl, m.coeffTermConst[i=1:order+1,k=1:5,j=1:3] == coeffTermConst[i,k,j])
-    @NLparameter(m.mdl, m.coeffTermCost[i=1:order+1,k=1:5] == coeffTermCost[i,k])
+    @NLparameter(m.mdl, m.coeffTermConst[i=1:order+1,k=1:n_oldTraj,j=1:3] == coeffTermConst[i,k,j])
+    @NLparameter(m.mdl, m.coeffTermCost[i=1:order+1,k=1:n_oldTraj] == coeffTermCost[i,k])
 
     @NLexpression(m.mdl, m.c[i = 1:N],    m.coeff[1]*m.z_Ol[i,1]^4+m.coeff[2]*m.z_Ol[i,1]^3+m.coeff[3]*m.z_Ol[i,1]^2+m.coeff[4]*m.z_Ol[i,1]+m.coeff[5])
     #@NLexpression(m.mdl, m.c[i = 1:N],    sum{m.coeff[j]*m.z_Ol[i,1]^(n_poly_curv-j+1),j=1:n_poly_curv} + m.coeff[n_poly_curv+1]) 
@@ -144,13 +144,13 @@ function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelP
 
     # Terminal constraints (soft), starting from 2nd lap
     #constraints force trajectory to end up on ss
-    # ---------------------------------   
-    @NLexpression(m.mdl, constZTerm, (sum{Q_term[j]*( m.lambda[1]*sum{m.coeffTermConst[i,1,j]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1}+
-                                                        m.lambda[2]*sum{m.coeffTermConst[i,2,j]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1}+
-                                                        m.lambda[3]*sum{m.coeffTermConst[i,3,j]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1}+
-                                                        m.lambda[4]*sum{m.coeffTermConst[i,4,j]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1}+
-                                                        m.lambda[5]*sum{m.coeffTermConst[i,5,j]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1}-
+    # ---------------------------------  
+    @NLexpression(m.mdl, constZTerm, (sum{Q_term[j]*( sum{m.lambda[k]*sum{m.coeffTermConst[i,k,j]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1},k=1:n_oldTraj}-
                                                         m.z_Ol[N+1,j+1])^2,j=1:3}))
+                                                        # m.lambda[2]*sum{m.coeffTermConst[i,2,j]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1}+
+                                                        # m.lambda[3]*sum{m.coeffTermConst[i,3,j]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1}+
+                                                        # m.lambda[4]*sum{m.coeffTermConst[i,4,j]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1}+
+                                                        # m.lambda[5]*sum{m.coeffTermConst[i,5,j]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1}
      # @NLexpression(m.mdl, constZTraj[k= 1:5], sum{Q_term[j]*sum{m.coeffTermConst[i,k,j]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1},j=1:3})
      # @NLexpression(m.mdl, constZTerm, (sum{m.lambda[i]*constZTraj[i],i = 1:5}-sum{m.z_Ol[N+1,j+1],j=1:3})^2)
     m.constZTerm = constZTerm
@@ -161,11 +161,11 @@ function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelP
     # Terminal cost
     # ---------------------------------
     # The value of this cost determines how fast the algorithm learns. The higher this cost, the faster the control tries to reach the finish line.
-    @NLexpression(m.mdl, costZTerm, Q_cost*(  m.lambda[1]*sum{m.coeffTermCost[i,1]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1}+
-                                                m.lambda[2]*sum{m.coeffTermCost[i,2]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1}+
-                                                m.lambda[3]*sum{m.coeffTermCost[i,3]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1}+
-                                                m.lambda[4]*sum{m.coeffTermCost[i,4]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1}+
-                                                m.lambda[5]*sum{m.coeffTermCost[i,5]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1}))
+    @NLexpression(m.mdl, costZTerm, Q_cost*( sum{m.lambda[k]*sum{m.coeffTermCost[i,k]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1},k=1:n_oldTraj}))
+                                                # m.lambda[2]*sum{m.coeffTermCost[i,2]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1}+
+                                                # m.lambda[3]*sum{m.coeffTermCost[i,3]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1}+
+                                                # m.lambda[4]*sum{m.coeffTermCost[i,4]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1}+
+                                                # m.lambda[5]*sum{m.coeffTermCost[i,5]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1}))
     m.costZTerm = costZTerm
     #basic idea    
     #@NLexpression(m.mdl, costZTerm, Q_cost*sum{coeffTermCost[i,1]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1})
@@ -216,14 +216,15 @@ function InitializeParameters(mpcParams::classes.MpcParams,trackCoeff::classes.T
     posInfo.s_start             = 0.0
     posInfo.s_target            = 5.0
 
-    oldTraj.oldTraj             = zeros(buffersize,4,5)
-    oldTraj.oldTrajXY           = zeros(buffersize,4,5)
-    oldTraj.oldInput            = zeros(buffersize,2,5)
-    oldTraj.oldCost             = 1000*ones(Int64,5)                   # dummies for initialization
+    oldTraj.n_oldTraj     = 10 #number of old Trajectories for safe set
+    oldTraj.oldTraj             = zeros(buffersize,4,oldTraj.n_oldTraj)
+    oldTraj.oldTrajXY           = zeros(buffersize,4,oldTraj.n_oldTraj)
+    oldTraj.oldInput            = zeros(buffersize,2,oldTraj.n_oldTraj)
+    oldTraj.oldCost             = 1000*ones(Int64,oldTraj.n_oldTraj)    # dummies for initialization
 
     mpcCoeff.order              = 5
-    mpcCoeff.coeffCost          = zeros(mpcCoeff.order+1,5)
-    mpcCoeff.coeffConst         = zeros(mpcCoeff.order+1,5,3) # nz-1 because no coeff for s
+    mpcCoeff.coeffCost          = zeros(mpcCoeff.order+1,oldTraj.n_oldTraj)
+    mpcCoeff.coeffConst         = zeros(mpcCoeff.order+1,oldTraj.n_oldTraj,3) # nz-1 because no coeff for s
     mpcCoeff.pLength            = 4*mpcParams.N        # small values here may lead to numerical problems since the functions are only approximated in a short horizon
 
     lapStatus.currentLap        = 1         # initialize lap number

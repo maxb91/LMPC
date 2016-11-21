@@ -51,7 +51,7 @@
     InitializeParameters(mpcParams,trackCoeff,modelParams,posInfo,oldTraj,mpcCoeff,lapStatus,obstacle,buffersize,n_rounds)
     mpcSol.u  = zeros(mpcParams.N,2)
     mpcSol.z  = zeros(mpcParams.N+1,4) 
-    mpcSol.lambda = 0.2*ones(5)
+    mpcSol.lambda = 0.2*ones(oldTraj.n_oldTraj)
     #########
 
 
@@ -72,7 +72,7 @@
     
     #####################################
     println("Initialize Model........")
-    InitializeModel(m,mpcParams,modelParams,trackCoeff,z_Init, obstacle)
+    InitializeModel(m,mpcParams,modelParams,trackCoeff,z_Init, obstacle,oldTraj)
     println("Initial solve........")
     solve(m.mdl)
     println("Initial solve done!")
@@ -99,7 +99,7 @@
     end
     z_pred_log = zeros(mpcParams.N+1,4,length(t),n_rounds)
     u_pred_log = zeros(mpcParams.N,2,length(t),n_rounds)
-    lambda_log = zeros(5,length(t),n_rounds)
+    lambda_log = zeros(oldTraj.n_oldTraj,length(t),n_rounds)
     cost        = zeros(7,length(t),n_rounds)
 
     xStates_log = zeros(length(t),4, n_rounds)
@@ -134,10 +134,14 @@
             zCurr_x[1,2] = z_Init[2] # y = 2.505 for s = 32  12.6
             zCurr_x[1,3] = z_Init[3]
             uCurr[1,:] = u_final
-            #objective formulation, minimize the sum of all parts of the objective
-            @NLobjective(m.mdl, Min, m.costZ + m.costZTerm + m.constZTerm + m.derivCost + m.controlCost + m.laneCost + m.costObstacle)    
-        else
-           @NLobjective(m.mdl, Min, m.costPath) # path following cost in first round
+        end
+            
+        if j == 1
+            # path following cost in first round
+            @NLobjective(m.mdl, Min, m.costPath)
+        elseif j == 2
+            #learning objective formulation, minimize the sum of all parts of the objective
+            @NLobjective(m.mdl, Min, m.costZ + m.costZTerm + m.constZTerm + m.derivCost + m.controlCost + m.laneCost + m.costObstacle)
         end
         
         ###########iterations learning
@@ -184,7 +188,7 @@
                 end
             elseif i==1 && j>1
                 mpcSol.z[:,1] = mpcSol.z[:,1]-mpcSol.z[1,1]+0.32
-                mpcSol.lambda = zeros(5)
+                mpcSol.lambda = zeros(oldTraj.n_oldTraj)
                 mpcSol.lambda[1] = 1
             end
             setvalue(m.u_Ol, mpcSol.u)
@@ -298,5 +302,6 @@
         JLD.write(file, "mpcParams", mpcParams)
         JLD.write(file, "buffersize", buffersize)
         JLD.write(file, "curv_approx", curv_approx)
+        JLD.write(file, "oldTraj", oldTraj)
     end
     println("finished")

@@ -11,7 +11,7 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
     plot_curvature_approx=0
     plot_inputs = 1
     interactive_plot_steps = 3
-    file = "data/2016-11-21-00-04-Data.jld"
+    file = "data/2016-11-21-10-24-Data.jld"
     close("all")
 
 
@@ -34,6 +34,7 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
     mpcParams = Data["mpcParams"]
     buffersize = Data["buffersize"]
     curv_approx = Data["curv_approx"]
+    oldTraj     = Data["oldTraj"]
     #include("calculateObstacleXY.jl")
     include("helper/calculateObstacleXY.jl")
     #end of data loading
@@ -191,16 +192,14 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
         f_lambda =figure(4)
         f_lambda[:canvas][:set_window_title]("Lambda values over t")
         ax11= subplot(1,1,1)
-        plot(t[1:i_final[j]-1],lambda_log[1,1:i_final[j]-1,j])
-        plot(t[1:i_final[j]-1],lambda_log[2,1:i_final[j]-1,j])
-        plot(t[1:i_final[j]-1],lambda_log[3,1:i_final[j]-1,j])
-        plot(t[1:i_final[j]-1],lambda_log[4,1:i_final[j]-1,j])
-        plot(t[1:i_final[j]-1],lambda_log[5,1:i_final[j]-1,j])
+        for k=1: oldTraj.n_oldTraj
+            plot(t[1:i_final[j]-1],lambda_log[k,1:i_final[j]-1,j])
+        end
         xlabel("t in [s]")
         ylabel("lambda")
         grid()
         ax11[:set_ylim]([-0.01,1.01])
-        legend(["lambda1","lambda2","lambda3","lambda4","lambda5"])
+        legend(["lambda1","lambda2","lambda3","lambda4","lambda5", "lambda6","lambda7","lambda8","lambda9","lambda10"])
     end
 
 
