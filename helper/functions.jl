@@ -145,14 +145,11 @@ function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelP
     # Terminal constraints (soft), starting from 2nd lap
     #constraints force trajectory to end up on ss
     # ---------------------------------  
-    @NLexpression(m.mdl, constZTerm, (sum{Q_term[j]*( sum{m.lambda[k]*sum{m.coeffTermConst[i,k,j]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1},k=1:n_oldTraj}-
-                                                        m.z_Ol[N+1,j+1])^2,j=1:3}))
+    @NLexpression(m.mdl, constZTerm, (sum{Q_term[j]*( sum{m.lambda[k]*sum{m.coeffTermConst[i,k,j]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1},k=1:n_oldTraj}-m.z_Ol[N+1,j+1])^2,j=1:3}))
                                                         # m.lambda[2]*sum{m.coeffTermConst[i,2,j]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1}+
                                                         # m.lambda[3]*sum{m.coeffTermConst[i,3,j]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1}+
                                                         # m.lambda[4]*sum{m.coeffTermConst[i,4,j]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1}+
                                                         # m.lambda[5]*sum{m.coeffTermConst[i,5,j]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1}
-     # @NLexpression(m.mdl, constZTraj[k= 1:5], sum{Q_term[j]*sum{m.coeffTermConst[i,k,j]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1},j=1:3})
-     # @NLexpression(m.mdl, constZTerm, (sum{m.lambda[i]*constZTraj[i],i = 1:5}-sum{m.z_Ol[N+1,j+1],j=1:3})^2)
     m.constZTerm = constZTerm
    #basic idea:
     #@NLexpression(m.mdl, constZTerm, sum{Q_term[j]*(sum{coeffTermConst[i,1,j]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1}-m.z_Ol[N+1,j+1])^2,j=1:3})
