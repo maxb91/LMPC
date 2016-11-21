@@ -91,8 +91,11 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
     coeffY = Matrix\nodes_near_Y
     coeffX = Matrix\nodes_near_X  
 
-
-
+#######test
+    # @show g=(idx_min-1)*ds
+    # testdX = dot(coeffX,[6*g^5, 5*g^4, 4*g^3, 3*g^2, 2*g, 1, 0]) 
+    #  @show testX = dot(coeffX,[g^6, g^5, g^4, g^3, g^2, g, 1]) 
+    #######
     # now compute (s,y) needed for the MPC
     Counter = 1
     Discretization = 0.01*ds
@@ -191,7 +194,7 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
                 s0_vec[i] =s0^(OrderXY+1-i)
                #sdot_vec = (OrderXY+1-i)*s^(OrderXY-i) #this calucaltion does not work: problems with NaN last i  gives 0 *Inf =NaN
         end
-        sdot_vec = [6*s^5 5*s^4 4*s^3 3*s^2 2*s^1 1 0]'
+        sdot_vec = [6*s^5 5*s^4 4*s^3 3*s^2 2*s 1 0]'
 
         XCurve0 = coeffX'*s0_vec
         YCurve0 = coeffY'*s0_vec
@@ -217,7 +220,7 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
     # now compute the angle and the curvature needed for the interpolation
 
     b_theta_vector = zeros(nPoints+1,1)
-    b_curvature_vector = zeros(nPoints+1,1)
+    b_curvature_vector = zeros(nPoints+1)
     angle = 0.0
 
 
@@ -240,7 +243,7 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
             
         angle = atan2(dY,dX);
 
-        psi
+       
         if Counter > 1 #what do we do here? do we normalize angle when we drive against "Lane direction"
             DummyVar = angle-(b_theta_vector[Counter-1,1]) 
             if (DummyVar > pi)
@@ -259,7 +262,7 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
         b_theta_vector[Counter,1] = angle 
             
         curvature = (dX*ddY-dY*ddX)/(dX^2+dY^2)^(3/2) #standard curvature formula
-        b_curvature_vector[Counter,1] = curvature
+        b_curvature_vector[Counter] = curvature #there might still be problesm with the accuracy of the curvature calculation
            
         Counter = Counter + 1
     end
@@ -267,8 +270,6 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
     # compute coeff for theta and curvature
     coeffTheta=Matrix4th\b_theta_vector
     coeffCurv=Matrix4th\b_curvature_vector
-    coeffCurv = vec(coeffCurv)
-   
    #####T
    #test the approximation of the curvature
    # if itercount%20 == 0 
@@ -301,16 +302,14 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
     #####endT
 
 
-    XConvertedBackS=coeffX'*[s^6 s^5 s^4 s^3 s^2 s 1]' 
-    YConvertedBackS=coeffY'*[s^6 s^5 s^4 s^3 s^2 s 1]'   
+    # XConvertedBackS=coeffX'*[s^6 s^5 s^4 s^3 s^2 s 1]' 
+    # YConvertedBackS=coeffY'*[s^6 s^5 s^4 s^3 s^2 s 1]'   
         
-    angle=coeffTheta'*[s^4 s^3 s^2 s 1]'; #Make the sketch to understand why 
+    # angle=coeffTheta'*[s^4 s^3 s^2 s 1]'; #Make the sketch to understand why 
 
-        
-
-    XConvertedBack = XConvertedBackS - sin(angle)*ey 
-    YConvertedBack = YConvertedBackS + cos(angle)*ey
-    ErrorConvertedBack = sqrt((x-XConvertedBack[1])^2+((y-YConvertedBack[1])^2))
+    # XConvertedBack = XConvertedBackS - sin(angle)*ey 
+    # YConvertedBack = YConvertedBackS + cos(angle)*ey
+    # @show ErrorConvertedBack = sqrt((x-XConvertedBack[1])^2+((y-YConvertedBack[1])^2))
         
 
     # Finally compute epsi

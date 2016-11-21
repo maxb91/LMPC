@@ -117,6 +117,14 @@ type MpcModel
     bta::Array{JuMP.NonlinearExpression,1}
     c::Array{JuMP.NonlinearExpression,1}
 
+    costPath::JuMP.NonlinearExpression
+    costZ::JuMP.NonlinearExpression
+    costZTerm::JuMP.NonlinearExpression
+    constZTerm::JuMP.NonlinearExpression
+    derivCost::JuMP.NonlinearExpression
+    controlCost::JuMP.NonlinearExpression
+    laneCost::JuMP.NonlinearExpression
+    costObstacle::JuMP.NonlinearExpression
 
     MpcModel(mdl=JuMP.Model(),
                 z0=@NLparameter(mdl,z0[i=1:4]==0),
@@ -132,7 +140,15 @@ type MpcModel
                 #t=@variable(mdl,[1:11]),
                 dsdt=@NLexpression(mdl,dsdt[1:10],0), 
                 bta=@NLexpression(mdl,bta[1:10],0),
-                c=@NLexpression(mdl,c[1:10],0))= new(mdl,
+                c=@NLexpression(mdl,c[1:10],0),
+                costPath = @NLexpression(mdl,costPath,0),
+                costZ =@NLexpression(mdl,costZ,0),
+                costZTerm=@NLexpression(mdl,costZTerm,0),
+                constZTerm=@NLexpression(mdl,constZTerm,0),
+                derivCost=@NLexpression(mdl,derivCost,0),
+                controlCost=@NLexpression(mdl,controlCost,0),
+                laneCost=@NLexpression(mdl,laneCost,0),
+                costObstacle=@NLexpression(mdl,costObstacle,0))= new(mdl,
                                                         z0,
                                                         coeff,
                                                         uCurr,
@@ -146,58 +162,14 @@ type MpcModel
                                                         #t,
                                                         dsdt,
                                                         bta,
-                                                        c)
-
-            ## this coudl be used if jumps allows to have classes as parameter
-    # costPath::JuMP.NonlinearExpression
-    # costZ::JuMP.NonlinearExpression
-    # costZTerm::JuMP.NonlinearExpression
-    # constZTerm::JuMP.NonlinearExpression
-    # derivCost::JuMP.NonlinearExpression
-    # controlCost::JuMP.NonlinearExpression
-    # laneCost::JuMP.NonlinearExpression
-    # costObstacle::JuMP.NonlinearExpression
-
-    # MpcModel(mdl=JuMP.Model(),
-    #             z0=@NLparameter(mdl,z0[i=1:4]==0),
-    #             coeff=@NLparameter(mdl,coeff[i=1:5]==0),
-    #             uCurr=@NLparameter(mdl,zCurr[i=1:4]==0),
-    #             sCoord_obst=@NLparameter(mdl,sCoord_obst[i=1:2]==0),
-    #             #s_startC=@NLparameter(mdl, s_startC==0),
-    #             z_Ol=@variable(mdl,[1:11, 1:4]),
-    #             u_Ol=@variable(mdl,[1:10, 1:2]),
-    #             lambda=@variable(mdl,[1:5]),
-    #             #t=@variable(mdl,[1:11]),
-    #             dsdt=@NLexpression(mdl,dsdt[1:10],0), 
-    #             bta=@NLexpression(mdl,bta[1:10],0),
-    #             c=@NLexpression(mdl,c[1:10],0),
-    #             costPath = @NLexpression(mdl,costPath,0),
-    #             costZ =@NLexpression(mdl,costZ,0),
-    #             costZTerm=@NLexpression(mdl,costZTerm,0),
-    #             constZTerm=@NLexpression(mdl,constZTerm,0),
-    #             derivCost=@NLexpression(mdl,derivCost,0),
-    #             controlCost=@NLexpression(mdl,controlCost,0),
-    #             laneCost=@NLexpression(mdl,laneCost,0),
-    #             costObstacle=@NLexpression(mdl,costObstacle,0))= new(mdl,
-    #                                                     z0,
-    #                                                     coeff,
-    #                                                     uCurr,
-    #                                                     sCoord_obst,
-    #                                                     #s_startC,
-    #                                                     z_Ol,
-    #                                                     u_Ol,
-    #                                                     lambda,
-    #                                                     #t,
-    #                                                     dsdt,
-    #                                                     bta,
-    #                                                     c,
-    #                                                     costPath,
-    #                                                     costZ,
-    #                                                     costZTerm,
-    #                                                     constZTerm,
-    #                                                     derivCost,
-    #                                                     controlCost,
-    #                                                     laneCost,
-    #                                                     costObstacle)
+                                                        c,   
+                                                        costPath,
+                                                        costZ,
+                                                        costZTerm,
+                                                        constZTerm,
+                                                        derivCost,
+                                                        controlCost,
+                                                        laneCost,
+                                                        costObstacle)
 end
 end

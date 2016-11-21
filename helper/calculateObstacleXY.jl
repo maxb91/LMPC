@@ -9,7 +9,11 @@ function calculateObstacleXY!(obstacle, trackCoeff, xy_track::Array{Float64,2}, 
 	if s_under_ind == s_over_ind
 		s_over_ind = s_under_ind+1
 		s_over = s_over+trackCoeff.ds
-	end           
+	end    
+	if  s_over_ind > size(xy_track)[2]
+			s_over_ind  = size(xy_track)[2]
+			s_under_ind  = s_over_ind-1
+	end
 	weight1 = (obstacle.s_obstacle[i,j]-s_under)/trackCoeff.ds
 	weight2 = (s_over-obstacle.s_obstacle[i,j])/trackCoeff.ds
 	xy_coord_infront = [xy_track[1,s_over_ind] xy_track[2,s_over_ind]]
