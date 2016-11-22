@@ -9,7 +9,8 @@
 
 # structure of oldTrajectory: 1st dimension = state number, 2nd dimension = step number (time equiv.), 3rd dimennsion = lap number
 
-function coeffConstraintCost!(oldTraj::classes.OldTrajectory, mpcCoeff::classes.MpcCoeff, posInfo::classes.PosInfo, mpcParams::classes.MpcParams)
+function coeffConstraintCost!(oldTraj, mpcCoeff::classes.MpcCoeff, posInfo::classes.PosInfo, mpcParams::classes.MpcParams)
+   #!!::classes.OldTrajectory
     # this computes the coefficients for the cost and constraints
 
     # Outputs: 

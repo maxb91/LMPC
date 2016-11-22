@@ -1,5 +1,5 @@
-function saveOldTraj(oldTraj::classes.OldTrajectory,zCurr::Array{Float64}, zCurr_x::Array{Float64},uCurr::Array{Float64},lapStatus::classes.LapStatus,buffersize::Int64,dt::Float64)
-    
+function saveOldTraj(oldTraj,zCurr::Array{Float64}, zCurr_x::Array{Float64},uCurr::Array{Float64},lapStatus::classes.LapStatus,buffersize::Int64,dt::Float64, load_safeset::Bool)
+    #!!::classes.OldTrajectory
     i               = lapStatus.currentIt           # current iteration number, just to make notation shorter
     zCurr_export    = zeros(buffersize,4)
     uCurr_export    = zeros(buffersize,2)
@@ -13,15 +13,15 @@ function saveOldTraj(oldTraj::classes.OldTrajectory,zCurr::Array{Float64}, zCurr
     costLap         = lapStatus.currentIt               # the cost of the current lap is the time it took to reach the finish line
     
     # Save all data in oldTrajectory:
-    if lapStatus.currentLap == 1     
-        for i= 1:5                   # if it's the first lap
+    if lapStatus.currentLap == 1 && load_safeset == false    # if it's the first lap
+        for i= 1:oldTraj.n_oldTraj                 
         oldTraj.oldTraj[:,:,i]  = zCurr_export          # ... just save everything
         oldTraj.oldInput[:,:,i] = uCurr_export
         oldTraj.oldTrajXY[1:size(zCurr_x)[1],:,i] = zCurr_x
         oldTraj.oldCost[i] = costLap
         end
     else
-        for i = 4:-1:1
+        for i = oldTraj.n_oldTraj-1:-1:1
             oldTraj.oldTraj[:,:,i+1]  = oldTraj.oldTraj[:,:,i]    # ... copy the first in the second
             oldTraj.oldInput[:,:,i+1] = oldTraj.oldInput[:,:,i]   # ... same for the input
             oldTraj.oldTrajXY[:,:,i+1]  = oldTraj.oldTrajXY[:,:,i]   
@@ -92,12 +92,12 @@ function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelP
     #         setupperbound(m.z_Ol[j,i], modelParams.z_ub[j,i])
     #     end
     # end
-
+    @NLparameter(m.mdl,m.ssOn[1:n_oldTraj]== 1)
     @NLparameter(m.mdl, m.z0[i=1:4] == z_Init[i])
     @NLconstraint(m.mdl, [i=1:4], m.z_Ol[1,i] == m.z0[i])
 
     #@constraint(m.mdl, m.lambda[1]+m.lambda[2]+m.lambda[3]+m.lambda[4]+m.lambda[5]== 1)
-    @constraint(m.mdl, sum{m.lambda[j],j=1:n_oldTraj}== 1)
+    @NLconstraint(m.mdl, sum{m.ssOn[j]*m.lambda[j],j=1:n_oldTraj}== 1)
    
     # object avoidance constraint now done with slack cost instead slack constraint
     # set s and y obst as nlparamter
@@ -189,11 +189,11 @@ function InitializeParameters(mpcParams::classes.MpcParams,trackCoeff::classes.T
     mpcParams.N                 = 10                        #lenght of prediction horizon
     mpcParams.nz                = 4                         #number of States
     mpcParams.Q                 = [0.0,10.0,0.1,10.0]  #0 10 0 1    # put weights on ey, epsi and v, just for first round of PathFollowing
-    mpcParams.Q_term            = 100*[5.0,1.0,0.5]           # weights for terminal constraints (LMPC, for e_y, e_psi, and v)
+    mpcParams.Q_term            = 100*[5.0,1.0,1.0]           # weights for terminal constraints (LMPC, for e_y, e_psi, and v)
     mpcParams.Q_cost            = 0.5
     mpcParams.R                 = 0.001*[1.0,1.0]             # put weights on a and d_f
     mpcParams.QderivZ           = 1.0*[0,0.0,0.1,0.1]             # cost matrix for derivative cost of states
-    mpcParams.QderivU           = 0.1*[1,10]               # cost matrix for derivative cost of inputs
+    mpcParams.QderivU           = 0.1*[1,20]               # cost matrix for derivative cost of inputs
     mpcParams.vPathFollowing    = 0.6                 # reference speed for first lap of path following
 
     trackCoeff.nPolyCurvature   = 4                       # 4th order polynomial for curvature approximation
@@ -213,7 +213,7 @@ function InitializeParameters(mpcParams::classes.MpcParams,trackCoeff::classes.T
     posInfo.s_start             = 0.0
     posInfo.s_target            = 5.0
 
-    oldTraj.n_oldTraj     = 10 #number of old Trajectories for safe set
+    oldTraj.n_oldTraj     = 20 #number of old Trajectories for safe set
     oldTraj.oldTraj             = zeros(buffersize,4,oldTraj.n_oldTraj)
     oldTraj.oldTrajXY           = zeros(buffersize,4,oldTraj.n_oldTraj)
     oldTraj.oldInput            = zeros(buffersize,2,oldTraj.n_oldTraj)

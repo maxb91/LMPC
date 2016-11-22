@@ -58,8 +58,9 @@ type MpcSol             # MPC solution output
     u::Array{Float64}
     z::Array{Float64}
     lambda::Array{Float64,1}
+    ssOn::Array{Int64,1}
     cost::Array{Float64}
-    MpcSol(a_x=0.0, d_f=0.0, solverStatus=Symbol(), u=Float64[], z=Float64[], lambda= Float64[],cost=Float64[]) = new(a_x,d_f,solverStatus,u,z,lambda,cost)
+    MpcSol(a_x=0.0, d_f=0.0, solverStatus=Symbol(), u=Float64[], z=Float64[], lambda= Float64[], ssOn= Int64[],cost=Float64[]) = new(a_x,d_f,solverStatus,u,z,lambda,ssOn,cost)
 end
 
 type Obstacle
@@ -67,13 +68,14 @@ type Obstacle
     sy_obstacle::Array{Float64}
     rs::Float64
     ry::Float64
+    v::Float64
     index::Array{Int64,1} #!!currently not used , if that stay like this delete it
     xy_vector::Array{Float64}
     axis_y_up::Array{Float64}
     axis_y_down::Array{Float64}
     axis_s_up::Array{Float64}
     axis_s_down::Array{Float64}
-    Obstacle(s_obstacle = Float64[], sy_obstacle = Float64[], rs = 0.0, ry = 0.0, index=Int64[], xy_vector=Float64[], axis_y_up=Float64[], axis_y_down=Float64[], axis_s_up=Float64[], axis_s_down=Float64[])= new(s_obstacle,sy_obstacle,rs,ry,index, xy_vector,axis_y_up, axis_y_down, axis_s_up, axis_s_down)
+    Obstacle(s_obstacle = Float64[], sy_obstacle = Float64[], rs = 0.0, ry = 0.0,v= 0, index=Int64[], xy_vector=Float64[], axis_y_up=Float64[], axis_y_down=Float64[], axis_s_up=Float64[], axis_s_down=Float64[])= new(s_obstacle,sy_obstacle,rs,ry,v,index, xy_vector,axis_y_up, axis_y_down, axis_s_up, axis_s_down)
 end
 
 type TrackCoeff         # coefficients of track
@@ -101,6 +103,7 @@ end
 type MpcModel
     mdl::JuMP.Model
 
+    ssOn::Array{JuMP.NonlinearParameter,1}
     z0::Array{JuMP.NonlinearParameter,1}
     coeff::Array{JuMP.NonlinearParameter,1}
     uCurr::Array{JuMP.NonlinearParameter,1}
@@ -128,6 +131,7 @@ type MpcModel
     costObstacle::JuMP.NonlinearExpression
 
     MpcModel(mdl=JuMP.Model(),
+                ssOn=@NLparameter(mdl,ssOn[i=1:10]==1),
                 z0=@NLparameter(mdl,z0[i=1:4]==0),
                 coeff=@NLparameter(mdl,coeff[i=1:5]==0),
                 uCurr=@NLparameter(mdl,zCurr[i=1:4]==0),
@@ -150,6 +154,7 @@ type MpcModel
                 controlCost=@NLexpression(mdl,controlCost,0),
                 laneCost=@NLexpression(mdl,laneCost,0),
                 costObstacle=@NLexpression(mdl,costObstacle,0))= new(mdl,
+                                                        ssOn,
                                                         z0,
                                                         coeff,
                                                         uCurr,

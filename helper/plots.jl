@@ -11,7 +11,7 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
     plot_curvature_approx=0
     plot_inputs = 1
     interactive_plot_steps = 3
-    file = "data/2016-11-21-10-24-Data.jld"
+    file = "data/2016-11-22-12-05-Data.jld"
     close("all")
 
 
@@ -35,6 +35,7 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
     buffersize = Data["buffersize"]
     curv_approx = Data["curv_approx"]
     oldTraj     = Data["oldTraj"]
+    ssOn_log = Data["ssOn_log"]
     #include("calculateObstacleXY.jl")
     include("helper/calculateObstacleXY.jl")
     #end of data loading
@@ -188,18 +189,61 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
 ######endold
 
     # plot the values of lambda over t
-    if plot_lambda == 1 && j>1 
+    if plot_lambda == 1
         f_lambda =figure(4)
-        f_lambda[:canvas][:set_window_title]("Lambda values over t")
+        f_lambda[:canvas][:set_window_title]("Lambda x ssOn values over t")
         ax11= subplot(1,1,1)
         for k=1: oldTraj.n_oldTraj
-            plot(t[1:i_final[j]-1],lambda_log[k,1:i_final[j]-1,j])
+            plot(t[1:i_final[j]-1],lambda_log[k,1:i_final[j]-1,j].*ssOn_log[k,1:i_final[j]-1,j])
         end
         xlabel("t in [s]")
         ylabel("lambda")
         grid()
         ax11[:set_ylim]([-0.01,1.01])
         legend(["lambda1","lambda2","lambda3","lambda4","lambda5", "lambda6","lambda7","lambda8","lambda9","lambda10"])
+        
+        f_ssOn =figure(10)
+        f_ssOn[:canvas][:set_window_title](" ssOn values over t")
+        axssOn = subplot(2,2,1,sharex= ax11)
+        for k=1: oldTraj.n_oldTraj//4
+            k = convert(Int64,k)
+            plot(t[1:i_final[j]-1],ssOn_log[k,1:i_final[j]-1,j])
+        end
+        xlabel("t in [s]")
+        ylabel("ssOn")
+        grid()
+        axssOn[:set_ylim]([-0.01,1.01])
+        legend(["ssOn1","ssOn2","ssOn3","ssOn4","ssOn5", "ssOn6","ssOn7","ssOn8","ssOn9","ssOn10"])
+        axssOn2 = subplot(2,2,2,sharex= ax11)
+        for k=oldTraj.n_oldTraj//4+1: oldTraj.n_oldTraj//2
+            k = convert(Int64,k)
+            plot(t[1:i_final[j]-1],ssOn_log[k,1:i_final[j]-1,j])
+        end
+        xlabel("t in [s]")
+        ylabel("ssOn")
+        grid()
+        axssOn2[:set_ylim]([-0.01,1.01])
+        legend(["ssOn/4+1","ssOn/4+2","ssOn3","ssOn4","ssOn5", "ssOn6","ssOn7","ssOn8","ssOn9","ssOn10"])
+        axssOn3 = subplot(2,2,3,sharex= ax11)
+        for k=oldTraj.n_oldTraj//2+1: oldTraj.n_oldTraj*3//4
+            k = convert(Int64,k)
+            plot(t[1:i_final[j]-1],ssOn_log[k,1:i_final[j]-1,j])
+        end
+        xlabel("t in [s]")
+        ylabel("ssOn")
+        grid()
+        axssOn3[:set_ylim]([-0.01,1.01])
+        legend(["ssOn/2+1","ssOn/2+2","ssOn3","ssOn4","ssOn5", "ssOn6","ssOn7","ssOn8","ssOn9","ssOn10"])
+        axssOn4 = subplot(2,2,4,sharex= ax11)
+        for k=oldTraj.n_oldTraj*3//4+1: oldTraj.n_oldTraj
+            k = convert(Int64,k)
+            plot(t[1:i_final[j]-1],ssOn_log[k,1:i_final[j]-1,j])
+        end
+        xlabel("t in [s]")
+        ylabel("ssOn")
+        grid()
+        axssOn4[:set_ylim]([-0.01,1.01])
+        legend(["ssOn*3/4+1","ssOn/2+2","ssOn3","ssOn4","ssOn5", "ssOn6","ssOn7","ssOn8","ssOn9","ssOn10"])
     end
 
 
