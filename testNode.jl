@@ -45,12 +45,12 @@
     z_Init[2] = 2.505 # y = 2.505 for s = 32  12.6
     z_Init[3] = 0.94
     z_Init[4]  = 0.4
-    n_rounds = 6
-    load_safeset = true #currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
-    safeset = "data/2016-11-22-11-21-SafeSet.jld"
+   
+    load_safeset = true#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
+    safeset = "data/2016-11-23-23-01-SafeSet.jld"
 
     #########
-    InitializeParameters(mpcParams,trackCoeff,modelParams,posInfo,oldTraj,mpcCoeff,lapStatus,obstacle,buffersize,n_rounds)
+    InitializeParameters(mpcParams,trackCoeff,modelParams,posInfo,oldTraj,mpcCoeff,lapStatus,obstacle,buffersize)
     mpcSol.u  = zeros(mpcParams.N,2)
     mpcSol.z  = zeros(mpcParams.N+1,4) 
     mpcSol.lambda = zeros(oldTraj.n_oldTraj)
@@ -60,7 +60,7 @@
 
 
     posInfo.s_start             = 0.0 #does not get changed with the current version
-    posInfo.s_target            = 45.2 #has to be fitted to track , current test track form ugo has 113.2 meters
+    posInfo.s_target            = 30.2 #has to be fitted to track , current test track form ugo has 113.2 meters
      
     ##define obstacle x and xy vlaues not used at the moment 
     #for a clean definition of the x,y points the value of s_obstacle has to be the same as one of the points of the source map. 
@@ -91,20 +91,13 @@
     trackCoeff.coeffCurvature   = [0.0;0.0;0.0;0.0;0.0]        # polynomial coefficients for curvature approximation (zeros for straight line)
     trackCoeff.nPolyCurvature = 4 # has to be 4 cannot be changed freely at the moment orders are still hardcoded in some parts of localizeVehicleCurvAbslizeVehicleCurvAbs
     trackCoeff.nPolyXY = 6  # has to be 6 cannot be changed freely at the moment orders are still hardcoded in some parts of localizeVehicleCurvAbslizeVehicleCurvAbs
-    
-    i_final = Array{Int64}(n_rounds)
-    for j = 1:n_rounds
-        i_final[j]= buffersize
-    end
+    n_rounds = 6
     z_pred_log = zeros(mpcParams.N+1,4,length(t),n_rounds)
     u_pred_log = zeros(mpcParams.N,2,length(t),n_rounds)
     lambda_log = zeros(oldTraj.n_oldTraj,length(t),n_rounds)
     cost        = zeros(7,length(t),n_rounds)
 
-    ssOn_log = zeros(oldTraj.n_oldTraj, length(t), n_rounds)
-    xStates_log = zeros(length(t),4, n_rounds)
-    sStates_log = zeros(length(t),4, n_rounds)
-    uAppl_log = zeros(length(t),2, n_rounds)
+    ssInfOn_log = zeros(oldTraj.n_oldTraj, length(t), n_rounds)
     curv_approx = zeros(mpcParams.N,length(t), n_rounds)
 
     if load_safeset == true
@@ -184,8 +177,11 @@
                         index_first[k]  = findfirst(x -> x>posInfo.s, oldTraj.oldTraj[:,1,k])
                         index_last[k] = findfirst(y -> y>obstacle.s_obstacle[i,j]+obstacle.rs, oldTraj.oldTraj[:,1,k])
                         for ii = index_first[k]:index_last[k]
-                            if oldTraj.oldTraj[ii,2,k]> obstacle.sy_obstacle[i,j]-obstacle.ry && oldTraj.oldTraj[ii,2,k]< obstacle.sy_obstacle[i,j]+obstacle.ry
-                                setvalue(m.ssOn[k],0)
+                            if oldTraj.oldTraj[ii,2,k]> obstacle.sy_obstacle[i,j]-obstacle.ry && 
+                                oldTraj.oldTraj[ii,2,k]< obstacle.sy_obstacle[i,j]+obstacle.ry && 
+                                oldTraj.oldTraj[ii,1,k] <=(obstacle.s_obstacle[i,j]+obstacle.rs)  && 
+                                oldTraj.oldTraj[ii,1,k] >= (obstacle.s_obstacle[i,j]-obstacle.rs)
+                                setvalue(m.ssInfOn[k],1500)
                             end
                         end
                     end
@@ -216,20 +212,19 @@
             #####################
             solveMpcProblem!(m,mpcSol,mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr_s[i,:]',[mpcSol.a_x;mpcSol.d_f], obstacle,i)
             tt[i]       = toq()
-            setvalue(m.ssOn,ones(oldTraj.n_oldTraj))# reset the all trajectories to on position
+            setvalue(m.ssInfOn,ones(oldTraj.n_oldTraj))# reset the all trajectories to on position
 
-            #tic()
-            curv_approx[:,i,j]=getvalue(m.c)
-            #t_curv = toq() 
-            
+ 
 
             uCurr[i,:]  = [mpcSol.a_x mpcSol.d_f]
-            cost[:,i,j]   = mpcSol.cost
 
+            cost[:,i,j]   = mpcSol.cost
             lambda_log[:,i,j] = mpcSol.lambda
             z_pred_log[:,:,i,j] = mpcSol.z
             u_pred_log[:,:,i,j] = mpcSol.u
-            ssOn_log[:,i,j]= mpcSol.ssOn
+            ssInfOn_log[:,i,j]= mpcSol.ssInfOn
+            curv_approx[:,i,j]=getvalue(m.c)
+     
           
             #have Zcurr as states XY and simulate from there return XY values of states 
             zCurr_x[i+1,:]  = simModel_x(zCurr_x[i,:],uCurr[i,:],modelParams.dt,modelParams) #!! @show
@@ -241,7 +236,7 @@
             if i%50 == 0 
                 println(" Time: $(tt[i]) s, Solving step $i of $(length(t)) - Status: $(mpcSol.solverStatus)")
                 # if j > 1 || load_safeset == true
-                #     println("ssOn time: $tt1 s")
+                #     println("ssInfOn time: $tt1 s")
                 # end
                 # println("calculate abs: $t_absci s")
                 # println("get curve-approx = $t_curv")
@@ -266,15 +261,10 @@
         # Save states in oldTraj:
         # --------------------------------
 
-        saveOldTraj(oldTraj,zCurr_s, zCurr_x,uCurr,lapStatus,buffersize,modelParams.dt, load_safeset)
-        xStates_log[:,:,j] = zCurr_x
-        uAppl_log[:,:,j] = uCurr
-        sStates_log[:,:,j]= zCurr_s
-
-
+        saveOldTraj(oldTraj,zCurr_s, zCurr_x,uCurr,lapStatus,buffersize,modelParams.dt, load_safeset, cost[:,:,j],  lambda_log[:,:,j],z_pred_log[:,:,:,j],u_pred_log[:,:,:,j],ssInfOn_log[:,:,j] )
         
-        i_final[j] = i
-        if j >1 && i_final[j-1] <= i_final[j]
+        oldTraj.oldNIter[1] = i
+        if j>1 && oldTraj.oldNIter[2] <= oldTraj.oldNIter[1]
             warn("round was not faster. no learning")
             println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
         end
@@ -306,26 +296,17 @@
     println("Save data to $filename .......")
     jldopen(filename, "w") do file
         addrequire(file, classes) #ensures that custom data types are working when loaded
-        
-        JLD.write(file, "sStates_log", sStates_log)
-        JLD.write(file, "xStates_log", xStates_log)
-        JLD.write(file, "uAppl_log", uAppl_log)
-        JLD.write(file, "z_pred_log", z_pred_log)
-        JLD.write(file, "u_pred_log", u_pred_log)
-        JLD.write(file, "lambda_log", lambda_log)
-        JLD.write(file, "cost", cost)
-        JLD.write(file, "i_final", i_final)
+
         JLD.write(file, "x_track", x_track)
         JLD.write(file, "y_track", y_track)
-        JLD.write(file, "n_rounds", n_rounds)
         JLD.write(file, "trackCoeff", trackCoeff)
         JLD.write(file, "obstacle", obstacle)
-        JLD.write(file, "modelParams.dt", modelParams.dt)
+        JLD.write(file, "modelParams", modelParams)
         JLD.write(file, "mpcParams", mpcParams)
         JLD.write(file, "buffersize", buffersize)
         JLD.write(file, "curv_approx", curv_approx)
         JLD.write(file, "oldTraj", oldTraj)
-        JLD.write(file, "ssOn_log", ssOn_log)
+
     end
 
     #save the safeset

@@ -6,10 +6,9 @@ type LapStatus
 end
 
 # Structure of coeffConst:
-# 1st dimension specifies the state (1 = eY, 2 = ePsi, 3 = v)
-# 2nd dimension is the polynomial coefficient
-# 3rd dimension is not used
-# 4th dimension specifies one of the two lap numbers between which are iterated
+# 1st dimension is the polynomial coefficient
+# 2nd dimension dimension specifies the lap numbers between which are iterated
+# 3rd dimension specifies the state (1 = eY, 2 = ePsi, 3 = v)
 
 type MpcCoeff           # coefficients for trajectory approximation
     coeffCost::Array{Float64}
@@ -26,8 +25,13 @@ type OldTrajectory      # information about previous trajectories
     oldTraj::Array{Float64}
     oldTrajXY::Array{Float64}
     oldInput::Array{Float64}
-    oldCost::Array{Int64}
-    OldTrajectory(n_oldTraj = 0, oldTraj=Float64[],oldTrajXY=Float64[],oldInput=Float64[],oldCost=Float64[]) = new(n_oldTraj, oldTraj,oldTrajXY,oldInput,oldCost)
+    oldNIter
+    costs::Array{Float64}
+    lambda_sol::Array{Float64}
+    z_pred_sol::Array{Float64}
+    u_pred_sol::Array{Float64}
+    ssInfOn_sol::Array{Float64}
+    OldTrajectory(n_oldTraj = 0, oldTraj=Float64[],oldTrajXY=Float64[],oldInput=Float64[],oldNIter=Float64[],costs=Float64[],lambda_sol=Float64[],z_pred_sol=Float64[],u_pred_sol=Float64[],ssInfOn_sol=Float64[]) = new(n_oldTraj, oldTraj,oldTrajXY,oldInput,oldNIter,costs,lambda_sol,z_pred_sol,u_pred_sol,ssInfOn_sol)
 end
 
 type MpcParams          # parameters for MPC solver
@@ -37,11 +41,13 @@ type MpcParams          # parameters for MPC solver
     Q::Array{Float64,1}
     Q_term::Array{Float64,1}
     Q_cost::Float64
+    Q_obstacle::Float64
+    Q_lane::Float64
     R::Array{Float64,1}
     vPathFollowing::Float64
     QderivZ::Array{Float64,1}
     QderivU::Array{Float64,1}
-    MpcParams(N=0,nz=0,OrderCostCons=0,Q=Float64[],Q_term=Float64[],Q_cost=1.0,R=Float64[],vPathFollowing=1.0,QderivZ=Float64[],QderivU=Float64[]) = new(N,nz,OrderCostCons,Q,Q_term,Q_cost,R,vPathFollowing)
+    MpcParams(N=0,nz=0,OrderCostCons=0,Q=Float64[],Q_term=Float64[],Q_cost=1.0,Q_obstacle = 1.0,Q_lane = 1.0, R=Float64[],vPathFollowing=1.0,QderivZ=Float64[],QderivU=Float64[]) = new(N,nz,OrderCostCons,Q,Q_term,Q_cost,Q_obstacle,Q_lane,R,vPathFollowing)
 end
 
 type PosInfo            # current position information
@@ -58,9 +64,9 @@ type MpcSol             # MPC solution output
     u::Array{Float64}
     z::Array{Float64}
     lambda::Array{Float64,1}
-    ssOn::Array{Int64,1}
+    ssInfOn::Array{Int64,1}
     cost::Array{Float64}
-    MpcSol(a_x=0.0, d_f=0.0, solverStatus=Symbol(), u=Float64[], z=Float64[], lambda= Float64[], ssOn= Int64[],cost=Float64[]) = new(a_x,d_f,solverStatus,u,z,lambda,ssOn,cost)
+    MpcSol(a_x=0.0, d_f=0.0, solverStatus=Symbol(), u=Float64[], z=Float64[], lambda= Float64[], ssInfOn= Int64[],cost=Float64[]) = new(a_x,d_f,solverStatus,u,z,lambda,ssInfOn,cost)
 end
 
 type Obstacle
@@ -103,7 +109,7 @@ end
 type MpcModel
     mdl::JuMP.Model
 
-    ssOn::Array{JuMP.NonlinearParameter,1}
+    ssInfOn::Array{JuMP.NonlinearParameter,1}
     z0::Array{JuMP.NonlinearParameter,1}
     coeff::Array{JuMP.NonlinearParameter,1}
     uCurr::Array{JuMP.NonlinearParameter,1}
@@ -131,7 +137,7 @@ type MpcModel
     costObstacle::JuMP.NonlinearExpression
 
     MpcModel(mdl=JuMP.Model(),
-                ssOn=@NLparameter(mdl,ssOn[i=1:10]==1),
+                ssInfOn=@NLparameter(mdl,ssInfOn[i=1:10]==1),
                 z0=@NLparameter(mdl,z0[i=1:4]==0),
                 coeff=@NLparameter(mdl,coeff[i=1:5]==0),
                 uCurr=@NLparameter(mdl,zCurr[i=1:4]==0),
@@ -154,7 +160,7 @@ type MpcModel
                 controlCost=@NLexpression(mdl,controlCost,0),
                 laneCost=@NLexpression(mdl,laneCost,0),
                 costObstacle=@NLexpression(mdl,costObstacle,0))= new(mdl,
-                                                        ssOn,
+                                                        ssInfOn,
                                                         z0,
                                                         coeff,
                                                         uCurr,
