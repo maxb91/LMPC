@@ -10,9 +10,10 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
     plot_states_over_s = 1
     plot_curvature_approx=0
     plot_inputs = 1
+    plot_eps = 1
     interactive_plot_steps = 1
     n_oldTrajPlots = 6
-    file = "data/2016-11-23-23-36-Data.jld"
+    file = "data/2016-11-24-18-38-Data.jld"
     close("all")
 
     ####load data from file
@@ -148,7 +149,7 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
         ax10[:plot](x_track',y_track', linestyle="--", color = "yellow", linewidth = 0.5)#plot the racetrack
         car_plot = ax10[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[j],1,j], oldTraj.oldTrajXY[1:oldTraj.oldNIter[j],2,j], color = "blue")#always plot trajectory either to stay or delete in interactive mode
         for k= 1:n_oldTrajPlots#plot older trajectory
-            ax10[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[j+k],1,j+k], oldTraj.oldTrajXY[1:oldTraj.oldNIter[j+k],2,j+k], color = "green",linestyle=":")
+            ax10[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[j+k],1,j+k], oldTraj.oldTrajXY[1:oldTraj.oldNIter[j+k],2,j+k], color = "green",linestyle="--")
         end
         
         if interactive_plot == 1
@@ -164,8 +165,8 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
             s_obst_plot = ax10[:plot]([obstacle.axis_s_up[oldTraj.oldNIter[j],1,j],obstacle.axis_s_down[oldTraj.oldNIter[j],1,j]],[obstacle.axis_s_up[oldTraj.oldNIter[j],2,j],obstacle.axis_s_down[oldTraj.oldNIter[j],2,j]],color = "red")# plot the s semi axis
         end
         #plot the boundary lines
-        ax10[:plot](boundary_up[1,:], boundary_up[2,:],color="green",linestyle="--")
-        ax10[:plot](boundary_down[1,:], boundary_down[2,:],color="green",linestyle="--")
+        ax10[:plot](boundary_up[1,:], boundary_up[2,:],color="green",linestyle=":")
+        ax10[:plot](boundary_down[1,:], boundary_down[2,:],color="green",linestyle=":")
         gca()[:set_aspect]("equal", adjustable="box")
         grid() 
     end    
@@ -284,7 +285,7 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
     end
 
     if plot_inputs == 1
-        f_input = figure(7)
+        f_input = figure(6)
         f_input[:canvas][:set_window_title]("Inputs over s")  
         ax_Inp1 = subplot(211) 
         plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j], oldTraj.oldInput[1:oldTraj.oldNIter[j]-1,1,j], color= "green")
@@ -304,9 +305,21 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
 
     #plot the estimated curvature for debugging
     if plot_curvature_approx==1
-        f_curv_app = figure(6)
+        f_curv_app = figure(7)
         f_curv_app[:canvas][:set_window_title]("Curvature approximation over s")  
         plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j],curv_approx[1,1:oldTraj.oldNIter[j],j])
+        grid()
+    end
+
+    if plot_eps ==1
+        f_eps = figure(8)
+        f_eps[:canvas][:set_window_title]("values of Eps over s") 
+    
+        plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j],oldTraj.eps[1,1:oldTraj.oldNIter[j],j])
+        plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j],oldTraj.eps[2,1:oldTraj.oldNIter[j],j])
+        xlabel("s in [m]")
+        ylabel("value of epsilons")
+        legend(["epsilon left boundary","epsilon right boundary"])
         grid()
     end
     

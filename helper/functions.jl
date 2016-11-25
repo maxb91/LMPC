@@ -1,4 +1,4 @@
-function saveOldTraj(oldTraj,zCurr::Array{Float64}, zCurr_x::Array{Float64},uCurr::Array{Float64},lapStatus::classes.LapStatus,buffersize::Int64,dt::Float64, load_safeset::Bool, costs::Array{Float64},  lambda_log::Array{Float64},z_pred_log::Array{Float64},u_pred_log::Array{Float64},ssInfOn_log::Array{Float64})
+function saveOldTraj(oldTraj,zCurr::Array{Float64}, zCurr_x::Array{Float64},uCurr::Array{Float64},lapStatus::classes.LapStatus,buffersize::Int64,dt::Float64, load_safeset::Bool, costs::Array{Float64},  lambda_log::Array{Float64},z_pred_log::Array{Float64},u_pred_log::Array{Float64},ssInfOn_log::Array{Float64}, mpcSol::classes.MpcSol)
     #!!::classes.OldTrajectory
     i               = lapStatus.currentIt           # current iteration number, just to make notation shorter
     zCurr_export    = zeros(buffersize,4)
@@ -25,6 +25,7 @@ function saveOldTraj(oldTraj,zCurr::Array{Float64}, zCurr_x::Array{Float64},uCur
         oldTraj.z_pred_sol[:,:,:,k] = z_pred_log
         oldTraj.u_pred_sol[:,:,:,k] = u_pred_log
         oldTraj.ssInfOn_sol[:,:,k]= ssInfOn_log
+        oldTraj.eps[:,:,k] = mpcSol.eps
 
         end
     else
@@ -38,6 +39,7 @@ function saveOldTraj(oldTraj,zCurr::Array{Float64}, zCurr_x::Array{Float64},uCur
             oldTraj.z_pred_sol[:,:,:,k+1] = oldTraj.z_pred_sol[:,:,:,k]
             oldTraj.u_pred_sol[:,:,:,k+1] = oldTraj.u_pred_sol[:,:,:,k]
             oldTraj.ssInfOn_sol[:,:,k+1]= oldTraj.ssInfOn_sol[:,:,k]
+            oldTraj.eps[:,:,k+1] = oldTraj.eps[:,:,k]
         end
         oldTraj.oldTraj[:,:,1]  = zCurr_export                 # ... and write the new traj in the first
         oldTraj.oldInput[:,:,1] = uCurr_export
@@ -49,6 +51,7 @@ function saveOldTraj(oldTraj,zCurr::Array{Float64}, zCurr_x::Array{Float64},uCur
         oldTraj.z_pred_sol[:,:,:,1] = z_pred_log
         oldTraj.u_pred_sol[:,:,:,1] = u_pred_log
         oldTraj.ssInfOn_sol[:,:,1]= ssInfOn_log
+        oldTraj.eps[:,:,1] = mpcSol.eps
     end
     
 end
@@ -99,6 +102,7 @@ function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelP
     @variable( m.mdl, modelParams.z_lb[i,j]<= m.z_Ol[i =1:(N+1),j = 1:4]<= modelParams.z_ub[i,j])      # z = s, ey, epsi, v
     @variable( m.mdl,  modelParams.u_lb[i,j] <= m.u_Ol[i=1:N,j=1:2]<= modelParams.u_ub[i,j])          # overwrtie dim of in classes.jl?
     @variable( m.mdl, 0 <= m.lambda[1:n_oldTraj] <= 1)
+    @variable( m.mdl, m.eps[1:2] >=0)
 
     # for i=1:2      
     #     for j=1:N
@@ -118,7 +122,8 @@ function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelP
 
     #@constraint(m.mdl, m.lambda[1]+m.lambda[2]+m.lambda[3]+m.lambda[4]+m.lambda[5]== 1)
     @NLconstraint(m.mdl, sum{m.lambda[j],j=1:n_oldTraj}== 1)
-   
+    @NLconstraint(m.mdl,[i = 1:(N+1)], m.z_Ol[i,2]<=trackCoeff.width/2+ m.eps[1] )
+    @NLconstraint(m.mdl,[i = 1:(N+1)], m.z_Ol[i,2]>=-trackCoeff.width/2 - m.eps[2] )
     # object avoidance constraint now done with slack cost instead slack constraint
     # set s and y obst as nlparamter
     #@NLconstraint(m.mdl, [i=1:N+1], ((m.z_Ol[i,1]-m.sCoord_obst)/0.3)^2+((m.z_Ol[i,2]-sy_obst)/0.2)^2 == 1+m.t[i]^2)
@@ -154,7 +159,8 @@ function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelP
     m.derivCost= derivCost
     # Lane cost
     # ---------------------------------
-    @NLexpression(m.mdl, laneCost, Q_lane*sum{m.z_Ol[i,2]^2*((0.5+0.5*tanh(35*(m.z_Ol[i,2]-ey_max-0.09))) + (0.5-0.5*tanh(35*(m.z_Ol[i,2]+ey_max+0.09)))),i=1:N+1})
+    #@NLexpression(m.mdl, laneCost, Q_lane*sum{m.z_Ol[i,2]^2*((0.5+0.5*tanh(35*(m.z_Ol[i,2]-ey_max-0.09))) + (0.5-0.5*tanh(35*(m.z_Ol[i,2]+ey_max+0.09)))),i=1:N+1})
+    @NLexpression(m.mdl, laneCost, Q_lane*sum{300.0*m.eps[i]+200.0*m.eps[i]^2,i=1:2})
     m.laneCost = laneCost
     # Control Input cost
     # ---------------------------------
@@ -213,9 +219,9 @@ function InitializeParameters(mpcParams::classes.MpcParams,trackCoeff::classes.T
     mpcParams.Q_cost            = 0.5
     mpcParams.Q_obstacle        = 0.02
     mpcParams.Q_lane            = 1.0
-    mpcParams.R                 = 0.001*[1.0,1.0]             # put weights on a and d_f
+    mpcParams.R                 = 0.0*[1.0,1.0]             # put weights on a and d_f
     mpcParams.QderivZ           = 1.0*[0,0.0,0.1,0.1]             # cost matrix for derivative cost of states
-    mpcParams.QderivU           = 0.1*[1,15]               # cost matrix for derivative cost of inputs
+    mpcParams.QderivU           = 0.1*[1,10]               # cost matrix for derivative cost of inputs
     mpcParams.vPathFollowing    = 0.6                 # reference speed for first lap of path following
 
     trackCoeff.nPolyCurvature   = 4                       # 4th order polynomial for curvature approximation
@@ -245,6 +251,7 @@ function InitializeParameters(mpcParams::classes.MpcParams,trackCoeff::classes.T
     oldTraj.z_pred_sol =zeros(mpcParams.N+1,4,buffersize,oldTraj.n_oldTraj)
     oldTraj.u_pred_sol = zeros(mpcParams.N,2,buffersize,oldTraj.n_oldTraj)
     oldTraj.ssInfOn_sol = zeros(oldTraj.n_oldTraj,buffersize,oldTraj.n_oldTraj)
+    oldTraj.eps = zeros(2,buffersize,oldTraj.n_oldTraj)
 
     mpcCoeff.order              = 5
     mpcCoeff.coeffCost          = zeros(mpcCoeff.order+1,oldTraj.n_oldTraj)

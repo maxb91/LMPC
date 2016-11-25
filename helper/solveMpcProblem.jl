@@ -38,6 +38,7 @@ function solveMpcProblem!(m::classes.MpcModel,mpcSol::classes.MpcSol,mpcCoeff::c
     sol_z       = getvalue(m.z_Ol)
     mpcSol.lambda = getvalue(m.lambda)
     mpcSol.ssInfOn = getvalue(m.ssInfOn)
+    mpcSol.eps[:,iter] = getvalue(m.eps)
     # c_print = getvalue(m.c)
 
     if iter%50 ==0

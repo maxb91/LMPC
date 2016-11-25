@@ -35,7 +35,7 @@
     mpcParams                   = classes.MpcParams()
     m                           = classes.MpcModel()
 
-    buffersize                  = 800 #1501
+    buffersize                  = 1401 #1501
     close("all")
 
 
@@ -46,8 +46,8 @@
     z_Init[3] = 0.94
     z_Init[4]  = 0.4
    
-    load_safeset = true#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
-    safeset = "data/2016-11-23-23-01-SafeSet.jld"
+    load_safeset = false#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
+    safeset = "data/2016-11-24-16-24-SafeSet.jld"
 
     #########
     InitializeParameters(mpcParams,trackCoeff,modelParams,posInfo,oldTraj,mpcCoeff,lapStatus,obstacle,buffersize)
@@ -55,23 +55,24 @@
     mpcSol.z  = zeros(mpcParams.N+1,4) 
     mpcSol.lambda = zeros(oldTraj.n_oldTraj)
     mpcSol.lambda[1] = 1
+    mpcSol.eps = zeros(2,buffersize)
     #########
 
 
 
     posInfo.s_start             = 0.0 #does not get changed with the current version
-    posInfo.s_target            = 30.2 #has to be fitted to track , current test track form ugo has 113.2 meters
+    posInfo.s_target            = 70.2 #has to be fitted to track , current test track form ugo has 113.2 meters
      
     ##define obstacle x and xy vlaues not used at the moment 
     #for a clean definition of the x,y points the value of s_obstacle has to be the same as one of the points of the source map. 
     # the end semi axes are approximated over the secant of the points of the track. drawing might not be 100% accurate
-    s_obst_init = 15.0 
+    s_obst_init = 85.0 
     sy_obst_init = -0.2
     obstacle.s_obstacle[1,:] = s_obst_init#gets overwritten in loop (moving)
     obstacle.sy_obstacle[1,:]  = sy_obst_init#gets overwritten in loop (moving)
     obstacle.rs = 0.5
     obstacle.ry = 0.19
-    obstacle.v = 0.4
+    obstacle.v = 0.0
 
 
     
@@ -152,7 +153,7 @@
        
             # the argument i in localizeVehicleCurvAbs  is solely used for debugging purposes plots not needed for control
             # localize takes some time see ProfileView.view()
-            #tic()
+            tic()
             zCurr_s[i,:], trackCoeff.coeffCurvature = localizeVehicleCurvAbs(zCurr_x[i,:],x_track,y_track,trackCoeff, i)
             #t_absci =toq()
             #if the car has crossed the finish line
@@ -209,6 +210,7 @@
             # setvalue(m.u_Ol, mpcSol.u)
             # setvalue(m.z_Ol, mpcSol.z)
             # setvalue(m.lambda, mpcSol.lambda)
+            # setvalue(m.eps, mpcSol.eps)
             #####################
             solveMpcProblem!(m,mpcSol,mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr_s[i,:]',[mpcSol.a_x;mpcSol.d_f], obstacle,i)
             tt[i]       = toq()
@@ -232,9 +234,10 @@
             #update Position of the Obstacle car        
             computeObstaclePos!(obstacle, dt, i, j, x_track, trackCoeff)#this funciton computes values for row i+1
             
-            
+            tt2= toq()
             if i%50 == 0 
                 println(" Time: $(tt[i]) s, Solving step $i of $(length(t)) - Status: $(mpcSol.solverStatus)")
+                #println(" Time for whole iteration: $(tt2) s")
                 # if j > 1 || load_safeset == true
                 #     println("ssInfOn time: $tt1 s")
                 # end
@@ -260,9 +263,13 @@
 
         # Save states in oldTraj:
         # --------------------------------
+        tic()
+        saveOldTraj(oldTraj,zCurr_s, zCurr_x,uCurr,lapStatus,buffersize,modelParams.dt, load_safeset, cost[:,:,j],  lambda_log[:,:,j],z_pred_log[:,:,:,j],u_pred_log[:,:,:,j],ssInfOn_log[:,:,j], mpcSol )
+        tt3= toq()
+        println(" Time to save and overwrite trajectories: $(tt3) s")
+        ###############
 
-        saveOldTraj(oldTraj,zCurr_s, zCurr_x,uCurr,lapStatus,buffersize,modelParams.dt, load_safeset, cost[:,:,j],  lambda_log[:,:,j],z_pred_log[:,:,:,j],u_pred_log[:,:,:,j],ssInfOn_log[:,:,j] )
-        
+
         oldTraj.oldNIter[1] = i
         if j>1 && oldTraj.oldNIter[2] <= oldTraj.oldNIter[1]
             warn("round was not faster. no learning")

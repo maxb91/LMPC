@@ -31,7 +31,8 @@ type OldTrajectory      # information about previous trajectories
     z_pred_sol::Array{Float64}
     u_pred_sol::Array{Float64}
     ssInfOn_sol::Array{Float64}
-    OldTrajectory(n_oldTraj = 0, oldTraj=Float64[],oldTrajXY=Float64[],oldInput=Float64[],oldNIter=Float64[],costs=Float64[],lambda_sol=Float64[],z_pred_sol=Float64[],u_pred_sol=Float64[],ssInfOn_sol=Float64[]) = new(n_oldTraj, oldTraj,oldTrajXY,oldInput,oldNIter,costs,lambda_sol,z_pred_sol,u_pred_sol,ssInfOn_sol)
+    eps::Array{Float64}
+    OldTrajectory(n_oldTraj = 0, oldTraj=Float64[],oldTrajXY=Float64[],oldInput=Float64[],oldNIter=Float64[],costs=Float64[],lambda_sol=Float64[],z_pred_sol=Float64[],u_pred_sol=Float64[],ssInfOn_sol=Float64[],eps=Float64[]) = new(n_oldTraj, oldTraj,oldTrajXY,oldInput,oldNIter,costs,lambda_sol,z_pred_sol,u_pred_sol,ssInfOn_sol,eps)
 end
 
 type MpcParams          # parameters for MPC solver
@@ -65,8 +66,9 @@ type MpcSol             # MPC solution output
     z::Array{Float64}
     lambda::Array{Float64,1}
     ssInfOn::Array{Int64,1}
+    eps::Array{Float64}
     cost::Array{Float64}
-    MpcSol(a_x=0.0, d_f=0.0, solverStatus=Symbol(), u=Float64[], z=Float64[], lambda= Float64[], ssInfOn= Int64[],cost=Float64[]) = new(a_x,d_f,solverStatus,u,z,lambda,ssInfOn,cost)
+    MpcSol(a_x=0.0, d_f=0.0, solverStatus=Symbol(), u=Float64[], z=Float64[], lambda= Float64[], ssInfOn= Int64[],eps=Float64[],cost=Float64[]) = new(a_x,d_f,solverStatus,u,z,lambda,ssInfOn,eps,cost)
 end
 
 type Obstacle
@@ -121,7 +123,7 @@ type MpcModel
     z_Ol::Array{JuMP.Variable,2}
     u_Ol::Array{JuMP.Variable,2}
     lambda::Array{JuMP.Variable,1}
-    #t::Array{JuMP.Variable,1}
+    eps::Array{JuMP.Variable,1}
 
     dsdt::Array{JuMP.NonlinearExpression,1}
     bta::Array{JuMP.NonlinearExpression,1}
@@ -148,7 +150,7 @@ type MpcModel
                 z_Ol=@variable(mdl,[1:11, 1:4]),
                 u_Ol=@variable(mdl,[1:10, 1:2]),
                 lambda=@variable(mdl,[1:5]),
-                #t=@variable(mdl,[1:11]),
+                eps=@variable(mdl,[1:2]),
                 dsdt=@NLexpression(mdl,dsdt[1:10],0), 
                 bta=@NLexpression(mdl,bta[1:10],0),
                 c=@NLexpression(mdl,c[1:10],0),
@@ -171,7 +173,7 @@ type MpcModel
                                                         z_Ol,
                                                         u_Ol,
                                                         lambda,
-                                                        #t,
+                                                        eps,
                                                         dsdt,
                                                         bta,
                                                         c,   
