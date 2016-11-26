@@ -47,9 +47,8 @@ function run_sim()
     coeff_sysID                 = (zeros(length(t),4),zeros(length(t),4),zeros(length(t),3))      # xDot, yDot, psiDot
     step_diff                   = zeros(length(t),6)        # one-step errors
 
-    posInfo.s_target            = 7
-    trackCoeff.coeffCurvature   = zeros(9)         # polynomial coefficients for curvature approximation (zeros for straight line)
-    
+    posInfo.s_target            = 20
+
     z_final         = zeros(8)
     z_final_meas    = zeros(6)
 
@@ -58,6 +57,17 @@ function run_sim()
     uPrev           = zeros(10,2)
 
     n_pf            = 3             # number of path-following laps
+
+    s_track = 0.1:.1:20               # s from 0 to 20 meters
+    c_track = zeros(200)
+    c_track[1:10] = 0
+    c_track[11:30] = linspace(0,0.1,20)
+    c_track[31:50] = linspace(0.1,0,20)
+    c_track[51:100] = 0
+    c_track[101:150] = linspace(0,0.2,50)
+    c_track[151:200] = linspace(0.2,0,50)
+
+    s_track, c_track = prepareTrack(s_track, c_track)
 
     # Run 10 laps
     for j=1:10
@@ -84,17 +94,9 @@ function run_sim()
         # --------------------------------
         i = 1
         while i<length(t) && !finished
-            # Define track curvature
-            if zCurr[i,6] <= 1.0
-                trackCoeff.coeffCurvature[9] = 0.0
-            elseif zCurr[i,6] <= 3
-                trackCoeff.coeffCurvature[9] = 0.2
-            elseif zCurr[i,6] <= 5
-                trackCoeff.coeffCurvature[9] = -0.2
-            else
-                trackCoeff.coeffCurvature[9] = 0.0
-            end
             println("///////////////////////////////// STARTING ONE ITERATION /////////////////////////////////")
+            # Define track curvature
+            trackCoeff.coeffCurvature = find_curvature(s_track,c_track,zCurr[i,6],trackCoeff)
 
             # Calculate coefficients for LMPC (if at least in the 2nd lap)
             posInfo.s   = zCurr_meas[i,6]
@@ -108,10 +110,10 @@ function run_sim()
             # Calculate optimal inputs u_i (solve MPC problem)
             tic()
             if j <= n_pf                   # if we are in the first x laps of path following
-                z_pf = [zCurr_meas[i,6],zCurr_meas[i,5],zCurr_meas[i,4],zCurr_meas[i,1]]        # use kinematic model and its states
+                z_pf = [zCurr[i,6],zCurr[i,5],zCurr[i,4],norm(zCurr[i,1:2])]        # use kinematic model and its states
                 solveMpcProblem_pathFollow(mdl_pF,mpcSol,mpcParams_pF,trackCoeff,posInfo,modelParams,z_pf,uPrev)
             else                        # otherwise: use system-ID-model
-                solveMpcProblem(mdl,mpcSol,mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr_meas[i,:]',uPrev)
+                solveMpcProblem(mdl,mpcSol,mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr[i,1:6]',uPrev)
             end
             
             # Ideas: Faster dynamics in car. Add first order damping system in MPC prediction. Can we use the exact same data twice? Overfitting?
@@ -123,7 +125,7 @@ function run_sim()
             uCurr[i,:]          = [mpcSol.a_x mpcSol.d_f]
             uPrev               = circshift(uPrev,1)
             uPrev[1,:]          = uCurr[i,:]
-            zCurr[i+1,:]        = simDynModel_exact(zCurr[i,:],uCurr[i,:],modelParams.dt,trackCoeff.coeffCurvature,modelParams)
+            zCurr[i+1,:]        = simDynModel_exact(zCurr[i,:],uCurr[i,:],modelParams.dt,modelParams,trackCoeff)
             zCurr_meas[i+1,:]   = zCurr[i+1,1:6] + randn(1,6)*diagm([0.01,0.01,0.001,0.001,0.001,0.001])
 
             if j <= n_pf
@@ -136,7 +138,9 @@ function run_sim()
 
             # Check if we're crossing the finish line
             if zCurr_meas[i+1,6] >= posInfo.s_target
-                println("Reaching finish line at step $(i+1)")
+                oldTraj.idx_end[lapStatus.currentLap] = oldTraj.count[lapStatus.currentLap]
+                oldTraj.oldCost[lapStatus.currentLap] = oldTraj.idx_end[lapStatus.currentLap] - oldTraj.idx_start[lapStatus.currentLap]
+                println("Reaching finish line at step $(i+1), cost = $(oldTraj.oldCost[lapStatus.currentLap])")
                 finished = true
             end
 
@@ -280,10 +284,50 @@ function run_sim()
     end
 end
 
+function prepareTrack(s_track,c_track)
+    sz = size(s_track,1)
+    s_target = s_track[end]
+    s_new = zeros(3*sz)
+    c_new = zeros(3*sz)
+    s_new[1:sz] = s_track-s_target
+    s_new[sz+1:2*sz] = s_track
+    s_new[2*sz+1:3*sz] = s_track + s_target
+    c_new[1:sz] = c_track
+    c_new[sz+1:2*sz] = c_track
+    c_new[2*sz+1:3*sz] = c_track
+    return s_new, c_new
+end
+function find_curvature(s_track,c_track,s,trackCoeff)
+    sz = size(s_track,1)
+    prev = 10
+    ahea = 20                   # 30*0.1 = 3 meter ahead
+    n_tot = prev+ahea+1
+    idx_min = indmin((s-s_track).^2)
+    idx = idx_min-prev:idx_min+ahea
+    intM = zeros(n_tot,trackCoeff.nPolyCurvature+1)
+    for i=1:trackCoeff.nPolyCurvature+1
+        intM[:,i] = s_track[idx].^(trackCoeff.nPolyCurvature+1-i)
+    end
+    coeff = intM\c_track[idx]
+    return coeff
+end
+function plot_curvature(s_track,c_track,trackCoeff)
+    for i=0:.1:20
+        s = i-1:.1:i+1
+        coeff = find_curvature(s_track,c_track,i,trackCoeff)
+        #c = [s.^8 s.^7 s.^6 s.^5 s.^4 s.^3 s.^2 s.^1 s.^0]*coeff
+        c = zeros(size(s,1))
+        for i=1:trackCoeff.nPolyCurvature+1
+            c += s.^(trackCoeff.nPolyCurvature+1-i)*coeff[i]
+        end
+        plot(s,c)
+    end
+    plot(s_track,c_track)
+    grid("on")
+end
 # Sequence of Laps:
 # 1st lap:
 # Path following, collect data. Actually only the end of the first lap is used for the data of the 2nd lap.
-# End of lap: Save trajectory
 # 2nd lap:
 # Path following, append data to first old trajectory and collect further data
 # Data of the end of 1st lap is added to data of 2nd lap.
