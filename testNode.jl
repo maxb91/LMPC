@@ -1,6 +1,7 @@
 using JuMP
 using Ipopt
 using PyPlot
+using JLD
 
 include("barc_lib/classes.jl")
 include("barc_lib/LMPC/MPC_models.jl")
@@ -29,7 +30,7 @@ function run_sim()
     mpcParams                   = MpcParams()
     mpcParams_pF                = MpcParams()       # for 1st lap (path following)
 
-    buffersize                  = 700
+    buffersize                  = 5000
 
     InitializeParameters(mpcParams,mpcParams_pF,trackCoeff,modelParams,posInfo,oldTraj,mpcCoeff,lapStatus,buffersize)
     mdl    = MpcModel(mpcParams,mpcCoeff,modelParams,trackCoeff)
@@ -37,17 +38,22 @@ function run_sim()
 
     # Simulation parameters
     dt                          = modelParams.dt::Float64
-    t                           = collect(0:dt:40)          # time vector
+    t                           = collect(0:dt:60)          # time vector
     zCurr                       = zeros(length(t),8)        # these are the simulated states
     zCurr_meas                  = zeros(length(t),6)        # these are the measured states (added noise)
     uCurr                       = zeros(length(t),2)        # these are the inputs
     cost                        = zeros(length(t),6)        # these are MPC cost values at each step
 
+    log_z                       = zeros(length(t),8,30)     # log z for 30 laps
+    log_u                       = zeros(length(t),2,30)     # log u for 30 laps
+    log_xy                      = zeros(length(t),2,30)     # log x-y-data for 30 laps
+    log_ParInt                  = zeros(length(t),30)       # log ParInt data
+
     # Logging parameters
     coeff_sysID                 = (zeros(length(t),4),zeros(length(t),4),zeros(length(t),3))      # xDot, yDot, psiDot
     step_diff                   = zeros(length(t),6)        # one-step errors
 
-    posInfo.s_target            = 20
+    posInfo.s_target            = 50.49
 
     z_final         = zeros(8)
     z_final_meas    = zeros(6)
@@ -58,19 +64,41 @@ function run_sim()
 
     n_pf            = 3             # number of path-following laps
 
-    s_track = 0.1:.1:20               # s from 0 to 20 meters
-    c_track = zeros(200)
-    c_track[1:10] = 0
-    c_track[11:30] = linspace(0,0.1,20)
-    c_track[31:50] = linspace(0.1,0,20)
-    c_track[51:100] = 0
-    c_track[101:150] = linspace(0,0.2,50)
-    c_track[151:200] = linspace(0.2,0,50)
+    # s_track = 0.01:.01:20               # s from 0 to 20 meters
+    # c_track = zeros(2000)
+    # c_track[1:100] = 0
+    # c_track[101:300] = linspace(0,pi/4,200)
+    # c_track[301:500] = linspace(pi/4,0,200)
+    # c_track[501:1000] = 0
+    # c_track[1001:1500] = linspace(0,-pi/5,500)
+    # c_track[1501:2000] = linspace(-pi/5,0,500)
 
-    s_track, c_track = prepareTrack(s_track, c_track)
+    s_track = 0.01:.01:50.49
+    c_track = zeros(5049)
+    c_track[1:300] = 0
+    c_track[301:400] = linspace(0,-pi/2,100)
+    c_track[401:500] = linspace(-pi/2,0,100)
+    c_track[501:900] = 0
+    c_track[901:1000] = linspace(0,-pi/2,100)
+    c_track[1001:1100] = linspace(-pi/2,0,100)
+    c_track[1101:1200] = linspace(0,-pi/4,100)
+    c_track[1201:1300] = linspace(-pi/4,0,100)
+    c_track[1301:1600] = 0
+    c_track[1601:2100] = linspace(0,10*pi/4/10,500)
+    c_track[2101:2600] = linspace(10*pi/4/10,0,500)
+    c_track[2601:2900] = linspace(0,-pi/3,300)
+    c_track[2901:3200] = linspace(-pi/3,0,300)
+    c_track[3201:3500] = 0
+    c_track[3501:3700] = linspace(0,-2*pi/2/4,200)
+    c_track[3701:3900] = linspace(-2*pi/2/4,0,200)
+    c_track[3901:4102] = 0
+    c_track[4103:4402] = linspace(0,-2*pi/2/6,300)
+    c_track[4403:4702] = linspace(-2*pi/2/6,0,300)
+
+    s_track_p, c_track_p = prepareTrack(s_track, c_track)
 
     # Run 10 laps
-    for j=1:10
+    for j=1:15
         # Initialize Lap
         lapStatus.currentLap = j
 
@@ -96,7 +124,7 @@ function run_sim()
         while i<length(t) && !finished
             println("///////////////////////////////// STARTING ONE ITERATION /////////////////////////////////")
             # Define track curvature
-            trackCoeff.coeffCurvature = find_curvature(s_track,c_track,zCurr[i,6],trackCoeff)
+            trackCoeff.coeffCurvature = find_curvature(s_track_p,c_track_p,zCurr[i,6],trackCoeff)
 
             # Calculate coefficients for LMPC (if at least in the 2nd lap)
             posInfo.s   = zCurr_meas[i,6]
@@ -151,7 +179,7 @@ function run_sim()
             oldTraj.count[lapStatus.currentLap] += 1
 
             # if necessary: append to end of previous lap
-            if lapStatus.currentLap > 1 && zCurr_meas[i,6] < 5.0
+            if lapStatus.currentLap > 1 && zCurr_meas[i,6] < 15.0
                 oldTraj.oldTraj[oldTraj.count[lapStatus.currentLap-1],:,lapStatus.currentLap-1] = zCurr_meas[i,:]
                 oldTraj.oldTraj[oldTraj.count[lapStatus.currentLap-1],6,lapStatus.currentLap-1] += posInfo.s_target
                 oldTraj.oldInput[oldTraj.count[lapStatus.currentLap-1],:,lapStatus.currentLap-1] = uCurr[i,:]
@@ -159,7 +187,7 @@ function run_sim()
             end
 
             #if necessary: append to beginning of next lap
-            if zCurr_meas[i,6] > posInfo.s_target - 5.0
+            if zCurr_meas[i,6] > posInfo.s_target - 15.0
                 oldTraj.oldTraj[oldTraj.count[lapStatus.currentLap+1],:,lapStatus.currentLap+1] = zCurr_meas[i,:]
                 oldTraj.oldTraj[oldTraj.count[lapStatus.currentLap+1],6,lapStatus.currentLap+1] -= posInfo.s_target
                 oldTraj.oldInput[oldTraj.count[lapStatus.currentLap+1],:,lapStatus.currentLap+1] = uCurr[i,:]
@@ -190,19 +218,34 @@ function run_sim()
             #     readline()
             # end
 
+            # Logging
+            log_z[i,:,lapStatus.currentLap] = zCurr[i,:]
+            log_u[i,:,lapStatus.currentLap] = uCurr[i,:]
+            if lapStatus.currentLap > n_pf
+                log_ParInt[i,lapStatus.currentLap] = getvalue(mdl.ParInt)
+            end
             i = i + 1
-            lapStatus.currentIt = i
         end
 
         # i = number of steps to *cross* the finish line -> s[i] >= s_target
-        lapStatus.currentIt = i
         z_final             = zCurr[i,:]
         z_final_meas        = zCurr_meas[i,:]
 
         println("=================\nFinished Solving. Avg. time = $(mean(tt[1:i])) s")
         println("Finished Lap Nr. $j with state $(zCurr[i,:])")
 
-        if j>n_pf
+        x_xy = transf_s_to_x(s_track,c_track,zCurr[1:i,6],zCurr[1:i,5])
+        log_xy[1:i,:,lapStatus.currentLap] = x_xy
+
+        if j>20#n_pf
+            figure(10)
+            path_x,xl,xr = s_to_x(s_track,c_track)
+            plot(path_x[:,1],path_x[:,2],"b--",xl[:,1],xl[:,2],"b-",xr[:,1],xr[:,2],"b-")
+            plot(x_xy[:,1],x_xy[:,2])
+            grid("on")
+            title("x-y-view")
+            axis("equal")
+
             figure(4)
             subplot(211)
             title("Old Trajectory #1")
@@ -282,6 +325,10 @@ function run_sim()
             readline()
         end
     end
+    # Save simulation data
+    log_path = "sim.jld"
+    save(log_path,"t",t,"z",log_z,"u",log_u,"x",log_xy)
+    println("Saved simulation data.")
 end
 
 function prepareTrack(s_track,c_track)
@@ -299,8 +346,8 @@ function prepareTrack(s_track,c_track)
 end
 function find_curvature(s_track,c_track,s,trackCoeff)
     sz = size(s_track,1)
-    prev = 10
-    ahea = 20                   # 30*0.1 = 3 meter ahead
+    prev = 100                  # 100*0.01 = 1 meter back
+    ahea = 200                  # 200*0.01 = 2 meter ahead
     n_tot = prev+ahea+1
     idx_min = indmin((s-s_track).^2)
     idx = idx_min-prev:idx_min+ahea
@@ -311,20 +358,7 @@ function find_curvature(s_track,c_track,s,trackCoeff)
     coeff = intM\c_track[idx]
     return coeff
 end
-function plot_curvature(s_track,c_track,trackCoeff)
-    for i=0:.1:20
-        s = i-1:.1:i+1
-        coeff = find_curvature(s_track,c_track,i,trackCoeff)
-        #c = [s.^8 s.^7 s.^6 s.^5 s.^4 s.^3 s.^2 s.^1 s.^0]*coeff
-        c = zeros(size(s,1))
-        for i=1:trackCoeff.nPolyCurvature+1
-            c += s.^(trackCoeff.nPolyCurvature+1-i)*coeff[i]
-        end
-        plot(s,c)
-    end
-    plot(s_track,c_track)
-    grid("on")
-end
+
 # Sequence of Laps:
 # 1st lap:
 # Path following, collect data. Actually only the end of the first lap is used for the data of the 2nd lap.
