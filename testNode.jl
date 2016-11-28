@@ -153,7 +153,7 @@ function run_sim()
             uCurr[i,:]          = [mpcSol.a_x mpcSol.d_f]
             uPrev               = circshift(uPrev,1)
             uPrev[1,:]          = uCurr[i,:]
-            zCurr[i+1,:]        = simDynModel_exact(zCurr[i,:],uCurr[i,:],modelParams.dt,modelParams,trackCoeff)
+            zCurr[i+1,:]        = simDynModel_exact(zCurr[i,:],[uPrev[1,1],uPrev[3,2]],modelParams.dt,modelParams,trackCoeff)
             zCurr_meas[i+1,:]   = zCurr[i+1,1:6] + randn(1,6)*diagm([0.01,0.01,0.001,0.001,0.001,0.001])
 
             if j <= n_pf
@@ -237,7 +237,7 @@ function run_sim()
         x_xy = transf_s_to_x(s_track,c_track,zCurr[1:i,6],zCurr[1:i,5])
         log_xy[1:i,:,lapStatus.currentLap] = x_xy
 
-        if j>20#n_pf
+        if j>0#n_pf
             figure(10)
             path_x,xl,xr = s_to_x(s_track,c_track)
             plot(path_x[:,1],path_x[:,2],"b--",xl[:,1],xl[:,2],"b-",xr[:,1],xr[:,2],"b-")
