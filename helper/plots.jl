@@ -10,10 +10,10 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
     plot_states_over_s = 1
     plot_curvature_approx=0
     plot_inputs = 1
-    plot_eps = 1
+    plot_eps = 0
     interactive_plot_steps = 1
     n_oldTrajPlots = 6
-    file = "data/2016-11-24-18-38-Data.jld"
+    file = "data/2016-11-29-01-03-Data.jld"
     close("all")
 
     ####load data from file
@@ -146,14 +146,14 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
         f_xy_plot= figure(3)
         f_xy_plot[:canvas][:set_window_title]("Track and cars in XY plane")
         ax10 = subplot(1,1,1)
-        ax10[:plot](x_track',y_track', linestyle="--", color = "yellow", linewidth = 0.5)#plot the racetrack
-        car_plot = ax10[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[j],1,j], oldTraj.oldTrajXY[1:oldTraj.oldNIter[j],2,j], color = "blue")#always plot trajectory either to stay or delete in interactive mode
+        ax10[:plot](x_track',y_track', linestyle="--", color = "#FF9900", linewidth = 0.5)#plot the racetrack
+        car_plot = ax10[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[j],1,j], oldTraj.oldTrajXY[1:oldTraj.oldNIter[j],2,j], color = "black")#always plot trajectory either to stay or delete in interactive mode
         for k= 1:n_oldTrajPlots#plot older trajectory
-            ax10[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[j+k],1,j+k], oldTraj.oldTrajXY[1:oldTraj.oldNIter[j+k],2,j+k], color = "green",linestyle="--")
+            ax10[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[j+k],1,j+k], oldTraj.oldTrajXY[1:oldTraj.oldNIter[j+k],2,j+k],linestyle="--")
         end
         
         if interactive_plot == 1
-            ax10[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[j],1,j], oldTraj.oldTrajXY[1:oldTraj.oldNIter[j],2,j], color = "blue" ,linestyle=":")# plot trajectory less visible to overwrite it with interactiv simulation
+            ax10[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[j],1,j], oldTraj.oldTrajXY[1:oldTraj.oldNIter[j],2,j], color = "black" ,linestyle=":")# plot trajectory less visible to overwrite it with interactiv simulation
             pred_plot = ax10[:plot](xy_pred[:,1,1,j],xy_pred[:,2,1,j],color = "yellow", marker="o") 
             obstacle_plot = ax10[:plot](obstacle.xy_vector[1,1,j], obstacle.xy_vector[1,2,j], color = "red",marker="o")
             y_obst_plot = ax10[:plot]([obstacle.axis_y_up[1,1,j],obstacle.axis_y_down[1,1,j]],[obstacle.axis_y_up[1,2,j],obstacle.axis_y_down[1,2,j]],color = "red")#plot the y semi axis
@@ -170,17 +170,6 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
         gca()[:set_aspect]("equal", adjustable="box")
         grid() 
     end    
-    ##########
-
-#####old
-    # #ax4[:set_xlim]([5.7,5.9])
-    # #ax4[:set_ylim]([8.0,8.2])
-    # figure(6)
-        # plot(zCurr_s[1:oldTraj.oldNIter[j],1], zCurr_x[1:oldTraj.oldNIter[j],3])
-        # xlabel("s in [m]")
-        # ylabel("absolute angle psi in [rad]")
-        # legend(["absolute angle psi plotted over s"]) 
-######endold
 
     # plot the values of lambda over t
     if plot_lambda == 1
@@ -319,7 +308,7 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
         plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j],oldTraj.eps[2,1:oldTraj.oldNIter[j],j])
         xlabel("s in [m]")
         ylabel("value of epsilons")
-        legend(["epsilon left boundary","epsilon right boundary"])
+        legend(["epsilon left boundary","epsilon right boundary", "epsilon obstacle"])
         grid()
     end
     
@@ -347,10 +336,10 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
             pred_plot[1][:remove]()
 
             pred_plot = ax10[:plot](xy_pred[:,1,i,j],xy_pred[:,2,i,j], color = "yellow", marker="o") # plot predicted states
-            ax10[:plot](oldTraj.oldTrajXY[1:i,1,j], oldTraj.oldTrajXY[1:i,2,j], color = "blue") # plot trajectory of this round for curent car
-            car_plot = ax10[:plot](oldTraj.oldTrajXY[i,1,j], oldTraj.oldTrajXY[i,2,j], color = "blue", marker="o") #plot current position of car with a marker
+            ax10[:plot](oldTraj.oldTrajXY[1:i,1,j], oldTraj.oldTrajXY[1:i,2,j], color = "black") # plot trajectory of this round for curent car
+            car_plot = ax10[:plot](oldTraj.oldTrajXY[i,1,j], oldTraj.oldTrajXY[i,2,j], color = "black", marker="o") #plot current position of car with a marker
 
-            ax10[:plot](obstacle.xy_vector[1:i,1,j], obstacle.xy_vector[1:i,2,j], color = "red")
+            ax10[:plot](obstacle.xy_vector[1:i,1,j], obstacle.xy_vector[1:i,2,j], linestyle=":", color = "red")
             obstacle_plot = ax10[:plot](obstacle.xy_vector[i,1,j], obstacle.xy_vector[i,2,j], color = "red", marker="o")  
             y_obst_plot = ax10[:plot]([obstacle.axis_y_up[i,1,j],obstacle.axis_y_down[i,1,j]],[obstacle.axis_y_up[i,2,j],obstacle.axis_y_down[i,2,j]],color = "red")#plot the y semi axis
             s_obst_plot = ax10[:plot]([obstacle.axis_s_up[i,1,j],obstacle.axis_s_down[i,1,j]],[obstacle.axis_s_up[i,2,j],obstacle.axis_s_down[i,2,j]],color = "red")# plot the s semi axis

@@ -7,11 +7,11 @@
 # i = 3 -> epsi
 # i = 4 -> v
 
-function solveMpcProblem!(m::classes.MpcModel,mpcSol::classes.MpcSol,mpcCoeff::classes.MpcCoeff,mpcParams::classes.MpcParams,trackCoeff::classes.TrackCoeff,lapStatus::classes.LapStatus,posInfo::classes.PosInfo,modelParams::classes.ModelParams,zCurr::Array{Float64},uCurr::Array{Float64}, obstacle::classes.Obstacle, iter::Int64)
+function solveMpcProblem!(m::classes.MpcModel,mpcSol::classes.MpcSol,mpcCoeff::classes.MpcCoeff,mpcParams::classes.MpcParams,trackCoeff::classes.TrackCoeff,lapStatus::classes.LapStatus,posInfo::classes.PosInfo,modelParams::classes.ModelParams,zCurr::Array{Float64},uCurr::Array{Float64}, obstacle, iter::Int64)
     # Load Parameters
     coeffCurvature  = trackCoeff.coeffCurvature::Array{Float64,1}
-    s_obst     = obstacle.s_obstacle[iter]
-    sy_obst    = obstacle.sy_obstacle[iter]
+    s_obst     = obstacle.s_obstacle[iter,1]
+    sy_obst    = obstacle.sy_obstacle[iter,1]
 
     local sol_u::Array{Float64,2} 
     local sol_z::Array{Float64,2} 
@@ -55,6 +55,6 @@ function solveMpcProblem!(m::classes.MpcModel,mpcSol::classes.MpcSol,mpcCoeff::c
     mpcSol.cost = zeros(7)
     mpcSol.cost = [getvalue(m.costZ);getvalue(m.costZTerm);getvalue(m.constZTerm);getvalue(m.derivCost);getvalue(m.controlCost);getvalue(m.laneCost); getvalue(m.costObstacle)]
     #objvl = getobjectivevalue(m.m)
-
+    c_print= getvalue(m.costObstacle)
     nothing #nothing to return
 end

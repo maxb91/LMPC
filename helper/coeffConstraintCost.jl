@@ -40,6 +40,7 @@ function coeffConstraintCost!(oldTraj, mpcCoeff::classes.MpcCoeff, posInfo::clas
     oldePsi         = oldTraj.oldTraj[:,3,:]::Array{Float64,2}
     oldV            = oldTraj.oldTraj[:,4,:]::Array{Float64,2}
 
+    
     N_points        = size(oldTraj.oldTraj,1)     #  dimension = length #how many points we saved so that we can subract these indeces to get values for second stroed trajectory which beginns at index NPoints+1
 
     local s_total::Float64        # initialize
@@ -77,52 +78,47 @@ function coeffConstraintCost!(oldTraj, mpcCoeff::classes.MpcCoeff, posInfo::clas
             bS_Vector[i,j] = oldS[vec_range[j,i]]
         end
     end
-    # bS_Vector       = cat(2, oldS[vec_range[1]],    oldS[vec_range[2]])
-    
-    # println("************************************** COEFFICIENTS **************************************")
-    # println("idx_s[1]  = $(idx_s[1]), idx_s[2] = $(idx_s[2])")
-    # println("s_total   = $s_total")
-    # println("bS_Vector[1] = $(bS_Vector[:,:,1]')")
-    # These matrices (above) contain two vectors each (for both old trajectories), stored in the 3rd dimension
+
     
     # The states are parametrized with resprect to the curvilinear abscissa,
     # so we select the point used for the interpolation. Need to subtract an
     # offset to be coherent with the MPC formulation
-    s_forinterpy   = bS_Vector - s_start 
-    if s_total - s_start < 0
-        s_forinterpy += s_target
-    end
-    # println("s_forinterpy[:,1,1]' = $(s_forinterpy[:,1,1]')")
+    # s_forinterpy   = bS_Vector - s_start 
+    # if s_total - s_start < 0
+    #     s_forinterpy += s_target
+    # end
     # Create the Matrices for the interpolation
     MatrixInterp = zeros(pLength+1,Order+1,n_oldTraj)
-
     for k = 0:Order
-        MatrixInterp[:,Order+1-k,:] = s_forinterpy[:,:].^k
+        MatrixInterp[:,Order+1-k,:] = bS_Vector[:,:].^k
     end
-    # Compute the constraint coefficients for both old trajectories
+    
 
     for i=1:n_oldTraj
+        # Compute the constraint coefficients for all old trajectories
         coeffConst[:,i,1]    = MatrixInterp[:,:,i]\oldeY[vec_range[i,:]]
         coeffConst[:,i,2]    = MatrixInterp[:,:,i]\oldePsi[vec_range[i,:]]
         coeffConst[:,i,3]    = MatrixInterp[:,:,i]\oldV[vec_range[i,:]]
-    end
-
-    # Finished with calculating the constraint coefficients
     
-    # Now compute the final cost coefficients
-
+        # compute the final cost coefficients
+        bQfunction_Vector = zeros(pLength+1)
+        for k = 1:pLength+1
+             bQfunction_Vector[k]  = oldTraj.cost2Target[idx_s[i]-N_points*(i-1)+k-1,i]
+        end
+        coeffCost[:,i]    = MatrixInterp[:,:,i]\bQfunction_Vector           # interpolate this vector with the given s
+    end
     # The Q-function contains for every point in the sampled safe set the minimum cost-to-go-value
     # These values are calculated for both old trajectories
     # The vector bQfunction_Vector contains the cost at each point in the interpolated area to reach the finish line
     # From this vector, polynomial coefficients coeffCost are calculated to approximate this cost
-  
-    for i=1:n_oldTraj  
+ 
         # in this part we construct a polynomial for the cost associated at each s value. the s value at the curent postion is used to calculate the cost of the old round at this postion
-        #we know that each following s has a cost value which is exactl 1 less thne the one before. so we can easiyl do the least squares to get the coeficients for approximation
-        iter_to_s_target  = oldTraj.oldNIter[i] - (idx_s[i]-N_points*(i-1))  # number of iterations from idx_s to s_target, this has sth todo with the count in the array as we look at values in second row
-        bQfunction_Vector = collect(linspace(iter_to_s_target,iter_to_s_target-pLength,pLength+1))    # build a vector that starts at the distance and decreases in equal steps
-        coeffCost[:,i]    = MatrixInterp[:,:,i]\bQfunction_Vector           # interpolate this vector with the given s
-    end
+        #we know that each following s has a cost value which is exactl 1 less than the one before.
+
+        #iter_to_s_target  = oldTraj.oldNIter[i] - (idx_s[i]-N_points*(i-1))+1  # number of iterations from idx_s to s_target, this has sth todo with the count in the array as we look at values in second row
+        
+        #bQfunction_Vector = collect(linspace(iter_to_s_target,iter_to_s_target-pLength,pLength+1))    # build a vector that starts at the distance and decreases in equal steps
+   
 
     mpcCoeff.coeffCost  = coeffCost #this value goes into the variable mpcCoeff in testNode.jl as well variables by reference
     mpcCoeff.coeffConst = coeffConst #this way we dont need to return anything 
