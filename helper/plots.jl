@@ -7,13 +7,13 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
     plot_states_over_t = 0
     plot_xy = 1
     plot_lambda = 1
-    plot_states_over_s = 1
+    plot_states_over_s = 0
     plot_curvature_approx=0
-    plot_inputs = 1
+    plot_inputs = 0
     plot_eps = 0
-    interactive_plot_steps = 1
+    interactive_plot_steps = 2
     n_oldTrajPlots = 6
-    file = "data/2016-11-29-01-18-Data.jld"
+    file = "data/2016-11-30-14-47-Data.jld"
     close("all")
 
     ####load data from file
@@ -175,9 +175,13 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
         #plot the boundary lines
         ax10[:plot](boundary_up[1,:], boundary_up[2,:],color="green",linestyle=":")
         ax10[:plot](boundary_down[1,:], boundary_down[2,:],color="green",linestyle=":")
+        for l=1:20
+            ax10[:plot]([boundary_down[1,l*50+1],boundary_up[1,l*50+1]],[boundary_down[2,l*50+1],boundary_up[2,l*50+1]], color = "black", linestyle = ":", linewidth = 0.5)
+            text(boundary_down[1,l*50+1]+1,boundary_down[2,l*50+1],"s = $(l*5)",fontsize=8)
+        end
         gca()[:set_aspect]("equal", adjustable="box")
         grid() 
-        legend()
+        legend(bbox_to_anchor=(1.001, 1), loc=2, borderaxespad=0.)
     end    
 
     # plot the values of lambda over t

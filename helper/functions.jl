@@ -8,35 +8,44 @@ function saveOldTraj(oldTraj,zCurr::Array{Float64}, zCurr_x::Array{Float64},uCur
     println(size(ones(buffersize-i+1,1)))
 
     #we just take i-1 beacuse the last s value is already the begining ogf the new round and we jsut coun from 0 <= s < s_target
-    #why bufferisze because length t is not in ros 
     zCurr_export    = cat(1,zCurr[1:i-1,:], [zCurr[i-1,1]+collect(1:buffersize-i+1)*dt*zCurr[i-1,4] ones(buffersize-i+1,1)*zCurr[i-1,2:4]']) # extrapolate values for after the finish line so that the old trjectory has feasible vlaues for the interpolation in the next round 
     uCurr_export    = cat(1,uCurr[1:i-1,:], zeros(buffersize-i+1,2)) # we need the i-1 as we do not want to keep the last vlaues which is s >= s_target
                    # the cost of the current lap is the time it took to reach the finish line
     
-    #!!!work
-    #cuCostObst = mpcParams.Q_obstacle*1/( ( (zCurr[l,1]-obstacle.s_obstacle[l,1])/rs )^2 + ( (zCurr[l,2]-obstacle.sy_obstacle[l,1])/ry )^2 - 1 )^2
-    # cumsum(flipdim((oldTraj.oldInput[1:i-2,1,k]-oldTraj.oldInput[2:i-1,1,k]).^2,1),1)
-    # InpCost= mpcParams.R[1]*cumsum(flipdim(oldTraj.oldInput[1:i-1,1,k].^2,1),1)+mpcParams.R[2]*cumsum(flipdim(oldTraj.oldInput[1:i-1,2,k].^2,1),1)
+    #the cost at each time step is the weighted current iterations to the target plus the costs of the obstacle, inputs and drivatives, not soft constraints
+    inpCost = zeros(buffersize)
+    derivStateCost = zeros(buffersize)
+    currCostObst = zeros(buffersize)
+    derivInpCost = zeros(buffersize)
+    cost2target = zeros(buffersize)
+    #fill up the arrays for the additional costs with measured values, the additional cost are zeros for all i after the finish line
+    currCostObst[1:i] = flipdim(cumsum(flipdim(mpcParams.Q_obstacle*1./( ( (zCurr[1:i,1]-obstacle.s_obstacle[1:i,1])/obstacle.rs ).^2 + ( (zCurr[1:i,2]-obstacle.sy_obstacle[1:i,1])/obstacle.ry ).^2 - 1 ).^2,1),1),1)
+    for l = 1:4
+        derivStateCost[1:i-1] += flipdim(mpcParams.QderivZ[l]*cumsum(flipdim((zCurr_export[1:i-1,l]-zCurr_export[2:i,l]).^2,1),1),1)
+    end
+    derivInpCost[1:i-2] = flipdim(mpcParams.QderivU[1]*cumsum(flipdim((uCurr_export[1:i-2,1]-uCurr_export[2:i-1,1]).^2,1),1)+mpcParams.QderivU[2]*cumsum(flipdim((uCurr_export[1:i-2,2]-uCurr_export[2:i-1,2]).^2,1),1),1)
+    inpCost[1:i-1] = flipdim(mpcParams.R[1]*cumsum(flipdim(uCurr_export[1:i-1,1].^2,1),1)+mpcParams.R[2]*cumsum(flipdim(uCurr_export[1:i-1,2].^2,1),1),1)
+    for j = 1:buffersize-1
+        cost2target[j] = mpcParams.Q_cost*(costLap-j+1)+derivStateCost[j]+derivInpCost[j]+inpCost[j]+currCostObst[j]
+    end
+
     # Save all data in oldTrajectory:
     if lapStatus.currentLap == 1 && load_safeset == false    # if it's the first lap
         for k= 1:oldTraj.n_oldTraj                 
-        oldTraj.oldTraj[:,:,k]  = zCurr_export          # ... just save everything
-        oldTraj.oldInput[:,:,k] = uCurr_export
-        oldTraj.oldTrajXY[1:size(zCurr_x)[1],:,k] = zCurr_x
-        oldTraj.oldNIter[k] = costLap
+            oldTraj.oldTraj[:,:,k]  = zCurr_export          # ... just save everything
+            oldTraj.oldInput[:,:,k] = uCurr_export
+            oldTraj.oldTrajXY[1:size(zCurr_x)[1],:,k] = zCurr_x
+            oldTraj.oldNIter[k] = costLap
+            oldTraj.costs[:,:,k] = costs
+            oldTraj.lambda_sol[:,:,k] = lambda_log
+            oldTraj.z_pred_sol[:,:,:,k] = z_pred_log
+            oldTraj.u_pred_sol[:,:,:,k] = u_pred_log
+            oldTraj.ssInfOn_sol[:,:,k]= ssInfOn_log
+            oldTraj.eps[:,:,k] = mpcSol.eps
+            oldTraj.cost2Target[:,k] = cost2target
 
-        oldTraj.costs[:,:,k] = costs
-        oldTraj.lambda_sol[:,:,k] = lambda_log
-        oldTraj.z_pred_sol[:,:,:,k] = z_pred_log
-        oldTraj.u_pred_sol[:,:,:,k] = u_pred_log
-        oldTraj.ssInfOn_sol[:,:,k]= ssInfOn_log
-        oldTraj.eps[:,:,k] = mpcSol.eps
-        for j = 1:buffersize-1
-            oldTraj.cost2Target[j,k] = (oldTraj.oldNIter[k]-j+1)*mpcParams.Q_cost+oldTraj.costs[4,j,k]+oldTraj.costs[5,j,k]+oldTraj.costs[7,j,k] #cost4 = derivCost, cost5 = input cost cost7 = obstacle costs
-        end
-        obstacle.s_obstacle[:,k] = obstacle.s_obstacle[:,1]
-        obstacle.sy_obstacle[:,k] = obstacle.sy_obstacle[:,1]
-
+            obstacle.s_obstacle[:,k] = obstacle.s_obstacle[:,1]# in the else part we dont shift s_obscle because we do that in the beginning of a new round
+            obstacle.sy_obstacle[:,k] = obstacle.sy_obstacle[:,1]
         end
     else
         for k = oldTraj.n_oldTraj-1:-1:1
@@ -51,24 +60,20 @@ function saveOldTraj(oldTraj,zCurr::Array{Float64}, zCurr_x::Array{Float64},uCur
             oldTraj.ssInfOn_sol[:,:,k+1]= oldTraj.ssInfOn_sol[:,:,k]
             oldTraj.eps[:,:,k+1] = oldTraj.eps[:,:,k]
             oldTraj.cost2Target[:,k+1] = oldTraj.cost2Target[:,k]
-            
-
         end
         oldTraj.oldTraj[:,:,1]  = zCurr_export                 # ... and write the new traj in the first
         oldTraj.oldInput[:,:,1] = uCurr_export
         oldTraj.oldTrajXY[1:size(zCurr_x)[1],:,1] = zCurr_x
         oldTraj.oldNIter[1] = costLap
-
+        
         oldTraj.costs[:,:,1] = costs
         oldTraj.lambda_sol[:,:,1] = lambda_log
         oldTraj.z_pred_sol[:,:,:,1] = z_pred_log
         oldTraj.u_pred_sol[:,:,:,1] = u_pred_log
         oldTraj.ssInfOn_sol[:,:,1]= ssInfOn_log
         oldTraj.eps[:,:,1] = mpcSol.eps
-        for j = 1:buffersize-1
-            oldTraj.cost2Target[j,1] = (oldTraj.oldNIter[1]-j+1)*mpcParams.Q_cost+oldTraj.costs[4,j,1]+oldTraj.costs[5,j,1]+oldTraj.costs[7,j,1] #cost4 = derivCost, cost5 = input cost cost7 = obstacle cost
-            #println("dervCos $(oldTraj.costs[4,k+1,i])")
-        end
+        oldTraj.cost2Target[:,1] = cost2target
+
     end
     
 end
@@ -81,9 +86,9 @@ function InitializeParameters(mpcParams::classes.MpcParams,trackCoeff::classes.T
     mpcParams.nz                = 4                         #number of States
     mpcParams.Q                 = [0.0,10.0,0.1,10.0]  #0 10 0 1    # put weights on ey, epsi and v, just for first round of PathFollowing
     mpcParams.Q_term            = 100*[5.0,1.0,1.0]           # weights for terminal constraints (LMPC, for e_y, e_psi, and v)
-    mpcParams.Q_cost            = 1.0
-    mpcParams.Q_obstacle        = 0.02
-    mpcParams.Q_lane            = 100.0
+    mpcParams.Q_cost            = 1.0                           #factor for terminal cost
+    mpcParams.Q_obstacle        = 0.03
+    mpcParams.Q_lane            = 1000.0
     mpcParams.R                 = 0.0*[1.0,1.0]             # put weights on a and d_f
     mpcParams.QderivZ           = 1.0*[0,0.0,0.1,0.1]             # cost matrix for derivative cost of states
     mpcParams.QderivU           = 0.1*[1,10]               # cost matrix for derivative cost of inputs

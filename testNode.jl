@@ -47,8 +47,8 @@
     z_Init[3] = 0.94
     z_Init[4]  = 0.4
    
-    load_safeset = true#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
-    safeset = "data/2016-11-28-01-09-SafeSet.jld"
+    load_safeset =true#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
+    safeset = "data/2016-11-30-14-44-SafeSet.jld"
 
     #########
     InitializeParameters(mpcParams,trackCoeff,modelParams,posInfo,oldTraj,mpcCoeff,lapStatus,obstacle,buffersize)
@@ -144,7 +144,7 @@
             
         if j == 1 && load_safeset == false
             # path following cost in first round
-            @NLobjective(m.mdl, Min, m.costPath + m.costObstacle)
+            @NLobjective(m.mdl, Min, m.costPath + m.derivCost + m.controlCost + m.costObstacle)
         elseif j == 2 || load_safeset == true
             #learning objective formulation, minimize the sum of all parts of the objective
             @NLobjective(m.mdl, Min, m.costZ + m.costZTerm + m.constZTerm + m.derivCost + m.controlCost + m.laneCost + m.costObstacle)
