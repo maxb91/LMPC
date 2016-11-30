@@ -168,6 +168,7 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
         else
             car_plot = ax10[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[j],1,j], oldTraj.oldTrajXY[1:oldTraj.oldNIter[j],2,j], color = "black", label="current Traj")
             ax10[:plot](obstacle.xy_vector[1:oldTraj.oldNIter[j],1,j], obstacle.xy_vector[1:oldTraj.oldNIter[j],2,j], color = "red")
+            ax10[:plot](obstacle.xy_vector[oldTraj.oldNIter[j],1,j], obstacle.xy_vector[oldTraj.oldNIter[j],2,j], color = "red", marker = "o")
             y_obst_plot = ax10[:plot]([obstacle.axis_y_up[oldTraj.oldNIter[j],1,j],obstacle.axis_y_down[oldTraj.oldNIter[j],1,j]],[obstacle.axis_y_up[oldTraj.oldNIter[j],2,j],obstacle.axis_y_down[oldTraj.oldNIter[j],2,j]],color = "red")#plot the y semi axis
             s_obst_plot = ax10[:plot]([obstacle.axis_s_up[oldTraj.oldNIter[j],1,j],obstacle.axis_s_down[oldTraj.oldNIter[j],1,j]],[obstacle.axis_s_up[oldTraj.oldNIter[j],2,j],obstacle.axis_s_down[oldTraj.oldNIter[j],2,j]],color = "red")# plot the s semi axis
         end
@@ -182,18 +183,52 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
     # plot the values of lambda over t
     if plot_lambda == 1
         f_lambda =figure(4)
-        f_lambda[:canvas][:set_window_title]("Lambda x ssOn values over t")
-        ax11= subplot(1,1,1)
-        colorObjectLambda= colorModule.ColorManager()
-        for k=1: oldTraj.n_oldTraj
+        f_lambda[:canvas][:set_window_title]("Lambda and ssOn values over t")
+        ax11= subplot(2,2,1)
+        colorObjectLambda = colorModule.ColorManager()
+        for k=1: oldTraj.n_oldTraj//4
+            k = convert(Int64,k)
             colorLambda = colorModule.getColor(colorObjectLambda)
-            plot(t[1:oldTraj.oldNIter[j]-1],oldTraj.lambda_sol[k,1:oldTraj.oldNIter[j]-1,j].*oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j], color = colorLambda)
+            scatter(t[1:oldTraj.oldNIter[j]-1],oldTraj.lambda_sol[k,1:oldTraj.oldNIter[j]-1,j].*oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j], color = colorLambda, marker = "x")
         end
         xlabel("t in [s]")
         ylabel("lambda")
         grid()
-        ax11[:set_ylim]([-0.01,1.01])
-        legend(["lambda1","lambda2","lambda3","lambda4","lambda5", "lambda6","lambda7","lambda8","lambda9","lambda10"])
+        #ax11[:set_ylim]([-0.1,1.1])
+        legend([L"\lambda 1",L"\lambda 2",L"\lambda 3",L"\lambda 4",L"\lambda 5", L"\lambda 6",L"\lambda 7",L"\lambda 8",L"\lambda 9",L"\lambda 10"],bbox_to_anchor=(-0.201, 1), loc=2, borderaxespad=0.)
+        
+        axlambda2= subplot(2,2,2,sharex= ax11, sharey =ax11)
+        for k=oldTraj.n_oldTraj//4+1: oldTraj.n_oldTraj//2
+            k = convert(Int64,k)
+            colorLambda = colorModule.getColor(colorObjectLambda)
+            scatter(t[1:oldTraj.oldNIter[j]-1],oldTraj.lambda_sol[k,1:oldTraj.oldNIter[j]-1,j].*oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j], color = colorLambda, marker = "x")
+        end
+        xlabel("t in [s]")
+        ylabel("lambda")
+        grid()
+        legend([L"\lambda /4+1",L"\lambda /4+2",L"\lambda 3",L"\lambda 4",L"\lambda 5", L"\lambda 6"],bbox_to_anchor=(1.001, 1), loc=2, borderaxespad=0.)
+
+        axlambda3= subplot(2,2,3,sharex= ax11, sharey =ax11)
+        for k=oldTraj.n_oldTraj//2+1: oldTraj.n_oldTraj//4*3
+            k = convert(Int64,k)
+            colorLambda = colorModule.getColor(colorObjectLambda)
+            scatter(t[1:oldTraj.oldNIter[j]-1],oldTraj.lambda_sol[k,1:oldTraj.oldNIter[j]-1,j].*oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j], color = colorLambda, marker = "x")
+        end
+        xlabel("t in [s]")
+        ylabel("lambda")
+        grid()
+        legend([L"\lambda /2+1",L"\lambda /2+2",L"\lambda 3",L"\lambda ",L"\lambda 5"],bbox_to_anchor=(-0.201, 1), loc=2, borderaxespad=0.)
+
+        axlambda4= subplot(2,2,4,sharex= ax11, sharey =ax11)
+        for k=oldTraj.n_oldTraj*3//4+1: oldTraj.n_oldTraj
+            k = convert(Int64,k)
+            colorLambda = colorModule.getColor(colorObjectLambda)
+            scatter(t[1:oldTraj.oldNIter[j]-1],oldTraj.lambda_sol[k,1:oldTraj.oldNIter[j]-1,j].*oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j], color = colorLambda, marker = "x")
+        end
+        xlabel("t in [s]")
+        ylabel("lambda")
+        grid()
+        legend([L"\lambda *3/4+1",L"\lambda *3/4+2",L"\lambda 3",L"\lambda 4",L"\lambda 5"],bbox_to_anchor=(1.001, 1), loc=2, borderaxespad=0.)
         
     # plot values of ssOn over t    
         f_ssOn =figure(10)
@@ -203,46 +238,43 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
         for k=1: oldTraj.n_oldTraj//4
             k = convert(Int64,k)
             colorSafeSet= colorModule.getColor(colorObjectSafeSet)
-            plot(t[1:oldTraj.oldNIter[j]-1],oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j], color = colorSafeSet)
+            scatter(t[1:oldTraj.oldNIter[j]-1],oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j], color = colorSafeSet, marker = "x")
         end
         xlabel("t in [s]")
         ylabel("ssOn")
         grid()
-        #axssOn[:set_ylim]([-0.01,1.01])
-        legend(["ssOn1","ssOn2","ssOn3","ssOn4","ssOn5", "ssOn6","ssOn7","ssOn8","ssOn9","ssOn10"])
+        legend(["ssOn1","ssOn2","ssOn3","ssOn4","ssOn5", "ssOn6","ssOn7","ssOn8","ssOn9","ssOn10"],bbox_to_anchor=(1.001, 1), loc=2, borderaxespad=0.)
+        
         axssOn2 = subplot(2,2,2,sharex= ax11)
         for k=oldTraj.n_oldTraj//4+1: oldTraj.n_oldTraj//2
             k = convert(Int64,k)
             colorSafeSet= colorModule.getColor(colorObjectSafeSet)
-            plot(t[1:oldTraj.oldNIter[j]-1],oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j],color = colorSafeSet)
+            scatter(t[1:oldTraj.oldNIter[j]-1],oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j],color = colorSafeSet, marker = "x")
         end
         xlabel("t in [s]")
         ylabel("ssOn")
         grid()
-        #axssOn2[:set_ylim]([-0.01,1.01])
-        legend(["ssOn/4+1","ssOn/4+2","ssOn3","ssOn4","ssOn5", "ssOn6","ssOn7","ssOn8","ssOn9","ssOn10"])
+        legend(["ssOn/4+1","ssOn/4+2","ssOn3","ssOn4","ssOn5", "ssOn6","ssOn7","ssOn8","ssOn9","ssOn10"],bbox_to_anchor=(1.001, 1), loc=2, borderaxespad=0.)
         axssOn3 = subplot(2,2,3,sharex= ax11)
         for k=oldTraj.n_oldTraj//2+1: oldTraj.n_oldTraj*3//4
             k = convert(Int64,k)
             colorSafeSet= colorModule.getColor(colorObjectSafeSet)
-            plot(t[1:oldTraj.oldNIter[j]-1],oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j],color = colorSafeSet)
+            scatter(t[1:oldTraj.oldNIter[j]-1],oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j],color = colorSafeSet, marker = "x")
         end
         xlabel("t in [s]")
         ylabel("ssOn")
         grid()
-        #axssOn3[:set_ylim]([-0.01,1.01])
-        legend(["ssOn/2+1","ssOn/2+2","ssOn3","ssOn4","ssOn5", "ssOn6","ssOn7","ssOn8","ssOn9","ssOn10"])
+        legend(["ssOn/2+1","ssOn/2+2","ssOn3","ssOn4","ssOn5", "ssOn6","ssOn7","ssOn8","ssOn9","ssOn10"],bbox_to_anchor=(1.001, 1), loc=2, borderaxespad=0.)
         axssOn4 = subplot(2,2,4,sharex= ax11)
         for k=oldTraj.n_oldTraj*3//4+1: oldTraj.n_oldTraj
             k = convert(Int64,k)
             colorSafeSet= colorModule.getColor(colorObjectSafeSet)
-            plot(t[1:oldTraj.oldNIter[j]-1],oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j],color = colorSafeSet)
+            scatter(t[1:oldTraj.oldNIter[j]-1],oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j],color = colorSafeSet, marker = "x")
         end
         xlabel("t in [s]")
         ylabel("ssOn")
         grid()
-        #axssOn4[:set_ylim]([-0.01,1.01])
-        legend(["ssOn*3/4+1","ssOn/2+2","ssOn3","ssOn4","ssOn5", "ssOn6","ssOn7","ssOn8","ssOn9","ssOn10"])
+        legend(["ssOn*3/4+1","ssOn/2+2","ssOn3","ssOn4","ssOn5", "ssOn6","ssOn7","ssOn8","ssOn9","ssOn10"],bbox_to_anchor=(1.001, 1), loc=2, borderaxespad=0.)
     end
 
 
@@ -361,7 +393,7 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
             ax10[:plot](oldTraj.oldTrajXY[1:i,1,j], oldTraj.oldTrajXY[1:i,2,j], color = "black") # plot trajectory of this round for curent car
             car_plot = ax10[:plot](oldTraj.oldTrajXY[i,1,j], oldTraj.oldTrajXY[i,2,j], color = "black", marker="o") #plot current position of car with a marker
 
-            ax10[:plot](obstacle.xy_vector[1:i,1,j], obstacle.xy_vector[1:i,2,j], linestyle=":", color = "red")
+            ax10[:plot](obstacle.xy_vector[1:i,1,j], obstacle.xy_vector[1:i,2,j], color = "red", linestyle= ":")
             obstacle_plot = ax10[:plot](obstacle.xy_vector[i,1,j], obstacle.xy_vector[i,2,j], color = "red", marker="o")  
             y_obst_plot = ax10[:plot]([obstacle.axis_y_up[i,1,j],obstacle.axis_y_down[i,1,j]],[obstacle.axis_y_up[i,2,j],obstacle.axis_y_down[i,2,j]],color = "red")#plot the y semi axis
             s_obst_plot = ax10[:plot]([obstacle.axis_s_up[i,1,j],obstacle.axis_s_down[i,1,j]],[obstacle.axis_s_up[i,2,j],obstacle.axis_s_down[i,2,j]],color = "red")# plot the s semi axis
