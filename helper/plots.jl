@@ -13,7 +13,7 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
     plot_eps = 0
     interactive_plot_steps = 1
     n_oldTrajPlots = 6
-    file = "data/2016-11-29-01-03-Data.jld"
+    file = "data/2016-11-29-01-18-Data.jld"
     close("all")
 
     ####load data from file
@@ -30,7 +30,9 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
     curv_approx = Data["curv_approx"]
     oldTraj     = Data["oldTraj"]
     #include("calculateObstacleXY.jl")
+    #include("colorModule.jl")
     include("helper/calculateObstacleXY.jl")
+    include("helper/colorModule.jl")
     #end of data loading
 
     #####create additional data for plotting
@@ -50,6 +52,7 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
             calculateObstacleXY!(obstacle, trackCoeff, xy_track,i,k) #this funciton computes values for row i
         end
     end
+
     ##this part is to calculate the tracks boundaries and plot them later
     convert(Array{Int64},oldTraj.oldNIter)
     trackL = size(xy_track,2)
@@ -146,20 +149,24 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
         f_xy_plot= figure(3)
         f_xy_plot[:canvas][:set_window_title]("Track and cars in XY plane")
         ax10 = subplot(1,1,1)
-        ax10[:plot](x_track',y_track', linestyle="--", color = "#FF9900", linewidth = 0.5)#plot the racetrack
-        car_plot = ax10[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[j],1,j], oldTraj.oldTrajXY[1:oldTraj.oldNIter[j],2,j], color = "black")#always plot trajectory either to stay or delete in interactive mode
-        for k= 1:n_oldTrajPlots#plot older trajectory
-            ax10[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[j+k],1,j+k], oldTraj.oldTrajXY[1:oldTraj.oldNIter[j+k],2,j+k],linestyle="--")
+        ax10[:plot](x_track',y_track', linestyle="--", color = "#FF9900", linewidth = 0.5, label="_nolegend_")#plot the racetrack
+        
+        #plot older trajectory
+        colorObjectXY= colorModule.ColorManager()
+        for k= 1:n_oldTrajPlots
+            colorXYold = colorModule.getColor(colorObjectXY)
+            ax10[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[j+k],1,j+k], oldTraj.oldTrajXY[1:oldTraj.oldNIter[j+k],2,j+k],linestyle="--", color = colorXYold, label= "$k old Traj")
         end
         
         if interactive_plot == 1
-            ax10[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[j],1,j], oldTraj.oldTrajXY[1:oldTraj.oldNIter[j],2,j], color = "black" ,linestyle=":")# plot trajectory less visible to overwrite it with interactiv simulation
+            car_plot = ax10[:plot](oldTraj.oldTrajXY[1,1,j], oldTraj.oldTrajXY[1,2,j], color = "black") # just dummy to use remove func later
+            ax10[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[j],1,j], oldTraj.oldTrajXY[1:oldTraj.oldNIter[j],2,j], color = "black" ,linestyle=":", label="current Traj")# plot trajectory less visible to overwrite it with interactiv simulation
             pred_plot = ax10[:plot](xy_pred[:,1,1,j],xy_pred[:,2,1,j],color = "yellow", marker="o") 
-            obstacle_plot = ax10[:plot](obstacle.xy_vector[1,1,j], obstacle.xy_vector[1,2,j], color = "red",marker="o")
+            obstacle_plot = ax10[:plot](obstacle.xy_vector[1,1,j], obstacle.xy_vector[1,2,j], color = "red",marker="o", label = "obstacle Traj")
             y_obst_plot = ax10[:plot]([obstacle.axis_y_up[1,1,j],obstacle.axis_y_down[1,1,j]],[obstacle.axis_y_up[1,2,j],obstacle.axis_y_down[1,2,j]],color = "red")#plot the y semi axis
             s_obst_plot = ax10[:plot]([obstacle.axis_s_up[1,1,j],obstacle.axis_s_down[1,1,j]],[obstacle.axis_s_up[1,2,j],obstacle.axis_s_down[1,2,j]],color = "red")# plot the s semi axis
         else
-
+            car_plot = ax10[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[j],1,j], oldTraj.oldTrajXY[1:oldTraj.oldNIter[j],2,j], color = "black", label="current Traj")
             ax10[:plot](obstacle.xy_vector[1:oldTraj.oldNIter[j],1,j], obstacle.xy_vector[1:oldTraj.oldNIter[j],2,j], color = "red")
             y_obst_plot = ax10[:plot]([obstacle.axis_y_up[oldTraj.oldNIter[j],1,j],obstacle.axis_y_down[oldTraj.oldNIter[j],1,j]],[obstacle.axis_y_up[oldTraj.oldNIter[j],2,j],obstacle.axis_y_down[oldTraj.oldNIter[j],2,j]],color = "red")#plot the y semi axis
             s_obst_plot = ax10[:plot]([obstacle.axis_s_up[oldTraj.oldNIter[j],1,j],obstacle.axis_s_down[oldTraj.oldNIter[j],1,j]],[obstacle.axis_s_up[oldTraj.oldNIter[j],2,j],obstacle.axis_s_down[oldTraj.oldNIter[j],2,j]],color = "red")# plot the s semi axis
@@ -169,6 +176,7 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
         ax10[:plot](boundary_down[1,:], boundary_down[2,:],color="green",linestyle=":")
         gca()[:set_aspect]("equal", adjustable="box")
         grid() 
+        legend()
     end    
 
     # plot the values of lambda over t
@@ -176,8 +184,10 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
         f_lambda =figure(4)
         f_lambda[:canvas][:set_window_title]("Lambda x ssOn values over t")
         ax11= subplot(1,1,1)
+        colorObjectLambda= colorModule.ColorManager()
         for k=1: oldTraj.n_oldTraj
-            plot(t[1:oldTraj.oldNIter[j]-1],oldTraj.lambda_sol[k,1:oldTraj.oldNIter[j]-1,j].*oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j])
+            colorLambda = colorModule.getColor(colorObjectLambda)
+            plot(t[1:oldTraj.oldNIter[j]-1],oldTraj.lambda_sol[k,1:oldTraj.oldNIter[j]-1,j].*oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j], color = colorLambda)
         end
         xlabel("t in [s]")
         ylabel("lambda")
@@ -185,12 +195,15 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
         ax11[:set_ylim]([-0.01,1.01])
         legend(["lambda1","lambda2","lambda3","lambda4","lambda5", "lambda6","lambda7","lambda8","lambda9","lambda10"])
         
+    # plot values of ssOn over t    
         f_ssOn =figure(10)
         f_ssOn[:canvas][:set_window_title](" ssOn values over t")
         axssOn = subplot(2,2,1,sharex= ax11)
+        colorObjectSafeSet= colorModule.ColorManager()
         for k=1: oldTraj.n_oldTraj//4
             k = convert(Int64,k)
-            plot(t[1:oldTraj.oldNIter[j]-1],oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j])
+            colorSafeSet= colorModule.getColor(colorObjectSafeSet)
+            plot(t[1:oldTraj.oldNIter[j]-1],oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j], color = colorSafeSet)
         end
         xlabel("t in [s]")
         ylabel("ssOn")
@@ -200,7 +213,8 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
         axssOn2 = subplot(2,2,2,sharex= ax11)
         for k=oldTraj.n_oldTraj//4+1: oldTraj.n_oldTraj//2
             k = convert(Int64,k)
-            plot(t[1:oldTraj.oldNIter[j]-1],oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j])
+            colorSafeSet= colorModule.getColor(colorObjectSafeSet)
+            plot(t[1:oldTraj.oldNIter[j]-1],oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j],color = colorSafeSet)
         end
         xlabel("t in [s]")
         ylabel("ssOn")
@@ -210,7 +224,8 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
         axssOn3 = subplot(2,2,3,sharex= ax11)
         for k=oldTraj.n_oldTraj//2+1: oldTraj.n_oldTraj*3//4
             k = convert(Int64,k)
-            plot(t[1:oldTraj.oldNIter[j]-1],oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j])
+            colorSafeSet= colorModule.getColor(colorObjectSafeSet)
+            plot(t[1:oldTraj.oldNIter[j]-1],oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j],color = colorSafeSet)
         end
         xlabel("t in [s]")
         ylabel("ssOn")
@@ -220,7 +235,8 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
         axssOn4 = subplot(2,2,4,sharex= ax11)
         for k=oldTraj.n_oldTraj*3//4+1: oldTraj.n_oldTraj
             k = convert(Int64,k)
-            plot(t[1:oldTraj.oldNIter[j]-1],oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j])
+            colorSafeSet= colorModule.getColor(colorObjectSafeSet)
+            plot(t[1:oldTraj.oldNIter[j]-1],oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j],color = colorSafeSet)
         end
         xlabel("t in [s]")
         ylabel("ssOn")
@@ -237,8 +253,10 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
         clf()
         ax4 = subplot(311)
         k = j
+        colorObjectV= colorModule.ColorManager()
         while k<=j+n_oldTrajPlots
-            plot(oldTraj.oldTraj[1:oldTraj.oldNIter[k],1,k], oldTraj.oldTraj[1:oldTraj.oldNIter[k],4,k])
+            colorV = colorModule.getColor(colorObjectV)
+            plot(oldTraj.oldTraj[1:oldTraj.oldNIter[k],1,k], oldTraj.oldTraj[1:oldTraj.oldNIter[k],4,k], color = colorV)
             k  = k+1
         end
         grid()
@@ -249,8 +267,10 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
 
         ax5 = subplot(312, sharex=ax4)
         k = j
+        colorObject_eY= colorModule.ColorManager()
         while k<=j+n_oldTrajPlots
-            plot(oldTraj.oldTraj[1:oldTraj.oldNIter[k],1,k], oldTraj.oldTraj[1:oldTraj.oldNIter[k],2,k])
+            color_eY = colorModule.getColor(colorObject_eY)
+            plot(oldTraj.oldTraj[1:oldTraj.oldNIter[k],1,k], oldTraj.oldTraj[1:oldTraj.oldNIter[k],2,k], color = color_eY)
             k  = k+1
         end
         grid()
@@ -262,8 +282,10 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
         ax6 = subplot(313, sharex=ax4)
         hold(true)
         k = j
+        colorObject_ePsi= colorModule.ColorManager()
         while k<=j+n_oldTrajPlots
-            plot(oldTraj.oldTraj[1:oldTraj.oldNIter[k],1,k], oldTraj.oldTraj[1:oldTraj.oldNIter[k],3,k])
+            color_ePsi = colorModule.getColor(colorObject_ePsi)
+            plot(oldTraj.oldTraj[1:oldTraj.oldNIter[k],1,k], oldTraj.oldTraj[1:oldTraj.oldNIter[k],3,k],color = color_ePsi)
             k  = k+1
         end
         grid()
@@ -318,13 +340,13 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
         #plot predicted states over s
         if plot_states_over_s ==1
             p1[1][:remove]()
-            p1 = ax4[:plot](oldTraj.z_pred_sol[:,1,i,j], oldTraj.z_pred_sol[:,4,i,j] ,marker="o") #plot predicted velocity
+            p1 = ax4[:plot](oldTraj.z_pred_sol[:,1,i,j], oldTraj.z_pred_sol[:,4,i,j] ,marker="o", color = "yellow") #plot predicted velocity
 
             p2[1][:remove]()
-            p2 = ax5[:plot](oldTraj.z_pred_sol[:,1,i,j], oldTraj.z_pred_sol[:,2,i,j] ,marker="o") #plot predicted e_y
+            p2 = ax5[:plot](oldTraj.z_pred_sol[:,1,i,j], oldTraj.z_pred_sol[:,2,i,j] ,marker="o", color = "yellow") #plot predicted e_y
          
             p3[1][:remove]()
-            p3 = ax6[:plot](oldTraj.z_pred_sol[:,1,i,j], oldTraj.z_pred_sol[:,3,i,j] ,marker="o")  #plot predicted e_psi
+            p3 = ax6[:plot](oldTraj.z_pred_sol[:,1,i,j], oldTraj.z_pred_sol[:,3,i,j] ,marker="o", color = "yellow")  #plot predicted e_psi
         end
        
        #x-y plot
@@ -354,8 +376,8 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
         if plot_inputs ==1 
             inta_plot_a[1][:remove]()
             inta_plot_df[1][:remove]()
-            inta_plot_a = ax_Inp1[:plot](oldTraj.z_pred_sol[1:end-1,1,i,j], oldTraj.u_pred_sol[:,1,i,j] ,marker="o")
-            inta_plot_df = ax_Inp2[:plot](oldTraj.z_pred_sol[1:end-1,1,i,j], oldTraj.u_pred_sol[:,2,i,j] ,marker="o")   
+            inta_plot_a = ax_Inp1[:plot](oldTraj.z_pred_sol[1:end-1,1,i,j], oldTraj.u_pred_sol[:,1,i,j] ,marker="o", color = "yellow")
+            inta_plot_df = ax_Inp2[:plot](oldTraj.z_pred_sol[1:end-1,1,i,j], oldTraj.u_pred_sol[:,2,i,j] ,marker="o", color = "yellow")   
         end
 
         println("Press Enter for next plot step")
