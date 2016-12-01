@@ -20,3 +20,16 @@ function computeObstaclePos!(obstacle, dt::Float64, i::Int64, x_track::Array{Flo
 
  nothing
 end
+
+function predictObstaclePos(obstacle, modelParams::classes.ModelParams,mpcParams::classes.MpcParams, iter::Int64)
+    s_obst = zeros(mpcParams.N+1)
+    sy_obst = zeros(mpcParams.N+1)
+    s_obst[1] = obstacle.s_obstacle[iter,1]
+    sy_obst[1] = obstacle.sy_obstacle[iter,1]
+    for i = 1:mpcParams.N
+        s_obst[i+1] = s_obst[i]+obstacle.v*modelParams.dt
+        sy_obst[i+1] = sy_obst[i]
+    end
+    return s_obst, sy_obst
+end
+

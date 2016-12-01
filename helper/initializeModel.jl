@@ -73,7 +73,7 @@ function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelP
 
     @NLparameter(m.mdl, m.coeff[i=1:n_poly_curv+1] == trackCoeff.coeffCurvature[i])
     @NLparameter(m.mdl, m.uCurr[i=1:2] == 0)
-    @NLparameter(m.mdl, m.sCoord_obst[i=1:2] == 100)
+    @NLparameter(m.mdl, m.sCoord_obst[j=1:(N+1),i=1:2] == 100)
     @NLparameter(m.mdl, m.coeffTermConst[i=1:order+1,k=1:n_oldTraj,j=1:3] == coeffTermConst[i,k,j])
     @NLparameter(m.mdl, m.coeffTermCost[i=1:order+1,k=1:n_oldTraj] == coeffTermCost[i,k])
 
@@ -137,7 +137,7 @@ function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelP
     @NLexpression(m.mdl, costZ, 1)
     m.costZ = costZ
     ## Cost to avoid obstacle. increases when car is near obstacle currently implemented as : a *1/(0.1+cost)
-    @NLexpression(m.mdl, costObstacle, sum{Q_obstacle*1/( ( (m.z_Ol[i,1]-m.sCoord_obst[1])/rs )^2 + ( (m.z_Ol[i,2]-m.sCoord_obst[2])/ry )^2 - 1 )^2,i=1:N+1})
+    @NLexpression(m.mdl, costObstacle, sum{Q_obstacle*1/( ( (m.z_Ol[i,1]-m.sCoord_obst[i,1])/rs )^2 + ( (m.z_Ol[i,2]-m.sCoord_obst[i,2])/ry )^2 - 1 )^2,i=1:N+1})
     #@NLexpression(m.mdl, costObstacle,    (10*m.eps[3]+5.0*m.eps[3]^2))
     #@NLexpression(m.mdl, costObstacle,    0)
     m.costObstacle = costObstacle

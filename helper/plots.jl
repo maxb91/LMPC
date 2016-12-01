@@ -7,13 +7,13 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
     plot_states_over_t = 0
     plot_xy = 1
     plot_lambda = 1
-    plot_states_over_s = 0
+    plot_states_over_s = 1
     plot_curvature_approx=0
     plot_inputs = 0
     plot_eps = 0
     interactive_plot_steps = 2
     n_oldTrajPlots = 6
-    file = "data/2016-11-30-14-47-Data.jld"
+    file = "data/2016-11-30-16-17-Data.jld"
     close("all")
 
     ####load data from file
@@ -288,7 +288,8 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
         f_states_over_s[:canvas][:set_window_title]("States and safe set over s")   
         clf()
         ax4 = subplot(311)
-        k = j
+        plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j], oldTraj.oldTraj[1:oldTraj.oldNIter[j],4,j], color = "black")
+        k = j+1
         colorObjectV= colorModule.ColorManager()
         while k<=j+n_oldTrajPlots
             colorV = colorModule.getColor(colorObjectV)
@@ -302,7 +303,8 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
         p1 = ax4[:plot](1,1)
 
         ax5 = subplot(312, sharex=ax4)
-        k = j
+        plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j], oldTraj.oldTraj[1:oldTraj.oldNIter[j],2,j], color = "black")
+        k = j+1
         colorObject_eY= colorModule.ColorManager()
         while k<=j+n_oldTrajPlots
             color_eY = colorModule.getColor(colorObject_eY)
@@ -317,7 +319,8 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
 
         ax6 = subplot(313, sharex=ax4)
         hold(true)
-        k = j
+        plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j], oldTraj.oldTraj[1:oldTraj.oldNIter[j],3,j],color = "black")
+        k = j+1
         colorObject_ePsi= colorModule.ColorManager()
         while k<=j+n_oldTrajPlots
             color_ePsi = colorModule.getColor(colorObject_ePsi)

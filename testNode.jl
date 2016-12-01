@@ -21,7 +21,6 @@
     # Load Variables and create Model:
     #println("Loading and defining variables...")
     #include("helper/createModel.jl")
-
     # DEFINE PARAMETERS
     # Define and initialize variables
     println("define types ........")
@@ -48,7 +47,7 @@
     z_Init[4]  = 0.4
    
     load_safeset =true#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
-    safeset = "data/2016-11-30-14-44-SafeSet.jld"
+    safeset = "data/2016-11-30-16-02-SafeSet.jld"
 
     #########
     InitializeParameters(mpcParams,trackCoeff,modelParams,posInfo,oldTraj,mpcCoeff,lapStatus,obstacle,buffersize)
@@ -69,7 +68,7 @@
     # the end semi axes are approximated over the secant of the points of the track. drawing might not be 100% accurate
     s_obst_init =15.0 
     sy_obst_init = -0.2
-    v_obst_init = 0.4
+    v_obst_init = 0.0
     obstacle.rs = 0.5 # if we load old trajecory these values get overwritten
     obstacle.ry = 0.19 # if we load old trajecory these values get overwritten
     
@@ -109,6 +108,8 @@
     end
 
     j = 1
+    z_final_x = zeros(1,4)::Array{Float64,2}
+    u_final = zeros(1,2)
     for j=1:n_rounds #10
         
 
@@ -117,8 +118,7 @@
         zCurr_s     = zeros(length(t),4)          # s, ey, epsi, v
         zCurr_x     = zeros(length(t),4)          # x, y, psi, v
         uCurr       = zeros(length(t),2)
-        z_final_x = zeros(1,4)::Array{Float64,2}
-        u_final = zeros(1,2)::Array{Float64,2}
+        
         #T
         for k = oldTraj.n_oldTraj-1:-1:1
             obstacle.s_obstacle[:,k+1]  = obstacle.s_obstacle[:,k]

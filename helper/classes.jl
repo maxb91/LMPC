@@ -118,7 +118,7 @@ type MpcModel
     z0::Array{JuMP.NonlinearParameter,1}
     coeff::Array{JuMP.NonlinearParameter,1}
     uCurr::Array{JuMP.NonlinearParameter,1}
-    sCoord_obst::Array{JuMP.NonlinearParameter,1}
+    sCoord_obst::Array{JuMP.NonlinearParameter,2}
     coeffTermConst::Array{JuMP.NonlinearParameter,3}
     coeffTermCost::Array{JuMP.NonlinearParameter,2}
     #s_startC::JuMP.NonlinearParameter
@@ -146,7 +146,7 @@ type MpcModel
                 z0=@NLparameter(mdl,z0[i=1:4]==0),
                 coeff=@NLparameter(mdl,coeff[i=1:5]==0),
                 uCurr=@NLparameter(mdl,zCurr[i=1:4]==0),
-                sCoord_obst=@NLparameter(mdl,sCoord_obst[i=1:2]==0),
+                sCoord_obst=@NLparameter(mdl,sCoord_obst[1:11,i=1:2]==0),
                 coeffTermConst= @NLparameter(mdl,coeffTermConst[i=1:7,k=1:5,j=1:3]==0),
                 coeffTermCost= @NLparameter(mdl,coeffTermCost[i=1:7,k=1:5]==0),
                 #s_startC=@NLparameter(mdl, s_startC==0),
