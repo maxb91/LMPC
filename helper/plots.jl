@@ -13,7 +13,7 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
     plot_eps = 0
     interactive_plot_steps = 2
     n_oldTrajPlots = 6
-    file = "data/2016-11-30-16-17-Data.jld"
+    file = "data/2016-12-05-14-54-Data.jld"
     close("all")
 
     ####load data from file
@@ -195,6 +195,7 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
             colorLambda = colorModule.getColor(colorObjectLambda)
             scatter(t[1:oldTraj.oldNIter[j]-1],oldTraj.lambda_sol[k,1:oldTraj.oldNIter[j]-1,j].*oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j], color = colorLambda, marker = "x")
         end
+        act_lambda_plot = ax11[:plot]([],[])
         xlabel("t in [s]")
         ylabel("lambda")
         grid()
@@ -301,6 +302,7 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
         ylabel("v in [m/s]")
         legend(["v current","v 2nd", "3rd last","4th last ", "5th last"],bbox_to_anchor=(1.001, 1), loc=2, borderaxespad=0.)
         p1 = ax4[:plot](1,1)
+        ax4[:set_ylim]([0.0,2.1])
 
         ax5 = subplot(312, sharex=ax4)
         plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j], oldTraj.oldTraj[1:oldTraj.oldNIter[j],2,j], color = "black")
@@ -410,6 +412,10 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
             act_s_plot[1][:remove]()
             act_s_plot= ax9[:plot]([oldTraj.oldTraj[i,1,j],oldTraj.oldTraj[i,1,j]],[-3,30])  
         end
+        if plot_lambda ==1
+            act_lambda_plot[1][:remove]()
+            act_lambda_plot= ax11[:plot]([t[i],t[i]],[0,1])  
+        end
 
         # #plot inputs and their predictions
         if plot_inputs ==1 
@@ -428,4 +434,5 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
         end
     end # end for loop interactive plots
     end #end if statement interactive plots
+    return mpcParams, oldTraj
 end

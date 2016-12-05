@@ -46,8 +46,8 @@
     z_Init[3] = 0.94
     z_Init[4]  = 0.4
    
-    load_safeset =true#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
-    safeset = "data/2016-11-30-16-02-SafeSet.jld"
+    load_safeset =false#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
+    safeset = "data/2016-12-04-00-08-SafeSet.jld"
 
     #########
     InitializeParameters(mpcParams,trackCoeff,modelParams,posInfo,oldTraj,mpcCoeff,lapStatus,obstacle,buffersize)
@@ -61,12 +61,12 @@
 
 
     posInfo.s_start             = 0.0 #does not get changed with the current version
-    posInfo.s_target            = 35.2 #has to be fitted to track , current test track form ugo has 113.2 meters
+    posInfo.s_target            = 30.2 #has to be fitted to track , current test track form ugo has 113.2 meters
      
     ##define obstacle x and xy vlaues not used at the moment 
     #for a clean definition of the x,y points the value of s_obstacle has to be the same as one of the points of the source map. 
     # the end semi axes are approximated over the secant of the points of the track. drawing might not be 100% accurate
-    s_obst_init =15.0 
+    s_obst_init =85.0 
     sy_obst_init = -0.2
     v_obst_init = 0.0
     obstacle.rs = 0.5 # if we load old trajecory these values get overwritten
@@ -145,7 +145,7 @@
         if j == 1 && load_safeset == false
             # path following cost in first round
             @NLobjective(m.mdl, Min, m.costPath + m.derivCost + m.controlCost + m.costObstacle)
-        elseif j == 2 || load_safeset == true
+        elseif j == 2 || (load_safeset == true && j == 1)
             #learning objective formulation, minimize the sum of all parts of the objective
             @NLobjective(m.mdl, Min, m.costZ + m.costZTerm + m.constZTerm + m.derivCost + m.controlCost + m.laneCost + m.costObstacle)
         end
@@ -185,13 +185,7 @@
                         index_last[k] = findfirst(y -> y>obstacle.s_obstacle[i,1]+obstacle.rs, oldTraj.oldTraj[:,1,k])
                         for ii = index_first[k]:index_last[k]
                             if ((oldTraj.oldTraj[ii,1,k]-obstacle.s_obstacle[i,1])/obstacle.rs )^2 + ( (oldTraj.oldTraj[ii,2,k]-obstacle.sy_obstacle[i,1])/obstacle.ry )^2 <= 1
-                            # if oldTraj.oldTraj[ii,2,k]> obstacle.sy_obstacle[i,j]-obstacle.ry && 
-                            #     oldTraj.oldTraj[ii,2,k]< obstacle.sy_obstacle[i,j]+obstacle.ry && 
-                            #     oldTraj.oldTraj[ii,1,k] <=(obstacle.s_obstacle[i,j]+obstacle.rs)  && 
-                            #     oldTraj.oldTraj[ii,1,k] >= (obstacle.s_obstacle[i,j]-obstacle.rs)
-                            #     
-                            # end
-                                setvalue(m.ssInfOn[k],1500)
+                                setvalue(m.ssInfOn[k],1000)#1500
                             end
                         end
                     end
@@ -252,6 +246,9 @@
                 # end
                 # println("calculate abs: $t_absci s")
                 # println("get curve-approx = $t_curv")
+            end
+            if tt[i] >0.8 #if solving takes long
+                println(" Time: $(tt[i]) s, Solving step $i of $(length(t)) - Status: $(mpcSol.solverStatus)")
             end
 
             i = i + 1

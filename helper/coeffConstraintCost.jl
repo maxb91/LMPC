@@ -118,7 +118,7 @@ function coeffConstraintCost!(oldTraj, mpcCoeff::classes.MpcCoeff, posInfo::clas
         #iter_to_s_target  = oldTraj.oldNIter[i] - (idx_s[i]-N_points*(i-1))+1  # number of iterations from idx_s to s_target, this has sth todo with the count in the array as we look at values in second row
         
         #bQfunction_Vector = collect(linspace(iter_to_s_target,iter_to_s_target-pLength,pLength+1))    # build a vector that starts at the distance and decreases in equal steps
-   
+    
 
     mpcCoeff.coeffCost  = coeffCost #this value goes into the variable mpcCoeff in testNode.jl as well variables by reference
     mpcCoeff.coeffConst = coeffConst #this way we dont need to return anything 

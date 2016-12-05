@@ -46,12 +46,6 @@ function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelP
     @variable( m.mdl, 0 <= m.lambda[1:n_oldTraj] <= 1)
     @variable( m.mdl, m.eps[1:2] >=0)
 
-    # for i=1:2      
-    #     for j=1:N
-    #         setlowerbound(m.u_Ol[j,i], modelParams.u_lb[j,i])
-    #         setupperbound(m.u_Ol[j,i], modelParams.u_ub[j,i])
-    #     end
-    # end
     # for i=1:4
     #     for j=1:N+1
     #         setlowerbound(m.z_Ol[j,i], modelParams.z_lb[j,i])
@@ -112,7 +106,7 @@ function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelP
     # Terminal constraints (soft), starting from 2nd lap
     #constraints force trajectory to end up on ss
     # ---------------------------------  
-    @NLexpression(m.mdl, constZTerm, (sum{Q_term[j]*( sum{m.ssInfOn[k]*m.lambda[k]*sum{m.coeffTermConst[i,k,j]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1},k=1:n_oldTraj}-m.z_Ol[N+1,j+1])^2,j=1:3}))                           
+    @NLexpression(m.mdl, constZTerm, sum{Q_term[j]* sum{m.ssInfOn[k]*m.lambda[k]*(sum{m.coeffTermConst[i,k,j]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1}-m.z_Ol[N+1,j+1])^2,k=1:n_oldTraj},j=1:3})                           
     m.constZTerm = constZTerm
    #basic idea:
     #@NLexpression(m.mdl, constZTerm, sum{Q_term[j]*(sum{coeffTermConst[i,1,j]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1}-m.z_Ol[N+1,j+1])^2,j=1:3})
@@ -134,10 +128,12 @@ function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelP
     #put cost on z (actually should put cost only on z before finishing the lap)
     #@NLexpression(m.mdl, costZ_h, 0)          # zero state cost after crossing the finish line
     #@NLexpression(m.mdl, costZ, 1 + (costZ_h-1) * (0.5+0.5*tanh(50*(m.z_Ol[1,N+1]+s_start-s_target))))
-    @NLexpression(m.mdl, costZ, 1)
+    #@NLexpression(m.mdl, costZ, Q_cost*1)
+    @NLexpression(m.mdl, costZ, Q_cost*sum{1,i=1:N+1})
+
     m.costZ = costZ
     ## Cost to avoid obstacle. increases when car is near obstacle currently implemented as : a *1/(0.1+cost)
-    @NLexpression(m.mdl, costObstacle, sum{Q_obstacle*1/( ( (m.z_Ol[i,1]-m.sCoord_obst[i,1])/rs )^2 + ( (m.z_Ol[i,2]-m.sCoord_obst[i,2])/ry )^2 - 1 )^2,i=1:N+1})
+    @NLexpression(m.mdl, costObstacle, Q_obstacle*sum{1/(1*( ( (m.z_Ol[i,1]-m.sCoord_obst[i,1])/rs )^2 + ( (m.z_Ol[i,2]-m.sCoord_obst[i,2])/ry )^2 - 1) )^2,i=1:N+1})
     #@NLexpression(m.mdl, costObstacle,    (10*m.eps[3]+5.0*m.eps[3]^2))
     #@NLexpression(m.mdl, costObstacle,    0)
     m.costObstacle = costObstacle
