@@ -13,7 +13,7 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
     plot_eps = 0
     interactive_plot_steps = 2
     n_oldTrajPlots = 6
-    file = "data/2016-12-05-14-54-Data.jld"
+    file = "data/2016-12-05-23-40-Data.jld"
     close("all")
 
     ####load data from file
@@ -195,7 +195,7 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
             colorLambda = colorModule.getColor(colorObjectLambda)
             scatter(t[1:oldTraj.oldNIter[j]-1],oldTraj.lambda_sol[k,1:oldTraj.oldNIter[j]-1,j].*oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j], color = colorLambda, marker = "x")
         end
-        act_lambda_plot = ax11[:plot]([],[])
+        act_lambda_plot = ax11[:plot]([],[], label="_nolegend_")
         xlabel("t in [s]")
         ylabel("lambda")
         grid()
@@ -410,11 +410,11 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
         ##plot a line in the cost function that always show the current s
         if plot_costs ==1
             act_s_plot[1][:remove]()
-            act_s_plot= ax9[:plot]([oldTraj.oldTraj[i,1,j],oldTraj.oldTraj[i,1,j]],[-3,30])  
+            act_s_plot= ax9[:plot]([oldTraj.oldTraj[i,1,j],oldTraj.oldTraj[i,1,j]],[-3,oldTraj.oldNIter[j]], color ="black")  
         end
         if plot_lambda ==1
             act_lambda_plot[1][:remove]()
-            act_lambda_plot= ax11[:plot]([t[i],t[i]],[0,1])  
+            act_lambda_plot= ax11[:plot]([t[i],t[i]],[0,1],label="_nolegend_", color ="black")  
         end
 
         # #plot inputs and their predictions
@@ -434,5 +434,5 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
         end
     end # end for loop interactive plots
     end #end if statement interactive plots
-    return mpcParams, oldTraj
+    #return mpcParams, oldTraj
 end

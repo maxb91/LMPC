@@ -106,8 +106,10 @@ function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelP
     # Terminal constraints (soft), starting from 2nd lap
     #constraints force trajectory to end up on ss
     # ---------------------------------  
-    @NLexpression(m.mdl, constZTerm, sum{Q_term[j]* sum{m.ssInfOn[k]*m.lambda[k]*(sum{m.coeffTermConst[i,k,j]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1}-m.z_Ol[N+1,j+1])^2,k=1:n_oldTraj},j=1:3})                           
-    m.constZTerm = constZTerm
+   #@NLexpression(m.mdl, constZTerm, sum{Q_term[j]* sum{m.ssInfOn[k]*m.lambda[k]*(sum{m.coeffTermConst[i,k,j]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1}-m.z_Ol[N+1,j+1]),k=1:n_oldTraj}^2,j=1:3})                           
+    
+    @NLexpression(m.mdl, constZTerm, sum{Q_term[j]* (sum{m.ssInfOn[k]*m.lambda[k]*sum{m.coeffTermConst[i,k,j]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1},k=1:n_oldTraj}-m.z_Ol[N+1,j+1])^2,j=1:3})                           
+    m.constZTerm = constZTerm           
    #basic idea:
     #@NLexpression(m.mdl, constZTerm, sum{Q_term[j]*(sum{coeffTermConst[i,1,j]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1}-m.z_Ol[N+1,j+1])^2,j=1:3})
 
@@ -133,7 +135,7 @@ function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelP
 
     m.costZ = costZ
     ## Cost to avoid obstacle. increases when car is near obstacle currently implemented as : a *1/(0.1+cost)
-    @NLexpression(m.mdl, costObstacle, Q_obstacle*sum{1/(1*( ( (m.z_Ol[i,1]-m.sCoord_obst[i,1])/rs )^2 + ( (m.z_Ol[i,2]-m.sCoord_obst[i,2])/ry )^2 - 1) )^2,i=1:N+1})
+    @NLexpression(m.mdl, costObstacle, 0.02*sum{1/(Q_obstacle*( ( (m.z_Ol[i,1]-m.sCoord_obst[i,1])/rs )^2 + ( (m.z_Ol[i,2]-m.sCoord_obst[i,2])/ry )^2 - 1) )^2,i=1:N+1})
     #@NLexpression(m.mdl, costObstacle,    (10*m.eps[3]+5.0*m.eps[3]^2))
     #@NLexpression(m.mdl, costObstacle,    0)
     m.costObstacle = costObstacle
