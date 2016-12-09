@@ -184,7 +184,7 @@
             
             if j > 1 || load_safeset == true
                 tic()
-                deleteInfeasibleTrajectories!(oldTraj,posInfo,obstacle, pred_obst, i)
+                deleteInfeasibleTrajectories!(oldTraj,posInfo,obstacle, pred_obst, i, zCurr_x)
                 tt1[i] = toq()
                 coeffConstraintCost!(oldTraj,mpcCoeff,posInfo,mpcParams)
             end
@@ -216,15 +216,15 @@
             zCurr_x[i+1,:]  = simModel_x(zCurr_x[i,:],uCurr[i,:],modelParams.dt,modelParams) #!! @show
 
             #update Position of the Obstacle car        
-            computeObstaclePos!(obstacle, dt, i, x_track, trackCoeff)#this funciton computes values for row i+1
+            computeObstaclePos!(obstacle, dt, i, x_track, trackCoeff) #this funciton computes values for row i+1
             
 
-            cost[:,i,j]   = mpcSol.cost
-            lambda_log[:,i,j] = mpcSol.lambda
+            cost[:,i,j]         = mpcSol.cost
+            lambda_log[:,i,j]   = mpcSol.lambda
             z_pred_log[:,:,i,j] = mpcSol.z
             u_pred_log[:,:,i,j] = mpcSol.u
-            ssInfOn_log[:,i,j]= mpcSol.ssInfOn
-            curv_approx[:,i,j]=getvalue(m.c)
+            ssInfOn_log[:,i,j]  = mpcSol.ssInfOn
+            curv_approx[:,i,j]  = getvalue(m.c)
             
 
             tt2= toq()
