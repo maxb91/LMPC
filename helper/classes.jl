@@ -46,12 +46,13 @@ type MpcParams          # parameters for MPC solver
     Q_term::Array{Float64,1}
     Q_cost::Float64
     Q_obstacle::Float64
+    Q_obstacleNumer::Float64
     Q_lane::Float64
     R::Array{Float64,1}
     vPathFollowing::Float64
     QderivZ::Array{Float64,1}
     QderivU::Array{Float64,1}
-    MpcParams(N=0,nz=0,OrderCostCons=0,Q=Float64[],Q_term=Float64[],Q_cost=1.0,Q_obstacle = 1.0,Q_lane = 1.0, R=Float64[],vPathFollowing=1.0,QderivZ=Float64[],QderivU=Float64[]) = new(N,nz,OrderCostCons,Q,Q_term,Q_cost,Q_obstacle,Q_lane,R,vPathFollowing)
+    MpcParams(N=0,nz=0,OrderCostCons=0,Q=Float64[],Q_term=Float64[],Q_cost=1.0,Q_obstacle = 1.0,Q_obstacleNumer = 1.0,Q_lane = 1.0, R=Float64[],vPathFollowing=1.0,QderivZ=Float64[],QderivU=Float64[]) = new(N,nz,OrderCostCons,Q,Q_term,Q_cost,Q_obstacle,Q_obstacleNumer,Q_lane,R,vPathFollowing)
 end
 
 type PosInfo            # current position information

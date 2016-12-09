@@ -19,14 +19,15 @@ function saveOldTraj(oldTraj,zCurr::Array{Float64}, zCurr_x::Array{Float64},uCur
     derivInpCost = zeros(buffersize)
     cost2target = zeros(buffersize)
     #fill up the arrays for the additional costs with measured values, the additional cost are zeros for all i after the finish line
-    currCostObst[1:i] = flipdim(cumsum(flipdim(mpcParams.Q_obstacle*1./( ( (zCurr[1:i,1]-obstacle.s_obstacle[1:i,1])/obstacle.rs ).^2 + ( (zCurr[1:i,2]-obstacle.sy_obstacle[1:i,1])/obstacle.ry ).^2 - 1 ).^2,1),1),1)
+    #!! edit for new cost function
+    #currCostObst[1:i] = flipdim(cumsum(flipdim(mpcParams.Q_obstacle*1./( ( (zCurr[1:i,1]-obstacle.s_obstacle[1:i,1])/obstacle.rs ).^2 + ( (zCurr[1:i,2]-obstacle.sy_obstacle[1:i,1])/obstacle.ry ).^2 - 1 ).^2,1),1),1)
     for l = 1:4
         derivStateCost[1:i-1] += flipdim(mpcParams.QderivZ[l]*cumsum(flipdim((zCurr_export[1:i-1,l]-zCurr_export[2:i,l]).^2,1),1),1)
     end
     derivInpCost[1:i-2] = flipdim(mpcParams.QderivU[1]*cumsum(flipdim((uCurr_export[1:i-2,1]-uCurr_export[2:i-1,1]).^2,1),1)+mpcParams.QderivU[2]*cumsum(flipdim((uCurr_export[1:i-2,2]-uCurr_export[2:i-1,2]).^2,1),1),1)
     inpCost[1:i-1] = flipdim(mpcParams.R[1]*cumsum(flipdim(uCurr_export[1:i-1,1].^2,1),1)+mpcParams.R[2]*cumsum(flipdim(uCurr_export[1:i-1,2].^2,1),1),1)
     for j = 1:buffersize
-        cost2target[j] = mpcParams.Q_cost*(costLap-j+1)+derivStateCost[j]+derivInpCost[j]+inpCost[j]+currCostObst[j]
+        cost2target[j] = mpcParams.Q_cost*(costLap-j+1)+derivStateCost[j]+derivInpCost[j]+inpCost[j]#+currCostObst[j]
     end
 
     # Save all data in oldTrajectory:
@@ -86,9 +87,10 @@ function InitializeParameters(mpcParams::classes.MpcParams,trackCoeff::classes.T
     mpcParams.nz                = 4                         #number of States
     mpcParams.Q                 = [0.0,10.0,0.1,10.0]  #0 10 0 1    # put weights on ey, epsi and v, just for first round of PathFollowing
     mpcParams.Q_term            = 100*[5.0,1.0,10.0]           # weights for terminal constraints (LMPC, for e_y, e_psi, and v)
-    mpcParams.Q_cost            = 0.5                           #factor for terminal cost
-    mpcParams.Q_obstacle        = 0.9
-    mpcParams.Q_lane            = 1000.0
+    mpcParams.Q_cost            = 1.0                           #factor for terminal cost
+    mpcParams.Q_obstacle        = 0.3
+    mpcParams.Q_obstacleNumer   = 0.02
+    mpcParams.Q_lane            = 2000.0
     mpcParams.R                 = 0.0*[1.0,1.0]             # put weights on a and d_f
     mpcParams.QderivZ           = 1.0*[0,0.0,0.1,0.1]             # cost matrix for derivative cost of states
     mpcParams.QderivU           = 0.1*[1,10]               # cost matrix for derivative cost of inputs

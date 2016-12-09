@@ -318,20 +318,22 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
     dY = dot(coeffY,[6*j^5, 5*j^4, 4*j^3, 3*j^2, 2*j, 1, 0])
     angle=atan2(dY,dX) # gives a value between -pi < x <= pi
 
-    if angle < 0
-        angle = 2*pi + angle
+    # if angle < 0
+    #     angle = 2*pi + angle
   
-    end
+    # end
 
-    epsi = psi - angle
+    # epsi = psi - angle
 
-    if abs(epsi)>(pi/2)
-        if epsi<(pi/2)
-            epsi = psi - (angle - 2*pi)  
-        else
-            epsi = (psi - 2*pi) - angle          
-        end
-    end
+    # if abs(epsi)>(pi/2)
+    #     if epsi<(pi/2)
+    #         @show epsi = psi - (angle - 2*pi)  
+    #     else
+    #         @show epsi = (psi - 2*pi) - angle          
+    #     end
+    # end
+    epsi = (psi+pi)%(2*pi)-pi-angle
+    epsi = (epsi+pi)%(2*pi)-pi
 
     #T
     #this was yjust to test correcntess of teh dfrisr derivative

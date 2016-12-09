@@ -7,16 +7,13 @@
 # i = 3 -> epsi
 # i = 4 -> v
 
-function solveMpcProblem!(m::classes.MpcModel,mpcSol::classes.MpcSol,mpcCoeff::classes.MpcCoeff,mpcParams::classes.MpcParams,trackCoeff::classes.TrackCoeff,lapStatus::classes.LapStatus,posInfo::classes.PosInfo,modelParams::classes.ModelParams,zCurr::Array{Float64},uCurr::Array{Float64}, obstacle, iter::Int64)
+function solveMpcProblem!(m::classes.MpcModel,mpcSol::classes.MpcSol,mpcCoeff::classes.MpcCoeff,mpcParams::classes.MpcParams,trackCoeff::classes.TrackCoeff,lapStatus::classes.LapStatus,posInfo::classes.PosInfo,modelParams::classes.ModelParams,zCurr::Array{Float64},uCurr::Array{Float64}, pred_obst, iter::Int64)
     # Load Parameters
     coeffCurvature  = trackCoeff.coeffCurvature::Array{Float64,1}
     
 
     local sol_u::Array{Float64,2} 
     local sol_z::Array{Float64,2} 
-  
-    s_obst, sy_obst = predictObstaclePos(obstacle, modelParams, mpcParams, iter)
-
     # Update current initial condition
     setvalue(m.z0,zCurr')
 
@@ -25,8 +22,8 @@ function solveMpcProblem!(m::classes.MpcModel,mpcSol::classes.MpcSol,mpcCoeff::c
     setvalue(m.coeffTermCost,mpcCoeff.coeffCost)
     setvalue(m.coeffTermConst,mpcCoeff.coeffConst)
     setvalue(m.uCurr,uCurr)
-    setvalue(m.sCoord_obst[:,1],s_obst)
-    setvalue(m.sCoord_obst[:,2],sy_obst)
+    setvalue(m.sCoord_obst[:,1],pred_obst[:,1])
+    setvalue(m.sCoord_obst[:,2],pred_obst[:,2])
 
     #println("Model formulation:")
     #println(m.m)

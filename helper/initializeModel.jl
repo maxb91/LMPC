@@ -16,6 +16,7 @@ function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelP
     Q_term          = mpcParams.Q_term
     Q_cost          = mpcParams.Q_cost
     Q_obstacle      = mpcParams.Q_obstacle
+    Q_obstacleNumer = mpcParams.Q_obstacleNumer
     Q_lane          = mpcParams.Q_lane
     R               = mpcParams.R # cost for control is always used but curently 0
     coeffTermCost   = mpcCoeff.coeffCost::Array{Float64,2}
@@ -90,7 +91,7 @@ function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelP
     #define expressions for cost
     # Derivative cost
     # ---------------------------------
-    @NLexpression(m.mdl, derivCost, sum{QderivZ[j]*((m.z0[j]-m.z_Ol[1,j])^2+sum{(m.z_Ol[i,j]-m.z_Ol[i+1,j])^2,i=1:N}),j=1:4} +
+    @NLexpression(m.mdl, derivCost, sum{QderivZ[j]*(sum{(m.z_Ol[i,j]-m.z_Ol[i+1,j])^2,i=1:N}),j=1:4} +  #(m.z0[j]-m.z_Ol[1,j])^2
                                       sum{QderivU[j]*((m.uCurr[j]-m.u_Ol[1,j])^2+sum{(m.u_Ol[i,j]-m.u_Ol[i+1,j])^2,i=1:N-1}),j=1:2})
     m.derivCost= derivCost
     # Lane cost
@@ -135,9 +136,12 @@ function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelP
 
     m.costZ = costZ
     ## Cost to avoid obstacle. increases when car is near obstacle currently implemented as : a *1/(0.1+cost)
-    @NLexpression(m.mdl, costObstacle, 0.02*sum{1/(Q_obstacle*( ( (m.z_Ol[i,1]-m.sCoord_obst[i,1])/rs )^2 + ( (m.z_Ol[i,2]-m.sCoord_obst[i,2])/ry )^2 - 1) )^2,i=1:N+1})
+    @NLexpression(m.mdl, costObstacle, 
+          sum{Q_obstacleNumer*1/(0.01+(Q_obstacle* (( (m.z_Ol[i,1]-m.sCoord_obst[i,1])/rs )^2 + ( (m.z_Ol[i,2]-m.sCoord_obst[i,2])/ry) ^2 - 1))^4)+
+        Q_obstacleNumer*3/(0.01+0.6*(((m.z_Ol[i,1]-m.sCoord_obst[i,1])/rs)^2+((m.z_Ol[i,2]-m.sCoord_obst[i,2])/ry)^2)),i=1:N+1})
+        #3*Q_obstacleNumer/((((m.z_Ol[i,1]-m.sCoord_obst[i,1])/rs)^2+((m.z_Ol[i,2]-m.sCoord_obst[i,2])/ry)^2)),i=1:N+1})
     #@NLexpression(m.mdl, costObstacle,    (10*m.eps[3]+5.0*m.eps[3]^2))
-    #@NLexpression(m.mdl, costObstacle,    0)
+    #@NLexpression(m.mdl, costObstacle,    0)       
     m.costObstacle = costObstacle
     #@NLobjective(m.mdl, Min, m.costPath)
 end

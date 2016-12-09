@@ -11,9 +11,9 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
     plot_curvature_approx=0
     plot_inputs = 0
     plot_eps = 0
-    interactive_plot_steps = 2
+    interactive_plot_steps = 3
     n_oldTrajPlots = 6
-    file = "data/2016-12-05-23-40-Data.jld"
+    file = "data/2016-12-08-17-20-Data.jld"
     close("all")
 
     ####load data from file
@@ -193,14 +193,15 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
         for k=1: oldTraj.n_oldTraj//4
             k = convert(Int64,k)
             colorLambda = colorModule.getColor(colorObjectLambda)
-            scatter(t[1:oldTraj.oldNIter[j]-1],oldTraj.lambda_sol[k,1:oldTraj.oldNIter[j]-1,j].*oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j], color = colorLambda, marker = "x")
+            scatter(t[1:oldTraj.oldNIter[j]-1],oldTraj.lambda_sol[k,1:oldTraj.oldNIter[j]-1,j].*oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j], color = colorLambda, marker = "x", label = string(L"\lambda","k"))
         end
         act_lambda_plot = ax11[:plot]([],[], label="_nolegend_")
         xlabel("t in [s]")
         ylabel("lambda")
         grid()
         #ax11[:set_ylim]([-0.1,1.1])
-        legend([L"\lambda 1",L"\lambda 2",L"\lambda 3",L"\lambda 4",L"\lambda 5", L"\lambda 6",L"\lambda 7",L"\lambda 8",L"\lambda 9",L"\lambda 10"],bbox_to_anchor=(-0.201, 1), loc=2, borderaxespad=0.)
+        legend()
+        #legend([L"\lambda 1",L"\lambda 2",L"\lambda 3",L"\lambda 4",L"\lambda 5", L"\lambda 6",L"\lambda 7",L"\lambda 8",L"\lambda 9",L"\lambda 10"],bbox_to_anchor=(-0.201, 1), loc=2, borderaxespad=0.)
         
         axlambda2= subplot(2,2,2,sharex= ax11, sharey =ax11)
         for k=oldTraj.n_oldTraj//4+1: oldTraj.n_oldTraj//2
@@ -302,7 +303,7 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
         ylabel("v in [m/s]")
         legend(["v current","v 2nd", "3rd last","4th last ", "5th last"],bbox_to_anchor=(1.001, 1), loc=2, borderaxespad=0.)
         p1 = ax4[:plot](1,1)
-        ax4[:set_ylim]([0.0,2.1])
+        ax4[:set_ylim](0.0,2.1)
 
         ax5 = subplot(312, sharex=ax4)
         plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j], oldTraj.oldTraj[1:oldTraj.oldNIter[j],2,j], color = "black")

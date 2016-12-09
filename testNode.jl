@@ -11,6 +11,7 @@
     include("helper/simModel.jl")
     include("helper/localizeVehicleCurvAbs.jl")
     include("helper/computeObstaclePos.jl")
+    include("helper/adjustSafeSet.jl")
 
     #just loads one specified track with distances betwwen points =1 m and returnx x and y coordinatates
     println("loadMap.......")
@@ -35,7 +36,7 @@
     mpcParams                   = classes.MpcParams()
     m                           = classes.MpcModel()
 
-    buffersize                  = 1401 #1501
+    buffersize                  = 801 #1501
     close("all")
 
 
@@ -47,7 +48,7 @@
     z_Init[4]  = 0.4
    
     load_safeset =true#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
-    safeset = "data/2016-12-05-23-00-SafeSet.jld"
+    safeset = "data/2016-12-08-16-52-SafeSet.jld"
 
     #########
     InitializeParameters(mpcParams,trackCoeff,modelParams,posInfo,oldTraj,mpcCoeff,lapStatus,obstacle,buffersize)
@@ -61,14 +62,14 @@
 
 
     posInfo.s_start             = 0.0 #does not get changed with the current version
-    posInfo.s_target            = 30.2 #has to be fitted to track , current test track form ugo has 113.2 meters
+    posInfo.s_target            = 35.2 #has to be fitted to track , current test track form ugo has 113.2 meters
      
     ##define obstacle x and xy vlaues not used at the moment 
     #for a clean definition of the x,y points the value of s_obstacle has to be the same as one of the points of the source map. 
     # the end semi axes are approximated over the secant of the points of the track. drawing might not be 100% accurate
-    s_obst_init =15.0 
+    s_obst_init =6.0 
     sy_obst_init = -0.2
-    v_obst_init = 0.4
+    v_obst_init = 1.8
     obstacle.rs = 0.5 # if we load old trajecory these values get overwritten
     obstacle.ry = 0.19 # if we load old trajecory these values get overwritten
     
@@ -92,7 +93,7 @@
     trackCoeff.coeffCurvature   = [0.0;0.0;0.0;0.0;0.0]        # polynomial coefficients for curvature approximation (zeros for straight line)
     trackCoeff.nPolyCurvature = 4 # has to be 4 cannot be changed freely at the moment orders are still hardcoded in some parts of localizeVehicleCurvAbslizeVehicleCurvAbs
     trackCoeff.nPolyXY = 6  # has to be 6 cannot be changed freely at the moment orders are still hardcoded in some parts of localizeVehicleCurvAbslizeVehicleCurvAbs
-    n_rounds = 6
+    n_rounds = 2
     z_pred_log = zeros(mpcParams.N+1,4,length(t),n_rounds)
     u_pred_log = zeros(mpcParams.N,2,length(t),n_rounds)
     lambda_log = zeros(oldTraj.n_oldTraj,length(t),n_rounds)
@@ -100,6 +101,7 @@
 
     ssInfOn_log = zeros(oldTraj.n_oldTraj, length(t), n_rounds)
     curv_approx = zeros(mpcParams.N,length(t), n_rounds)
+    pred_obst = zeros(mpcParams.N+1,2)
 
     if load_safeset == true
         SafeSetData = load(safeset)
@@ -115,6 +117,7 @@
 
         lapStatus.currentLap = j
         tt          = zeros(length(t),1)
+        tt1         = zeros(length(t),1)
         zCurr_s     = zeros(length(t),4)          # s, ey, epsi, v
         zCurr_x     = zeros(length(t),4)          # x, y, psi, v
         uCurr       = zeros(length(t),2)
@@ -161,6 +164,7 @@
             # localize takes some time see ProfileView.view()
             tic()
             zCurr_s[i,:], trackCoeff.coeffCurvature = localizeVehicleCurvAbs(zCurr_x[i,:],x_track,y_track,trackCoeff, i)
+            posInfo.s   = zCurr_s[i,1]
             #t_absci =toq()
             #if the car has crossed the finish line
             if zCurr_s[i,1] >= posInfo.s_target
@@ -172,30 +176,18 @@
                 break
             end
             #!! println("s = $(zCurr_s[i,1])")
-     
-            posInfo.s   = zCurr_s[i,1]
+            
+
+            ##################
+            pred_obst = predictObstaclePos(obstacle, modelParams, mpcParams, i)
+            ##################
+            
             if j > 1 || load_safeset == true
-                
                 tic()
-                index_first = Array{Int64}(oldTraj.n_oldTraj)#
-                index_last = Array{Int64}(oldTraj.n_oldTraj)
-                if (obstacle.s_obstacle[i,1]-obstacle.rs) - posInfo.s <=2.0 && (obstacle.s_obstacle[i,1]+obstacle.rs)>= posInfo.s #if our car is closer than one meter to obstacle and not fully after it
-                    for k =1:oldTraj.n_oldTraj
-                        index_first[k]  = findfirst(x -> x>posInfo.s, oldTraj.oldTraj[:,1,k])
-                        index_last[k] = findfirst(y -> y>obstacle.s_obstacle[i,1]+obstacle.rs, oldTraj.oldTraj[:,1,k])
-                        for ii = index_first[k]:index_last[k]
-                            if ((oldTraj.oldTraj[ii,1,k]-obstacle.s_obstacle[i,1])/obstacle.rs )^2 + ( (oldTraj.oldTraj[ii,2,k]-obstacle.sy_obstacle[i,1])/obstacle.ry )^2 <= 1
-                                setvalue(m.ssInfOn[k],1000)#1500
-                            end
-                        end
-                    end
-                end
-                tt1 = toq()
+                deleteInfeasibleTrajectories!(oldTraj,posInfo,obstacle, pred_obst, i)
+                tt1[i] = toq()
                 coeffConstraintCost!(oldTraj,mpcCoeff,posInfo,mpcParams)
             end
-
-
-            
             tic()
             #solve with zCurr_s containing s ey values 
 
@@ -215,13 +207,17 @@
             # setvalue(m.lambda, mpcSol.lambda)
             # setvalue(m.eps, mpcSol.eps)
             #####################
-            solveMpcProblem!(m,mpcSol,mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr_s[i,:]',[mpcSol.a_x;mpcSol.d_f], obstacle,i)
+            solveMpcProblem!(m,mpcSol,mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr_s[i,:]',[mpcSol.a_x;mpcSol.d_f], pred_obst,i)
             tt[i]       = toq()
             setvalue(m.ssInfOn,ones(oldTraj.n_oldTraj))# reset the all trajectories to on position
 
- 
-
             uCurr[i,:]  = [mpcSol.a_x mpcSol.d_f]
+            #have Zcurr as states XY and simulate from there return XY values of states 
+            zCurr_x[i+1,:]  = simModel_x(zCurr_x[i,:],uCurr[i,:],modelParams.dt,modelParams) #!! @show
+
+            #update Position of the Obstacle car        
+            computeObstaclePos!(obstacle, dt, i, x_track, trackCoeff)#this funciton computes values for row i+1
+            
 
             cost[:,i,j]   = mpcSol.cost
             lambda_log[:,i,j] = mpcSol.lambda
@@ -229,14 +225,8 @@
             u_pred_log[:,:,i,j] = mpcSol.u
             ssInfOn_log[:,i,j]= mpcSol.ssInfOn
             curv_approx[:,i,j]=getvalue(m.c)
-     
-          
-            #have Zcurr as states XY and simulate from there return XY values of states 
-            zCurr_x[i+1,:]  = simModel_x(zCurr_x[i,:],uCurr[i,:],modelParams.dt,modelParams) #!! @show
-
-            #update Position of the Obstacle car        
-            computeObstaclePos!(obstacle, dt, i, x_track, trackCoeff)#this funciton computes values for row i+1
             
+
             tt2= toq()
             if i%50 == 0 
                 println(" Time: $(tt[i]) s, Solving step $i of $(length(t)) - Status: $(mpcSol.solverStatus)")
@@ -276,9 +266,9 @@
         saveOldTraj(oldTraj,zCurr_s, zCurr_x,uCurr,lapStatus,buffersize,modelParams.dt, load_safeset, cost[:,:,j],
           lambda_log[:,:,j],z_pred_log[:,:,:,j],u_pred_log[:,:,:,j],ssInfOn_log[:,:,j], mpcSol, obstacle )
         tt3= toq()
+        println("Max time to calculate infeasible traj: $(maximum(tt1))")
         println(" Time to save and overwrite trajectories: $(tt3) s")
         ###############
-
 
         oldTraj.oldNIter[1] = i
         if j>1 && oldTraj.oldNIter[2] <= oldTraj.oldNIter[1]
