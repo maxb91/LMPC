@@ -47,8 +47,8 @@
     z_Init[3] = 0.94
     z_Init[4]  = 0.4
    
-    load_safeset =false#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
-    safeset = "data/2016-12-13-17-17-SafeSet.jld"
+    load_safeset =true#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
+    safeset = "data/2016-12-14-12-58-SafeSet.jld"
 
     #########
     InitializeParameters(mpcParams,trackCoeff,modelParams,posInfo,oldTraj,mpcCoeff,lapStatus,obstacle,buffersize)
@@ -242,7 +242,7 @@
                 # println("calculate abs: $t_absci s")
                 # println("get curve-approx = $t_curv")
             end
-            if tt[i] >0.07 #if solving takes long
+            if tt[i] >0.08 #if solving takes long
                 println(" Time: $(tt[i]) s, Solving step $i of $(length(t)) - Status: $(mpcSol.solverStatus)")
                 println(" Time: $(tt2) s for the whole step of the loop ")
                 println("                           ")
