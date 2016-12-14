@@ -53,8 +53,8 @@ function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelP
     #         setupperbound(m.z_Ol[j,i], modelParams.z_ub[j,i])
     #     end
     # end
-    @NLparameter(m.mdl,m.ssInfOn[1:n_oldTraj-1]== 1)
-    @NLparameter(m.mdl,m.ssAddTraj[i=1:1] == 1500)
+    @NLparameter(m.mdl,m.ssInfOn[1:n_oldTraj]== 1)
+    #@NLparameter(m.mdl,m.ssAddTraj[i=1:1] == 1500)
     @NLparameter(m.mdl, m.z0[i=1:4] == z_Init[i])
     @NLconstraint(m.mdl, [i=1:4], m.z_Ol[1,i] == m.z0[i])
 
@@ -110,8 +110,7 @@ function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelP
     # ---------------------------------  
    #@NLexpression(m.mdl, constZTerm, sum{Q_term[j]* sum{m.ssInfOn[k]*m.lambda[k]*(sum{m.coeffTermConst[i,k,j]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1}-m.z_Ol[N+1,j+1]),k=1:n_oldTraj}^2,j=1:3})                           
     
-    @NLexpression(m.mdl, constZTerm, sum{Q_term[j]*(sum{m.ssInfOn[k]*m.lambda[k]*sum{m.coeffTermConst[i,k,j]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1},k=1:n_oldTraj-1}+
-                                                    m.ssAddTraj[1]*m.lambda[end]*sum{m.coeffTermConst[i,end,j]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1}-m.z_Ol[N+1,j+1])^2,j=1:3})                           
+    @NLexpression(m.mdl, constZTerm, sum{Q_term[j]*(sum{m.ssInfOn[k]*m.lambda[k]*sum{m.coeffTermConst[i,k,j]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1},k=1:n_oldTraj}-m.z_Ol[N+1,j+1])^2,j=1:3})                           
     m.constZTerm = constZTerm           
    #basic idea:
     #@NLexpression(m.mdl, constZTerm, sum{Q_term[j]*(sum{coeffTermConst[i,1,j]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1}-m.z_Ol[N+1,j+1])^2,j=1:3})
@@ -120,8 +119,7 @@ function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelP
     # Terminal cost
     # ---------------------------------
     # The value of this cost determines how fast the algorithm learns. The higher this cost, the faster the control tries to reach the finish line.
-    @NLexpression(m.mdl, costZTerm,  sum{m.ssInfOn[k]*m.lambda[k]*sum{m.coeffTermCost[i,k]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1},k=1:n_oldTraj-1}+
-                                       m.ssAddTraj[1]*m.lambda[end]*sum{m.coeffTermCost[i,end]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1})
+    @NLexpression(m.mdl, costZTerm,  sum{m.ssInfOn[k]*m.lambda[k]*sum{m.coeffTermCost[i,k]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1},k=1:n_oldTraj})
     m.costZTerm = costZTerm
     #basic idea    
     #@NLexpression(m.mdl, costZTerm, Q_cost*sum{coeffTermCost[i,1]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1})

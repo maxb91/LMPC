@@ -215,8 +215,8 @@
             #####################
             solveMpcProblem!(m,mpcSol,mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr_s[i,:]',[mpcSol.a_x;mpcSol.d_f], pred_obst,i)
             tt[i]       = toq()
-            setvalue(m.ssInfOn,ones(oldTraj.n_oldTraj-1))# reset the all trajectories to on position
-            setvalue(m.ssAddTraj[1],1500)
+            setvalue(m.ssInfOn[1:oldTraj.n_oldTraj-1],ones(oldTraj.n_oldTraj-1))# reset the all trajectories to on position
+            setvalue(m.ssInfOn[oldTraj.n_oldTraj],1500)
 
             uCurr[i,:]  = [mpcSol.a_x mpcSol.d_f]
             #have Zcurr as states XY and simulate from there return XY values of states 
