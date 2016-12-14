@@ -13,7 +13,7 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
     plot_eps = 0
     interactive_plot_steps = 3
     n_oldTrajPlots = 6
-    file = "data/2016-12-08-17-20-Data.jld"
+    file = "data/2016-12-13-17-33-Data.jld"
     close("all")
 
     ####load data from file

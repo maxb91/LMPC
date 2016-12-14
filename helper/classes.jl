@@ -24,6 +24,8 @@ type OldTrajectory      # information about previous trajectories
     n_oldTraj::Int64
     oldTraj::Array{Float64}
     oldTrajXY::Array{Float64}
+    distance2obst::Array{Float64}
+    curvature::Array{Float64}
     oldInput::Array{Float64}
     oldNIter
     costs::Array{Float64}
@@ -33,9 +35,9 @@ type OldTrajectory      # information about previous trajectories
     ssInfOn_sol::Array{Float64}
     eps::Array{Float64}
     cost2Target::Array{Float64}
-    OldTrajectory(n_oldTraj = 0, oldTraj=Float64[],oldTrajXY=Float64[],oldInput=Float64[],oldNIter=Float64[],
+    OldTrajectory(n_oldTraj = 0, oldTraj=Float64[],oldTrajXY=Float64[],distance2obst=Float64[],curvature=Float64[],oldInput=Float64[],oldNIter=Float64[],
         costs=Float64[],lambda_sol=Float64[],z_pred_sol=Float64[],u_pred_sol=Float64[],ssInfOn_sol=Float64[],eps=Float64[],cost2Target= Float64[]) =
-                 new(n_oldTraj, oldTraj,oldTrajXY,oldInput,oldNIter,costs,lambda_sol,z_pred_sol,u_pred_sol,ssInfOn_sol,eps,cost2Target)
+                 new(n_oldTraj, oldTraj,oldTrajXY,distance2obst,curvature,oldInput,oldNIter,costs,lambda_sol,z_pred_sol,u_pred_sol,ssInfOn_sol,eps,cost2Target)
 end
 
 type MpcParams          # parameters for MPC solver
@@ -116,6 +118,7 @@ type MpcModel
     mdl::JuMP.Model
 
     ssInfOn::Array{JuMP.NonlinearParameter,1}
+    ssAddTraj::Array{JuMP.NonlinearParameter,1}
     z0::Array{JuMP.NonlinearParameter,1}
     coeff::Array{JuMP.NonlinearParameter,1}
     uCurr::Array{JuMP.NonlinearParameter,1}
@@ -144,6 +147,7 @@ type MpcModel
 
     MpcModel(mdl=JuMP.Model(),
                 ssInfOn=@NLparameter(mdl,ssInfOn[i=1:10]==1),
+                ssAddTraj=@NLparameter(mdl,ssAddTraj[i=1:1]==1500),
                 z0=@NLparameter(mdl,z0[i=1:4]==0),
                 coeff=@NLparameter(mdl,coeff[i=1:5]==0),
                 uCurr=@NLparameter(mdl,zCurr[i=1:4]==0),
@@ -167,6 +171,7 @@ type MpcModel
                 laneCost=@NLexpression(mdl,laneCost,0),
                 costObstacle=@NLexpression(mdl,costObstacle,0))= new(mdl,
                                                         ssInfOn,
+                                                        ssAddTraj,
                                                         z0,
                                                         coeff,
                                                         uCurr,

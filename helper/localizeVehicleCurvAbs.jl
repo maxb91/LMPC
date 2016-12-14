@@ -47,7 +47,7 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
         ind_start   = 1  #!!sometimes cars turns weird at start hasnt found optimal solution maybe interpolation plays a role in this
         ind_end     = nPoints+1
         nodes_near = nodes_center[:,ind_start:ind_end]
-    elseif idx_min+N_nodes_poly_front>= N_nodes_center
+    elseif idx_min+N_nodes_poly_front >= N_nodes_center
         # then stack the end and beginning of the lap together
         nodes_near = append!(nodes_center[:,ind_start:N_nodes_center],nodes_center[:,0:idx_min+N_nodes_poly_front+1-N_nodes_center])
         ind_start   = idx_min-N_nodes_poly_back 
