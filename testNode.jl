@@ -36,7 +36,7 @@
     mpcParams                   = classes.MpcParams()
     m                           = classes.MpcModel()
 
-    buffersize                  = 801 #1501
+    buffersize                  = 1501 #1501
     close("all")
 
 
@@ -47,8 +47,8 @@
     z_Init[3] = 0.94
     z_Init[4]  = 0.4
    
-    load_safeset =true#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
-    safeset = "data/2016-12-08-16-52-SafeSet.jld"
+    load_safeset =false#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
+    safeset = "data/2016-12-13-17-17-SafeSet.jld"
 
     #########
     InitializeParameters(mpcParams,trackCoeff,modelParams,posInfo,oldTraj,mpcCoeff,lapStatus,obstacle,buffersize)
@@ -67,9 +67,9 @@
     ##define obstacle x and xy vlaues not used at the moment 
     #for a clean definition of the x,y points the value of s_obstacle has to be the same as one of the points of the source map. 
     # the end semi axes are approximated over the secant of the points of the track. drawing might not be 100% accurate
-    s_obst_init =6.0 
+    s_obst_init =89.0 
     sy_obst_init = -0.2
-    v_obst_init = 1.8
+    v_obst_init = 0#1.5##1.8
     obstacle.rs = 0.5 # if we load old trajecory these values get overwritten
     obstacle.ry = 0.19 # if we load old trajecory these values get overwritten
     
@@ -93,7 +93,7 @@
     trackCoeff.coeffCurvature   = [0.0;0.0;0.0;0.0;0.0]        # polynomial coefficients for curvature approximation (zeros for straight line)
     trackCoeff.nPolyCurvature = 4 # has to be 4 cannot be changed freely at the moment orders are still hardcoded in some parts of localizeVehicleCurvAbslizeVehicleCurvAbs
     trackCoeff.nPolyXY = 6  # has to be 6 cannot be changed freely at the moment orders are still hardcoded in some parts of localizeVehicleCurvAbslizeVehicleCurvAbs
-    n_rounds = 2
+    n_rounds = 3
     z_pred_log = zeros(mpcParams.N+1,4,length(t),n_rounds)
     u_pred_log = zeros(mpcParams.N,2,length(t),n_rounds)
     lambda_log = zeros(oldTraj.n_oldTraj,length(t),n_rounds)
@@ -121,6 +121,8 @@
         zCurr_s     = zeros(length(t),4)          # s, ey, epsi, v
         zCurr_x     = zeros(length(t),4)          # x, y, psi, v
         uCurr       = zeros(length(t),2)
+        distance2obst = zeros(length(t))
+        curvature_curr = zeros(length(t))
         
         #T
         for k = oldTraj.n_oldTraj-1:-1:1
@@ -165,6 +167,8 @@
             tic()
             zCurr_s[i,:], trackCoeff.coeffCurvature = localizeVehicleCurvAbs(zCurr_x[i,:],x_track,y_track,trackCoeff, i)
             posInfo.s   = zCurr_s[i,1]
+            curvature_curr[i] = trackCoeff.coeffCurvature[1]*posInfo.s^4+trackCoeff.coeffCurvature[2]*posInfo.s^3+trackCoeff.coeffCurvature[3]*posInfo.s^2+trackCoeff.coeffCurvature[4]*posInfo.s +trackCoeff.coeffCurvature[5]
+            distance2obst[i] = obstacle.s_obstacle[i,1]- posInfo.s
             #t_absci =toq()
             #if the car has crossed the finish line
             if zCurr_s[i,1] >= posInfo.s_target
@@ -185,6 +189,7 @@
             if j > 1 || load_safeset == true
                 tic()
                 deleteInfeasibleTrajectories!(oldTraj,posInfo,obstacle, pred_obst, i, zCurr_x)
+		addOldtoNewPos(oldTraj)
                 tt1[i] = toq()
                 coeffConstraintCost!(oldTraj,mpcCoeff,posInfo,mpcParams)
             end
@@ -239,6 +244,8 @@
             end
             if tt[i] >0.07 #if solving takes long
                 println(" Time: $(tt[i]) s, Solving step $i of $(length(t)) - Status: $(mpcSol.solverStatus)")
+                println(" Time: $(tt2) s for the whole step of the loop ")
+                println("                           ")
             end
 
             i = i + 1
@@ -264,7 +271,7 @@
         mpcSol.cost[5]
         mpcSol.cost[7]
         saveOldTraj(oldTraj,zCurr_s, zCurr_x,uCurr,lapStatus,buffersize,modelParams.dt, load_safeset, cost[:,:,j],
-          lambda_log[:,:,j],z_pred_log[:,:,:,j],u_pred_log[:,:,:,j],ssInfOn_log[:,:,j], mpcSol, obstacle )
+          lambda_log[:,:,j],z_pred_log[:,:,:,j],u_pred_log[:,:,:,j],ssInfOn_log[:,:,j], mpcSol, obstacle,distance2obst, curvature_curr)
         tt3= toq()
         println("Max time to calculate infeasible traj: $(maximum(tt1))")
         println(" Time to save and overwrite trajectories: $(tt3) s")
@@ -301,7 +308,7 @@
     end
     println("Save data to $filename .......")
     jldopen(filename, "w") do file
-        addrequire(file, classes) #ensures that custom data types are working when loaded
+        #addrequire(file, classes) #ensures that custom data types are working when loaded
 
         JLD.write(file, "x_track", x_track)
         JLD.write(file, "y_track", y_track)
@@ -323,7 +330,7 @@
     end
     println("Save SafeSet to $filenameS .......")
     jldopen(filenameS, "w") do file
-        addrequire(file, classes) #ensures that custom data types are working when loaded
+        #addrequire(file, classes) #ensures that custom data types are working when loaded
         JLD.write(file, "oldTraj", oldTraj)
         JLD.write(file,"obstacle", obstacle)
     end

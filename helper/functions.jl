@@ -1,4 +1,6 @@
-function saveOldTraj(oldTraj,zCurr::Array{Float64}, zCurr_x::Array{Float64},uCurr::Array{Float64},lapStatus::classes.LapStatus,buffersize::Int64,dt::Float64, load_safeset::Bool, costs::Array{Float64},  lambda_log::Array{Float64},z_pred_log::Array{Float64},u_pred_log::Array{Float64},ssInfOn_log::Array{Float64}, mpcSol::classes.MpcSol, obstacle)
+function saveOldTraj(oldTraj,zCurr::Array{Float64}, zCurr_x::Array{Float64},uCurr::Array{Float64},lapStatus::classes.LapStatus,buffersize::Int64,dt::Float64, 
+    load_safeset::Bool, costs::Array{Float64},  lambda_log::Array{Float64},z_pred_log::Array{Float64},u_pred_log::Array{Float64},ssInfOn_log::Array{Float64},
+     mpcSol::classes.MpcSol, obstacle, distance2obst::Array{Float64}, curvature_curr::Array{Float64})
     #!!::classes.OldTrajectory
     i               = lapStatus.currentIt           # current iteration number, just to make notation shorter
     costLap         = lapStatus.currentIt
@@ -44,6 +46,8 @@ function saveOldTraj(oldTraj,zCurr::Array{Float64}, zCurr_x::Array{Float64},uCur
             oldTraj.ssInfOn_sol[:,:,k]= ssInfOn_log
             oldTraj.eps[:,:,k] = mpcSol.eps
             oldTraj.cost2Target[:,k] = cost2target
+            oldTraj.distance2obst[:,k] = distance2obst
+            oldTraj.curvature[:,k] = curvature_curr
 
             obstacle.s_obstacle[:,k] = obstacle.s_obstacle[:,1]# in the else part we dont shift s_obscle because we do that in the beginning of a new round
             obstacle.sy_obstacle[:,k] = obstacle.sy_obstacle[:,1]
@@ -61,6 +65,8 @@ function saveOldTraj(oldTraj,zCurr::Array{Float64}, zCurr_x::Array{Float64},uCur
             oldTraj.ssInfOn_sol[:,:,k+1]= oldTraj.ssInfOn_sol[:,:,k]
             oldTraj.eps[:,:,k+1] = oldTraj.eps[:,:,k]
             oldTraj.cost2Target[:,k+1] = oldTraj.cost2Target[:,k]
+            oldTraj.distance2obst[:,k+1] = oldTraj.distance2obst[:,k]
+            oldTraj.curvature[:,k+1] = oldTraj.curvature[:,k]
         end
         oldTraj.oldTraj[:,:,1]  = zCurr_export                 # ... and write the new traj in the first
         oldTraj.oldInput[:,:,1] = uCurr_export
@@ -74,6 +80,8 @@ function saveOldTraj(oldTraj,zCurr::Array{Float64}, zCurr_x::Array{Float64},uCur
         oldTraj.ssInfOn_sol[:,:,1]= ssInfOn_log
         oldTraj.eps[:,:,1] = mpcSol.eps
         oldTraj.cost2Target[:,1] = cost2target
+        oldTraj.distance2obst[:,1] = distance2obst
+        oldTraj.curvature[:,1] = curvature_curr
 
     end
     
@@ -86,14 +94,14 @@ function InitializeParameters(mpcParams::classes.MpcParams,trackCoeff::classes.T
     mpcParams.N                 = 10                        #lenght of prediction horizon
     mpcParams.nz                = 4                         #number of States
     mpcParams.Q                 = [0.0,10.0,0.1,10.0]  #0 10 0 1    # put weights on ey, epsi and v, just for first round of PathFollowing
-    mpcParams.Q_term            = 100*[5.0,1.0,10.0]           # weights for terminal constraints (LMPC, for e_y, e_psi, and v)
-    mpcParams.Q_cost            = 1.0                           #factor for terminal cost
-    mpcParams.Q_obstacle        = 0.3
-    mpcParams.Q_obstacleNumer   = 0.02
+    mpcParams.Q_term            = 100*[10.0,2.0,10.0]           # weights for terminal constraints (LMPC, for e_y, e_psi, and v)
+    mpcParams.Q_cost            = 0.7                           #factor for terminal cost
+    mpcParams.Q_obstacle        = 0.3 #
+    mpcParams.Q_obstacleNumer   = 0.003
     mpcParams.Q_lane            = 2000.0
     mpcParams.R                 = 0.0*[1.0,1.0]             # put weights on a and d_f
-    mpcParams.QderivZ           = 1.0*[0,0.0,0.1,0.1]             # cost matrix for derivative cost of states
-    mpcParams.QderivU           = 0.1*[1,10]               # cost matrix for derivative cost of inputs
+    mpcParams.QderivZ           = 0.0*[0,0.0,0.1,0.1]             # cost matrix for derivative cost of states
+    mpcParams.QderivU           = 0.1*[1,3]               # cost matrix for derivative cost of inputs
     mpcParams.vPathFollowing    = 0.6                 # reference speed for first lap of path following
 
     trackCoeff.nPolyCurvature   = 4                       # 4th order polynomial for curvature approximation
@@ -116,6 +124,8 @@ function InitializeParameters(mpcParams::classes.MpcParams,trackCoeff::classes.T
     oldTraj.n_oldTraj     = 20 #number of old Trajectories for safe set
     oldTraj.oldTraj             = zeros(buffersize,4,oldTraj.n_oldTraj)
     oldTraj.oldTrajXY           = zeros(buffersize,4,oldTraj.n_oldTraj)
+    oldTraj.distance2obst       = zeros(buffersize,oldTraj.n_oldTraj)
+    oldTraj.curvature           = zeros(buffersize,oldTraj.n_oldTraj)
     oldTraj.oldInput            = zeros(buffersize,2,oldTraj.n_oldTraj)
     oldTraj.oldNIter             = 1000*ones(Int64,oldTraj.n_oldTraj)    # dummies for initialization
     oldTraj.costs = zeros(7,buffersize,oldTraj.n_oldTraj)
