@@ -1,4 +1,4 @@
-function deleteInfeasibleTrajectories!(oldTraj,posInfo::classes.PosInfo,obstacle, pred_obst::Array{Float64,2}, i::Int64, zCurr_x::Array{Float,2})
+function deleteInfeasibleTrajectories!(oldTraj,posInfo::classes.PosInfo,obstacle, pred_obst::Array{Float64,2}, i::Int64, zCurr_x::Array{Float64,2})
 
     v_ego = zCurr_x[i,4]
     ds = 0.1# get as input

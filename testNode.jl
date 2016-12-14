@@ -237,7 +237,7 @@
                 # println("calculate abs: $t_absci s")
                 # println("get curve-approx = $t_curv")
             end
-            if tt[i] >0.7 #if solving takes long
+            if tt[i] >0.07 #if solving takes long
                 println(" Time: $(tt[i]) s, Solving step $i of $(length(t)) - Status: $(mpcSol.solverStatus)")
             end
 
