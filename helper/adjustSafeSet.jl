@@ -8,7 +8,7 @@ function deleteInfeasibleTrajectories!(oldTraj,posInfo::classes.PosInfo,obstacle
     index_first = Array{Int64}(oldTraj.n_oldTraj)
     index_last = Array{Int64}(oldTraj.n_oldTraj)
     if (obstacle.s_obstacle[i,1]-obstacle.rs) - posInfo.s <=2.4 && (obstacle.s_obstacle[i,1]+obstacle.rs)>= posInfo.s #if our car is closer than one meter to obstacle and not fully after it
-        for k =1:oldTraj.n_oldTraj
+        for k =1:oldTraj.n_oldTraj-1
             index_first[k]  = findfirst(x -> x > posInfo.s, oldTraj.oldTraj[:,1,k])
             index_last[k] = findfirst(y -> y > pred_obst[end,1]+obstacle.rs, oldTraj.oldTraj[:,1,k])
             for ii = index_first[k]:index_last[k], kk = 1:mpcParams.N+1
@@ -61,8 +61,8 @@ function addOldtoNewPos(oldTraj)
     oldTraj.oldNIter[oldTraj.n_oldTraj] = 10*oldTraj.oldNIter[oldTraj.n_oldTraj-1] 
     oldTraj.cost2Target[:,oldTraj.n_oldTraj] = 10*oldTraj.cost2Target[:,oldTraj.n_oldTraj-1] 
     oldTraj.curvature[:,oldTraj.n_oldTraj] = 10*oldTraj.curvature[:,oldTraj.n_oldTraj-1]
-        ssAddTraj = 1500
-        setvalue(m.ssAddTraj[1],ssAddTraj)
+        ssAddTraj = 1
+        setvalue(m.ssInfOn[oldTraj.n_oldTraj],ssAddTraj)
         return ssAddTraj
 end
 # solve mpc problem

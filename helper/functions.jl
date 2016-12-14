@@ -43,8 +43,8 @@ function saveOldTraj(oldTraj,zCurr::Array{Float64}, zCurr_x::Array{Float64},uCur
             oldTraj.lambda_sol[:,:,k] = lambda_log
             oldTraj.z_pred_sol[:,:,:,k] = z_pred_log
             oldTraj.u_pred_sol[:,:,:,k] = u_pred_log
-            oldTraj.ssInfOn_sol[1:oldTraj.n_oldTraj-1,:,k]= ssInfOn_log
-            oldTraj.ssInfOn_sol[oldTraj.n_oldTraj,:,k] = ssAddTraj_log
+            oldTraj.ssInfOn_sol[1:oldTraj.n_oldTraj,:,k]= ssInfOn_log
+            #oldTraj.ssInfOn_sol[oldTraj.n_oldTraj,:,k] = ssAddTraj_log
             oldTraj.eps[:,:,k] = mpcSol.eps
             oldTraj.cost2Target[:,k] = cost2target
             oldTraj.distance2obst[:,k] = distance2obst
@@ -78,8 +78,8 @@ function saveOldTraj(oldTraj,zCurr::Array{Float64}, zCurr_x::Array{Float64},uCur
         oldTraj.lambda_sol[:,:,1] = lambda_log
         oldTraj.z_pred_sol[:,:,:,1] = z_pred_log
         oldTraj.u_pred_sol[:,:,:,1] = u_pred_log
-        oldTraj.ssInfOn_sol[1:oldTraj.n_oldTraj-1,:,1]= ssInfOn_log
-        oldTraj.ssInfOn_sol[oldTraj.n_oldTraj,:,1] = ssAddTraj_log
+        oldTraj.ssInfOn_sol[1:oldTraj.n_oldTraj,:,1]= ssInfOn_log
+        #oldTraj.ssInfOn_sol[oldTraj.n_oldTraj,:,1] = ssAddTraj_log
         oldTraj.eps[:,:,1] = mpcSol.eps
         oldTraj.cost2Target[:,1] = cost2target
         oldTraj.distance2obst[:,1] = distance2obst

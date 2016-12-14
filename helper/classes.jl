@@ -118,7 +118,7 @@ type MpcModel
     mdl::JuMP.Model
 
     ssInfOn::Array{JuMP.NonlinearParameter,1}
-    ssAddTraj::Array{JuMP.NonlinearParameter,1}
+    #ssAddTraj::Array{JuMP.NonlinearParameter,1}
     z0::Array{JuMP.NonlinearParameter,1}
     coeff::Array{JuMP.NonlinearParameter,1}
     uCurr::Array{JuMP.NonlinearParameter,1}
@@ -147,7 +147,7 @@ type MpcModel
 
     MpcModel(mdl=JuMP.Model(),
                 ssInfOn=@NLparameter(mdl,ssInfOn[i=1:10]==1),
-                ssAddTraj=@NLparameter(mdl,ssAddTraj[i=1:1]==1500),
+                #ssAddTraj=@NLparameter(mdl,ssAddTraj[i=1:1]==1500),
                 z0=@NLparameter(mdl,z0[i=1:4]==0),
                 coeff=@NLparameter(mdl,coeff[i=1:5]==0),
                 uCurr=@NLparameter(mdl,zCurr[i=1:4]==0),
@@ -171,7 +171,7 @@ type MpcModel
                 laneCost=@NLexpression(mdl,laneCost,0),
                 costObstacle=@NLexpression(mdl,costObstacle,0))= new(mdl,
                                                         ssInfOn,
-                                                        ssAddTraj,
+                                                        #ssAddTraj,
                                                         z0,
                                                         coeff,
                                                         uCurr,

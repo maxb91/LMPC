@@ -99,7 +99,7 @@
     lambda_log = zeros(oldTraj.n_oldTraj,length(t),n_rounds)
     cost        = zeros(7,length(t),n_rounds)
 
-    ssInfOn_log = zeros(oldTraj.n_oldTraj-1, length(t), n_rounds)
+    ssInfOn_log = zeros(oldTraj.n_oldTraj, length(t), n_rounds)
     curv_approx = zeros(mpcParams.N,length(t), n_rounds)
     pred_obst = zeros(mpcParams.N+1,2)
 
