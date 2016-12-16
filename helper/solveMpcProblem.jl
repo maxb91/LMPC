@@ -7,7 +7,8 @@
 # i = 3 -> epsi
 # i = 4 -> v
 
-function solveMpcProblem!(m::classes.MpcModel,mpcSol::classes.MpcSol,mpcCoeff::classes.MpcCoeff,mpcParams::classes.MpcParams,trackCoeff::classes.TrackCoeff,lapStatus::classes.LapStatus,posInfo::classes.PosInfo,modelParams::classes.ModelParams,zCurr::Array{Float64},uCurr::Array{Float64}, pred_obst, iter::Int64)
+function solveMpcProblem!(m::classes.MpcModel,mpcSol::classes.MpcSol,mpcCoeff::classes.MpcCoeff,mpcParams::classes.MpcParams,trackCoeff::classes.TrackCoeff,
+    lapStatus::classes.LapStatus,posInfo::classes.PosInfo,modelParams::classes.ModelParams,zCurr::Array{Float64},uCurr::Array{Float64}, pred_obst, iter::Int64)
     # Load Parameters
     coeffCurvature  = trackCoeff.coeffCurvature::Array{Float64,1}
     
@@ -19,8 +20,8 @@ function solveMpcProblem!(m::classes.MpcModel,mpcSol::classes.MpcSol,mpcCoeff::c
 
     # Update model values
     setvalue(m.coeff,coeffCurvature)
-    setvalue(m.coeffTermCost,mpcCoeff.coeffCost)
-    setvalue(m.coeffTermConst,mpcCoeff.coeffConst)
+    setvalue(m.coeffTermCost,mpcCoeff.coeffCost[iter,:,:])
+    setvalue(m.coeffTermConst,mpcCoeff.coeffConst[iter,:,:,:])
     setvalue(m.uCurr,uCurr)
     setvalue(m.sCoord_obst[:,1],pred_obst[:,1])
     setvalue(m.sCoord_obst[:,2],pred_obst[:,2])

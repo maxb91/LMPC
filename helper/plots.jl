@@ -2,8 +2,11 @@ using JLD
 using PyPlot
 include("classes.jl")
 
-function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
-    plot_costs = 1
+#function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
+    j = 2
+    interactive_plot = 1
+
+    plot_costs = 0
     plot_states_over_t = 0
     plot_xy = 1
     plot_lambda = 1
@@ -11,9 +14,9 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
     plot_curvature_approx=0
     plot_inputs = 0
     plot_eps = 0
-    interactive_plot_steps = 3
-    n_oldTrajPlots = 6
-    file = "data/2016-12-14-13-02-Data.jld"
+    interactive_plot_steps = 2
+    n_oldTrajPlots = 3
+    file = "data/2016-12-16-00-25-Data.jld"
     close("all")
 
     ####load data from file
@@ -29,10 +32,11 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
     buffersize = Data["buffersize"]
     curv_approx = Data["curv_approx"]
     oldTraj     = Data["oldTraj"]
-    #include("calculateObstacleXY.jl")
-    #include("colorModule.jl")
-    include("helper/calculateObstacleXY.jl")
-    include("helper/colorModule.jl")
+    mpcCoeff = Data["mpcCoeff"]
+    include("calculateObstacleXY.jl")
+    include("colorModule.jl")
+    # include("helper/calculateObstacleXY.jl")
+    # include("helper/colorModule.jl")
     #end of data loading
 
     #####create additional data for plotting
@@ -52,8 +56,9 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
             calculateObstacleXY!(obstacle, trackCoeff, xy_track,i,k) #this funciton computes values for row i
         end
     end
-
+    ################################
     ##this part is to calculate the tracks boundaries and plot them later
+    ################################
     convert(Array{Int64},oldTraj.oldNIter)
     trackL = size(xy_track,2)
     boundary_up = zeros(2,trackL)
@@ -79,6 +84,22 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
             boundary_down[:,kkk] = xy_track[:,kkk] - normVec * trackCoeff.width /2
         end
     end
+    ################################
+    ##calculate interpolated values to check for differences with trajectories
+    ################################
+    state_approx =zeros(buffersize,oldTraj.n_oldTraj,3)
+    s_vec = zeros(mpcCoeff.order+1)
+    for k = 2:oldTraj.n_oldTraj
+        for i = 1:oldTraj.oldNIter[k]-1
+            for l = 1:mpcCoeff.order+1
+                s_vec[l] = oldTraj.z_pred_sol[11,1,i,k]^(mpcCoeff.order+1-l)
+            end
+            for m = 1:3
+                   state_approx[i,k,m] = dot(mpcCoeff.coeffConst[i,:,k-1,m],  s_vec) 
+            end
+        end
+    end
+        
 
       # Print results
             # --------------------------------
@@ -290,12 +311,13 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
         f_states_over_s[:canvas][:set_window_title]("States and safe set over s")   
         clf()
         ax4 = subplot(311)
-        plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j], oldTraj.oldTraj[1:oldTraj.oldNIter[j],4,j], color = "black")
+      #  plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j], oldTraj.oldTraj[1:oldTraj.oldNIter[j],4,j], color = "black")
         k = j+1
         colorObjectV= colorModule.ColorManager()
         while k<=j+n_oldTrajPlots
             colorV = colorModule.getColor(colorObjectV)
             plot(oldTraj.oldTraj[1:oldTraj.oldNIter[k],1,k], oldTraj.oldTraj[1:oldTraj.oldNIter[k],4,k], color = colorV)
+            plot(oldTraj.z_pred_sol[11,1,1:oldTraj.oldNIter[k]-1,k],state_approx[1:oldTraj.oldNIter[k]-1,k,3],color = colorV,label="_nolegend_", linestyle = "--")
             k  = k+1
         end
         grid()
@@ -306,12 +328,13 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
         ax4[:set_ylim](0.0,2.1)
 
         ax5 = subplot(312, sharex=ax4)
-        plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j], oldTraj.oldTraj[1:oldTraj.oldNIter[j],2,j], color = "black")
+       # plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j], oldTraj.oldTraj[1:oldTraj.oldNIter[j],2,j], color = "black")
         k = j+1
         colorObject_eY= colorModule.ColorManager()
         while k<=j+n_oldTrajPlots
             color_eY = colorModule.getColor(colorObject_eY)
             plot(oldTraj.oldTraj[1:oldTraj.oldNIter[k],1,k], oldTraj.oldTraj[1:oldTraj.oldNIter[k],2,k], color = color_eY)
+            plot(oldTraj.z_pred_sol[11,1,1:oldTraj.oldNIter[k]-1,k],state_approx[1:oldTraj.oldNIter[k]-1,k,1],color = color_eY,label="_nolegend_", linestyle = "--")
             k  = k+1
         end
         grid()
@@ -322,12 +345,13 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
 
         ax6 = subplot(313, sharex=ax4)
         hold(true)
-        plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j], oldTraj.oldTraj[1:oldTraj.oldNIter[j],3,j],color = "black")
+     #   plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j], oldTraj.oldTraj[1:oldTraj.oldNIter[j],3,j],color = "black")
         k = j+1
         colorObject_ePsi= colorModule.ColorManager()
         while k<=j+n_oldTrajPlots
             color_ePsi = colorModule.getColor(colorObject_ePsi)
             plot(oldTraj.oldTraj[1:oldTraj.oldNIter[k],1,k], oldTraj.oldTraj[1:oldTraj.oldNIter[k],3,k],color = color_ePsi)
+            plot(oldTraj.z_pred_sol[11,1,1:oldTraj.oldNIter[k]-1,k],state_approx[1:oldTraj.oldNIter[k]-1,k,2],color = color_ePsi,label="_nolegend_", linestyle = "--")
             k  = k+1
         end
         grid()
@@ -436,4 +460,4 @@ function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
     end # end for loop interactive plots
     end #end if statement interactive plots
     #return mpcParams, oldTraj
-end
+#end

@@ -9,7 +9,7 @@
 
 # structure of oldTrajectory: 1st dimension = state number, 2nd dimension = step number (time equiv.), 3rd dimennsion = lap number
 
-function coeffConstraintCost!(oldTraj, mpcCoeff::classes.MpcCoeff, posInfo::classes.PosInfo, mpcParams::classes.MpcParams)
+function coeffConstraintCost!(oldTraj, mpcCoeff::classes.MpcCoeff, posInfo::classes.PosInfo, mpcParams::classes.MpcParams, iter::Int64)
    #!!::classes.OldTrajectory
     # this computes the coefficients for the cost and constraints
 
@@ -120,8 +120,8 @@ function coeffConstraintCost!(oldTraj, mpcCoeff::classes.MpcCoeff, posInfo::clas
         #bQfunction_Vector = collect(linspace(iter_to_s_target,iter_to_s_target-pLength,pLength+1))    # build a vector that starts at the distance and decreases in equal steps
     
 
-    mpcCoeff.coeffCost  = coeffCost #this value goes into the variable mpcCoeff in testNode.jl as well variables by reference
-    mpcCoeff.coeffConst = coeffConst #this way we dont need to return anything 
+    mpcCoeff.coeffCost[iter,:,:]     = coeffCost #this value goes into the variable mpcCoeff in testNode.jl as well variables by reference
+    mpcCoeff.coeffConst[iter,:,:,:]  = coeffConst #this way we dont need to return anything 
 
     nothing
 end

@@ -47,8 +47,8 @@
     z_Init[3] = 0.94
     z_Init[4]  = 0.4
    
-    load_safeset =true#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
-    safeset = "data/2016-12-14-12-58-SafeSet.jld"
+    load_safeset = true#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
+    safeset = "data/2016-12-16-00-03-SafeSet.jld"
 
     #########
     InitializeParameters(mpcParams,trackCoeff,modelParams,posInfo,oldTraj,mpcCoeff,lapStatus,obstacle,buffersize)
@@ -67,7 +67,7 @@
     ##define obstacle x and xy vlaues not used at the moment 
     #for a clean definition of the x,y points the value of s_obstacle has to be the same as one of the points of the source map. 
     # the end semi axes are approximated over the secant of the points of the track. drawing might not be 100% accurate
-    s_obst_init =89.0 
+    s_obst_init = 20.0 
     sy_obst_init = -0.2
     v_obst_init = 0#1.5##1.8
     obstacle.rs = 0.5 # if we load old trajecory these values get overwritten
@@ -168,7 +168,7 @@
             zCurr_s[i,:], trackCoeff.coeffCurvature = localizeVehicleCurvAbs(zCurr_x[i,:],x_track,y_track,trackCoeff, i)
             posInfo.s   = zCurr_s[i,1]
             curvature_curr[i] = trackCoeff.coeffCurvature[1]*posInfo.s^4+trackCoeff.coeffCurvature[2]*posInfo.s^3+trackCoeff.coeffCurvature[3]*posInfo.s^2+trackCoeff.coeffCurvature[4]*posInfo.s +trackCoeff.coeffCurvature[5]
-            distance2obst[i] = obstacle.s_obstacle[i,1]- posInfo.s
+            distance2obst[i] = (obstacle.s_obstacle[i,1]-obstacle.rs) - posInfo.s
             #t_absci =toq()
             #if the car has crossed the finish line
             if zCurr_s[i,1] >= posInfo.s_target
@@ -189,9 +189,9 @@
             if j > 1 || load_safeset == true
                 tic()
                 deleteInfeasibleTrajectories!(oldTraj,posInfo,obstacle, pred_obst, i, zCurr_x)
-		addOldtoNewPos(oldTraj)
+		        addOldtoNewPos(oldTraj, distance2obst[i],obstacle,i)
                 tt1[i] = toq()
-                coeffConstraintCost!(oldTraj,mpcCoeff,posInfo,mpcParams)
+                coeffConstraintCost!(oldTraj,mpcCoeff,posInfo,mpcParams,i)
             end
             tic()
             #solve with zCurr_s containing s ey values 
@@ -212,6 +212,7 @@
             # setvalue(m.lambda, mpcSol.lambda)
             # setvalue(m.eps, mpcSol.eps)
             #####################
+          
             solveMpcProblem!(m,mpcSol,mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr_s[i,:]',[mpcSol.a_x;mpcSol.d_f], pred_obst,i)
             tt[i]       = toq()
             setvalue(m.ssInfOn,ones(oldTraj.n_oldTraj))# reset the all trajectories to on position
@@ -319,6 +320,7 @@
         JLD.write(file, "buffersize", buffersize)
         JLD.write(file, "curv_approx", curv_approx) ###not same numberign as in oldTraj
         JLD.write(file, "oldTraj", oldTraj)
+        JLD.write(file, "mpcCoeff",mpcCoeff)
 
     end
 
