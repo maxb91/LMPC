@@ -82,14 +82,14 @@ type Obstacle
     sy_obstacle::Array{Float64}
     rs::Float64
     ry::Float64
-    v::Float64
+    v::Array{Float64}
     index::Array{Int64,1} #!!currently not used , if that stay like this delete it
     xy_vector::Array{Float64}
     axis_y_up::Array{Float64}
     axis_y_down::Array{Float64}
     axis_s_up::Array{Float64}
     axis_s_down::Array{Float64}
-    Obstacle(s_obstacle = Float64[], sy_obstacle = Float64[], rs = 0.0, ry = 0.0,v= 0, index=Int64[], xy_vector=Float64[], axis_y_up=Float64[], axis_y_down=Float64[], axis_s_up=Float64[], axis_s_down=Float64[])= new(s_obstacle,sy_obstacle,rs,ry,v,index, xy_vector,axis_y_up, axis_y_down, axis_s_up, axis_s_down)
+    Obstacle(s_obstacle = Float64[], sy_obstacle = Float64[], rs = 0.0, ry = 0.0,v= Float64[], index=Int64[], xy_vector=Float64[], axis_y_up=Float64[], axis_y_down=Float64[], axis_s_up=Float64[], axis_s_down=Float64[])= new(s_obstacle,sy_obstacle,rs,ry,v,index, xy_vector,axis_y_up, axis_y_down, axis_s_up, axis_s_down)
 end
 
 type TrackCoeff         # coefficients of track

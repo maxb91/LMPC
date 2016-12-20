@@ -51,6 +51,7 @@ function saveOldTraj(oldTraj,zCurr::Array{Float64}, zCurr_x::Array{Float64},uCur
 
             obstacle.s_obstacle[:,k] = obstacle.s_obstacle[:,1]# in the else part we dont shift s_obscle because we do that in the beginning of a new round
             obstacle.sy_obstacle[:,k] = obstacle.sy_obstacle[:,1]
+            obstacle.v[:,k] = obstacle.v[:,1]
         end
     else
         for k = oldTraj.n_oldTraj-1:-1:1
@@ -146,6 +147,7 @@ function InitializeParameters(mpcParams::classes.MpcParams,trackCoeff::classes.T
 
     obstacle.s_obstacle = zeros(buffersize,oldTraj.n_oldTraj)
     obstacle.sy_obstacle = zeros(buffersize,oldTraj.n_oldTraj)
+    obstacle.v = zeros(buffersize, oldTraj.n_oldTraj)
     obstacle.rs = 0
     obstacle.ry = 0
     obstacle.index = zeros(buffersize)##is not used at the moment can be deleted in final version

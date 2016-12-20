@@ -78,7 +78,6 @@ function coeffConstraintCost!(oldTraj, mpcCoeff::classes.MpcCoeff, posInfo::clas
             bS_Vector[i,j] = oldS[vec_range[j,i]]
         end
     end
-
     
     # The states are parametrized with resprect to the curvilinear abscissa,
     # so we select the point used for the interpolation. Need to subtract an

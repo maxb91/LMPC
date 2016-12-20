@@ -93,7 +93,7 @@
     trackCoeff.coeffCurvature   = [0.0;0.0;0.0;0.0;0.0]        # polynomial coefficients for curvature approximation (zeros for straight line)
     trackCoeff.nPolyCurvature = 4 # has to be 4 cannot be changed freely at the moment orders are still hardcoded in some parts of localizeVehicleCurvAbslizeVehicleCurvAbs
     trackCoeff.nPolyXY = 6  # has to be 6 cannot be changed freely at the moment orders are still hardcoded in some parts of localizeVehicleCurvAbslizeVehicleCurvAbs
-    n_rounds = 3
+    n_rounds = 1 
     z_pred_log = zeros(mpcParams.N+1,4,length(t),n_rounds)
     u_pred_log = zeros(mpcParams.N,2,length(t),n_rounds)
     lambda_log = zeros(oldTraj.n_oldTraj,length(t),n_rounds)
@@ -101,7 +101,7 @@
 
     ssInfOn_log = zeros(oldTraj.n_oldTraj, length(t), n_rounds)
     curv_approx = zeros(mpcParams.N,length(t), n_rounds)
-    pred_obst = zeros(mpcParams.N+1,2)
+    pred_obst = zeros(mpcParams.N+1,3)
 
     if load_safeset == true
         SafeSetData = load(safeset)
@@ -128,10 +128,11 @@
         for k = oldTraj.n_oldTraj-1:-1:1
             obstacle.s_obstacle[:,k+1]  = obstacle.s_obstacle[:,k]
             obstacle.sy_obstacle[:,k+1] = obstacle.sy_obstacle[:,k]
+            obstacle.v[:,k+1] = obstacle.v[:,k]
         end
         obstacle.s_obstacle[1,1] = s_obst_init
         obstacle.sy_obstacle[1,1] = sy_obst_init
-        obstacle.v = v_obst_init
+        obstacle.v[1,1] = v_obst_init
         #setup point for vehicle on track in first round. gets overwritten in other rounds
         zCurr_x[1,1] = z_Init[1] # x = 1.81 for s = 32     14 in curve
         zCurr_x[1,2] = z_Init[2] # y = 2.505 for s = 32  12.6
@@ -188,8 +189,9 @@
             
             if j > 1 || load_safeset == true
                 tic()
-                deleteInfeasibleTrajectories!(oldTraj,posInfo,obstacle, pred_obst, i, zCurr_x)
-		        addOldtoNewPos(oldTraj, distance2obst[i],obstacle,i)
+                addOldtoNewPos(oldTraj, distance2obst[i],obstacle,i,pred_obst, mpcParams,zCurr_s,modelParams.dt)
+                deleteInfeasibleTrajectories!(oldTraj,posInfo,obstacle, pred_obst, i, zCurr_x,modelParams.dt)
+		        
                 tt1[i] = toq()
                 coeffConstraintCost!(oldTraj,mpcCoeff,posInfo,mpcParams,i)
             end

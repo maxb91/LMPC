@@ -15,7 +15,7 @@ include("classes.jl")
     plot_inputs = 0
     plot_eps = 0
     interactive_plot_steps = 2
-    n_oldTrajPlots = 3
+    n_oldTrajPlots = 2
     file = "data/2016-12-16-00-25-Data.jld"
     close("all")
 
@@ -86,19 +86,19 @@ include("classes.jl")
     end
     ################################
     ##calculate interpolated values to check for differences with trajectories
-    ################################
-    state_approx =zeros(buffersize,oldTraj.n_oldTraj,3)
-    s_vec = zeros(mpcCoeff.order+1)
-    for k = 2:oldTraj.n_oldTraj
-        for i = 1:oldTraj.oldNIter[k]-1
-            for l = 1:mpcCoeff.order+1
-                s_vec[l] = oldTraj.z_pred_sol[11,1,i,k]^(mpcCoeff.order+1-l)
-            end
-            for m = 1:3
-                   state_approx[i,k,m] = dot(mpcCoeff.coeffConst[i,:,k-1,m],  s_vec) 
-            end
-        end
-    end
+    # ################################
+    # state_approx =zeros(buffersize,oldTraj.n_oldTraj,3)
+    # s_vec = zeros(mpcCoeff.order+1)
+    # for k = 2:oldTraj.n_oldTraj
+    #     for i = 1:oldTraj.oldNIter[k]-1
+    #         for l = 1:mpcCoeff.order+1
+    #             s_vec[l] = oldTraj.z_pred_sol[11,1,i,k]^(mpcCoeff.order+1-l)
+    #         end
+    #         for m = 1:3
+    #                state_approx[i,k,m] = dot(mpcCoeff.coeffConst[i,:,k-1,m],  s_vec) 
+    #         end
+    #     end
+    # end
         
 
       # Print results
@@ -317,7 +317,7 @@ include("classes.jl")
         while k<=j+n_oldTrajPlots
             colorV = colorModule.getColor(colorObjectV)
             plot(oldTraj.oldTraj[1:oldTraj.oldNIter[k],1,k], oldTraj.oldTraj[1:oldTraj.oldNIter[k],4,k], color = colorV)
-            plot(oldTraj.z_pred_sol[11,1,1:oldTraj.oldNIter[k]-1,k],state_approx[1:oldTraj.oldNIter[k]-1,k,3],color = colorV,label="_nolegend_", linestyle = "--")
+            #plot(oldTraj.z_pred_sol[11,1,1:oldTraj.oldNIter[k]-1,k],state_approx[1:oldTraj.oldNIter[k]-1,k,3],color = colorV,label="_nolegend_", linestyle = "--")
             k  = k+1
         end
         grid()
@@ -334,7 +334,7 @@ include("classes.jl")
         while k<=j+n_oldTrajPlots
             color_eY = colorModule.getColor(colorObject_eY)
             plot(oldTraj.oldTraj[1:oldTraj.oldNIter[k],1,k], oldTraj.oldTraj[1:oldTraj.oldNIter[k],2,k], color = color_eY)
-            plot(oldTraj.z_pred_sol[11,1,1:oldTraj.oldNIter[k]-1,k],state_approx[1:oldTraj.oldNIter[k]-1,k,1],color = color_eY,label="_nolegend_", linestyle = "--")
+            #plot(oldTraj.z_pred_sol[11,1,1:oldTraj.oldNIter[k]-1,k],state_approx[1:oldTraj.oldNIter[k]-1,k,1],color = color_eY,label="_nolegend_", linestyle = "--")
             k  = k+1
         end
         grid()
@@ -351,7 +351,7 @@ include("classes.jl")
         while k<=j+n_oldTrajPlots
             color_ePsi = colorModule.getColor(colorObject_ePsi)
             plot(oldTraj.oldTraj[1:oldTraj.oldNIter[k],1,k], oldTraj.oldTraj[1:oldTraj.oldNIter[k],3,k],color = color_ePsi)
-            plot(oldTraj.z_pred_sol[11,1,1:oldTraj.oldNIter[k]-1,k],state_approx[1:oldTraj.oldNIter[k]-1,k,2],color = color_ePsi,label="_nolegend_", linestyle = "--")
+            #plot(oldTraj.z_pred_sol[11,1,1:oldTraj.oldNIter[k]-1,k],state_approx[1:oldTraj.oldNIter[k]-1,k,2],color = color_ePsi,label="_nolegend_", linestyle = "--")
             k  = k+1
         end
         grid()
