@@ -50,6 +50,7 @@ exist_feas_traj = 0
 s_horizon = zeros(mpcParams.N+1)
 s_horizon[1] = zCurr_s[iter,1]
 v_ego = zCurr_s[iter,4]
+N_points        = size(oldTraj.oldTraj,1) 
 
 eps0 = 0.05 #tol distance
 eps1 = 0.1 #tol v_obst
@@ -102,9 +103,19 @@ if exist_feas_traj == 1
     oldTraj.oldTraj[:,1,end] =  oldTraj.oldTraj[:,1,index_of_traj_2_copy]-s_start+s_horizon[1]
     oldTraj.oldTraj[:,2:4,end] = oldTraj.oldTraj[:,2:4,index_of_traj_2_copy]
 
-    distance_s =(oldTraj.oldTraj[:,1,index_of_traj_2_copy]-zCurr_s[iter,1]).^2
+    distance_s =(oldTraj.oldTraj[:,1,1:end-1]-zCurr_s[iter,1]).^2
     index_s = findmin(distance_s,1)[2]
-    oldTraj.cost2Target[ind_start:ind_start+pLength,end] = oldTraj.cost2Target[index_s[1]:index_s[1]+pLength,index_of_traj_2_copy]
+    costs = zeros(oldTraj.n_oldTraj-1)
+    for k =1:oldTraj.n_oldTraj-1
+        costs[k]= oldTraj.cost2Target[index_s[k]-N_points*(k-1),k]
+    end
+    traj_min = findmin(costs,1)[2]
+    #implement dnamic model
+    plot curvature
+    plot oldTRaj aprox
+    check which cost to assign
+    oldTraj.cost2Target[ind_start:ind_start+pLength,end] = oldTraj.cost2Target[index_s[1]:index_s[1]+pLength,traj_min]
+    println("$(oldTraj.cost2Target[:,end])")
 else
 
     oldTraj.oldTraj[:,:,end]  = oldTraj.oldTraj[:,:,end-1]
