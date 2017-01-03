@@ -39,11 +39,11 @@ function run_sim()
     # Simulation parameters
     dt                          = modelParams.dt::Float64
     t                           = collect(0:dt:60)          # time vector
-    zCurr                       = zeros(length(t),4)        # these are the simulated states
+    zCurr                       = zeros(length(t),6)        # these are the simulated states
     uCurr                       = zeros(length(t),2)        # these are the inputs
     cost                        = zeros(length(t),6)        # these are MPC cost values at each step
 
-    log_z                       = zeros(length(t),4,30)     # log z for 30 laps
+    log_z                       = zeros(length(t),6,30)     # log z for 30 laps
     log_u                       = zeros(length(t),2,30)     # log u for 30 laps
     log_xy                      = zeros(length(t),2,30)     # log x-y-data for 30 laps
     log_ParInt                  = zeros(length(t),30)       # log ParInt data
@@ -87,13 +87,13 @@ function run_sim()
         lapStatus.currentLap = j
 
         tt          = zeros(length(t),1)
-        zCurr       = zeros(length(t),4)
+        zCurr       = zeros(length(t),6)
         uCurr       = zeros(length(t),2)
         zCurr[1,1]  = 0.2
 
         if j>1                                  # if we are in the second or higher lap
             zCurr[1,:]          = z_final       # use final state as initial state
-            zCurr[1,1]          = zCurr[1,1]%posInfo.s_target   # and make sure that it's before the finish line (0 <= s < s_target)
+            zCurr[1,6]          = zCurr[1,6]%posInfo.s_target   # and make sure that it's before the finish line (0 <= s < s_target)
         end
 
         cost        = zeros(length(t),6)
@@ -105,17 +105,18 @@ function run_sim()
         while i<length(t) && !finished
             println("///////////////////////////////// STARTING ONE ITERATION /////////////////////////////////")
             # Define track curvature
-            trackCoeff.coeffCurvature = find_curvature(s_track_p,c_track_p,zCurr[i,1],trackCoeff)
+            trackCoeff.coeffCurvature = find_curvature(s_track_p,c_track_p,zCurr[i,6],trackCoeff)
 
             # Calculate coefficients for LMPC (if at least in the 2nd lap)
-            posInfo.s   = zCurr[i,1]
+            posInfo.s   = zCurr[i,6]
             if j > n_pf
                 coeffConstraintCost(oldTraj,mpcCoeff,posInfo,mpcParams,lapStatus)
             end
 
             # Calculate optimal inputs u_i (solve MPC problem)
             if j <= n_pf                    # if we are in the first x laps of path following
-                solveMpcProblem_pathFollow(mdl_pF,mpcSol,mpcParams_pF,trackCoeff,posInfo,modelParams,zCurr[i,:]',uPrev)
+                z_pf = zCurr[i,[6,5,4,1]]
+                solveMpcProblem_pathFollow(mdl_pF,mpcSol,mpcParams_pF,trackCoeff,posInfo,modelParams,z_pf',uPrev)
             else                            # otherwise: LMPC
                 solveMpcProblem_LMPC(mdl,mpcSol,mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr[i,:]',uPrev)
             end
@@ -126,13 +127,14 @@ function run_sim()
             uCurr[i,:]          = [mpcSol.a_x mpcSol.d_f]
             uPrev               = circshift(uPrev,1)
             uPrev[1,:]          = uCurr[i,:]
-            zCurr[i+1,:]        = simKinModel(zCurr[i,:],uCurr[i,:],modelParams.dt,trackCoeff.coeffCurvature,modelParams)
+            #zCurr[i+1,:]        = simKinModel(zCurr[i,:],uCurr[i,:],modelParams.dt,trackCoeff.coeffCurvature,modelParams)
+            zCurr[i+1,:]        = simDynModel(zCurr[i,:],uCurr[i,:],modelParams.dt,modelParams,trackCoeff)
 
             println("Solving step $i of $(length(t)) - Status: $(mpcSol.solverStatus)")
 
-            println("Prediction error = ",zCurr[i+1,:]-mpcSol.z[2,:])
+            println("Prediction error = ",zCurr[i+1,[6,5,4,1]]-mpcSol.z[2,:])
             # Check if we're crossing the finish line
-            if zCurr[i+1,1] >= posInfo.s_target
+            if zCurr[i+1,6] >= posInfo.s_target
                 oldTraj.idx_end[lapStatus.currentLap] = oldTraj.count[lapStatus.currentLap]
                 oldTraj.oldCost[lapStatus.currentLap] = oldTraj.idx_end[lapStatus.currentLap] - oldTraj.idx_start[lapStatus.currentLap]
                 println("Reaching finish line at step $(i+1), cost = $(oldTraj.oldCost[lapStatus.currentLap])")
@@ -146,17 +148,17 @@ function run_sim()
             oldTraj.count[lapStatus.currentLap] += 1
 
             # if necessary: append to end of previous lap
-            if lapStatus.currentLap > 1 && zCurr[i,1] < 15.0
+            if lapStatus.currentLap > 1 && zCurr[i,6] < 15.0
                 oldTraj.oldTraj[oldTraj.count[lapStatus.currentLap-1],:,lapStatus.currentLap-1] = zCurr[i,:]
-                oldTraj.oldTraj[oldTraj.count[lapStatus.currentLap-1],1,lapStatus.currentLap-1] += posInfo.s_target
+                oldTraj.oldTraj[oldTraj.count[lapStatus.currentLap-1],6,lapStatus.currentLap-1] += posInfo.s_target
                 oldTraj.oldInput[oldTraj.count[lapStatus.currentLap-1],:,lapStatus.currentLap-1] = uCurr[i,:]
                 oldTraj.count[lapStatus.currentLap-1] += 1
             end
 
             #if necessary: append to beginning of next lap
-            if zCurr[i,1] > posInfo.s_target - 15.0
+            if zCurr[i,6] > posInfo.s_target - 15.0
                 oldTraj.oldTraj[oldTraj.count[lapStatus.currentLap+1],:,lapStatus.currentLap+1] = zCurr[i,:]
-                oldTraj.oldTraj[oldTraj.count[lapStatus.currentLap+1],1,lapStatus.currentLap+1] -= posInfo.s_target
+                oldTraj.oldTraj[oldTraj.count[lapStatus.currentLap+1],6,lapStatus.currentLap+1] -= posInfo.s_target
                 oldTraj.oldInput[oldTraj.count[lapStatus.currentLap+1],:,lapStatus.currentLap+1] = uCurr[i,:]
                 oldTraj.count[lapStatus.currentLap+1] += 1
                 oldTraj.idx_start[lapStatus.currentLap+1] = oldTraj.count[lapStatus.currentLap+1]
@@ -177,10 +179,10 @@ function run_sim()
         println("=================\nFinished Solving. Avg. time = $(mean(tt[1:i])) s")
         println("Finished Lap Nr. $j with state $(zCurr[i,:])")
 
-        x_xy = transf_s_to_x(s_track,c_track,zCurr[1:i,1],zCurr[1:i,2])
+        x_xy = transf_s_to_x(s_track,c_track,zCurr[1:i,6],zCurr[1:i,5])
         log_xy[1:i,:,lapStatus.currentLap] = x_xy
 
-        if j>3#n_pf
+        if j>0#n_pf
             figure(10)
             path_x,xl,xr = s_to_x(s_track,c_track)
             plot(path_x[:,1],path_x[:,2],"b--",xl[:,1],xl[:,2],"b-",xr[:,1],xr[:,2],"b-")
@@ -205,18 +207,18 @@ function run_sim()
             # --------------------------------
             figure(2)
             subplot(211)
-            plot(zCurr[1:i,1],zCurr[1:i,2:4])
+            plot(zCurr[1:i,6],zCurr[1:i,[5,4,1]])
             title("Real")
             legend(["eY","ePsi","v"])
             xlabel("s [m]")
             grid("on")
             subplot(212)
-            plot(zCurr[1:i,1],uCurr[1:i,:])
+            plot(zCurr[1:i,6],uCurr[1:i,:])
             legend(["a","d_f"])
             grid("on")
 
             figure(8)
-            plot(zCurr[1:i,1],cost[1:i,1],"r",zCurr[1:i,1],cost[1:i,2],"g",zCurr[1:i,1],cost[1:i,3],"b",zCurr[1:i,1],cost[1:i,4],"y",zCurr[1:i,1],cost[1:i,5],"m",zCurr[1:i,1],cost[1:i,6],"c")
+            plot(zCurr[1:i,6],cost[1:i,1],"r",zCurr[1:i,6],cost[1:i,2],"g",zCurr[1:i,6],cost[1:i,3],"b",zCurr[1:i,6],cost[1:i,4],"y",zCurr[1:i,6],cost[1:i,5],"m",zCurr[1:i,6],cost[1:i,6],"c")
             grid(1)
             title("Cost distribution")
             legend(["z","z_Term","z_Term_const","deriv","control","lane"])
