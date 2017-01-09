@@ -48,7 +48,7 @@
     z_Init[4]  = 0.4
    
     load_safeset = true#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
-    safeset = "data/2016-12-21-15-25-SafeSet.jld"
+    safeset = "data/2017-01-08-22-10-SafeSet.jld"
 
     #########
     InitializeParameters(mpcParams,trackCoeff,modelParams,posInfo,oldTraj,mpcCoeff,lapStatus,obstacle,buffersize)
@@ -62,12 +62,12 @@
 
 
     posInfo.s_start             = 0.0 #does not get changed with the current version
-    posInfo.s_target            = 25.2 #has to be fitted to track , current test track form ugo has 113.2 meters
+    posInfo.s_target            = 45.2 #has to be fitted to track , current test track form ugo has 113.2 meters
      
     ##define obstacle x and xy vlaues not used at the moment 
     #for a clean definition of the x,y points the value of s_obstacle has to be the same as one of the points of the source map. 
     # the end semi axes are approximated over the secant of the points of the track. drawing might not be 100% accurate
-    s_obst_init = 12.0 
+    s_obst_init = 31.0 
     sy_obst_init = -0.2
     v_obst_init = 0#1.5##1.8
     obstacle.rs = 0.5 # if we load old trajecory these values get overwritten
@@ -193,7 +193,7 @@
                 deleteInfeasibleTrajectories!(oldTraj,posInfo,obstacle, pred_obst, i, zCurr_x,modelParams.dt)
 		        
                 tt1[i] = toq()
-                println(" time to add/remove traj $(tt1[i])")
+                #println(" time to add/remove traj $(tt1[i])")
                 coeffConstraintCost!(oldTraj,mpcCoeff,posInfo,mpcParams,i)
             end
             tic()

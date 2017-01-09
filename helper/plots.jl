@@ -3,7 +3,7 @@ using PyPlot
 include("classes.jl")
 
 #function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
-    j = 2
+    j = 1
     interactive_plot = 1
 
     plot_costs = 0
@@ -16,7 +16,7 @@ include("classes.jl")
     plot_eps = 0
     interactive_plot_steps = 2
     n_oldTrajPlots = 2
-    file = "data/2016-12-16-00-25-Data.jld"
+    file = "data/2017-01-08-22-17-Data.jld"
     close("all")
 
     ####load data from file
@@ -311,7 +311,7 @@ include("classes.jl")
         f_states_over_s[:canvas][:set_window_title]("States and safe set over s")   
         clf()
         ax4 = subplot(311)
-      #  plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j], oldTraj.oldTraj[1:oldTraj.oldNIter[j],4,j], color = "black")
+        plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j], oldTraj.oldTraj[1:oldTraj.oldNIter[j],4,j], color = "black")
         k = j+1
         colorObjectV= colorModule.ColorManager()
         while k<=j+n_oldTrajPlots
@@ -328,7 +328,7 @@ include("classes.jl")
         ax4[:set_ylim](0.0,2.1)
 
         ax5 = subplot(312, sharex=ax4)
-       # plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j], oldTraj.oldTraj[1:oldTraj.oldNIter[j],2,j], color = "black")
+        plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j], oldTraj.oldTraj[1:oldTraj.oldNIter[j],2,j], color = "black")
         k = j+1
         colorObject_eY= colorModule.ColorManager()
         while k<=j+n_oldTrajPlots
@@ -345,7 +345,7 @@ include("classes.jl")
 
         ax6 = subplot(313, sharex=ax4)
         hold(true)
-     #   plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j], oldTraj.oldTraj[1:oldTraj.oldNIter[j],3,j],color = "black")
+        plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j], oldTraj.oldTraj[1:oldTraj.oldNIter[j],3,j],color = "black")
         k = j+1
         colorObject_ePsi= colorModule.ColorManager()
         while k<=j+n_oldTrajPlots
