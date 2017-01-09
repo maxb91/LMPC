@@ -82,7 +82,7 @@ function run_sim()
     s_track_p, c_track_p = prepareTrack(s_track, c_track)
 
     # Run 10 laps
-    for j=1:15
+    for j=1:10
         # Initialize Lap
         lapStatus.currentLap = j
 
@@ -103,7 +103,7 @@ function run_sim()
         # --------------------------------
         i = 1
         while i<length(t) && !finished
-            println("///////////////////////////////// STARTING ONE ITERATION /////////////////////////////////")
+            #println("///////////////////////////////// STARTING ONE ITERATION /////////////////////////////////")
             # Define track curvature
             trackCoeff.coeffCurvature = find_curvature(s_track_p,c_track_p,zCurr[i,1],trackCoeff)
 
@@ -128,9 +128,9 @@ function run_sim()
             uPrev[1,:]          = uCurr[i,:]
             zCurr[i+1,:]        = simKinModel(zCurr[i,:],uCurr[i,:],modelParams.dt,trackCoeff.coeffCurvature,modelParams)
 
-            println("Solving step $i of $(length(t)) - Status: $(mpcSol.solverStatus)")
+            println("Lap ",j,", solving step ",i," of ",(length(t))," - Status: ",(mpcSol.solverStatus))
 
-            println("Prediction error = ",zCurr[i+1,:]-mpcSol.z[2,:])
+            #println("Prediction error = ",zCurr[i+1,:]-mpcSol.z[2,:])
             # Check if we're crossing the finish line
             if zCurr[i+1,1] >= posInfo.s_target
                 oldTraj.idx_end[lapStatus.currentLap] = oldTraj.count[lapStatus.currentLap]
@@ -180,7 +180,7 @@ function run_sim()
         x_xy = transf_s_to_x(s_track,c_track,zCurr[1:i,1],zCurr[1:i,2])
         log_xy[1:i,:,lapStatus.currentLap] = x_xy
 
-        if j>3#n_pf
+        if j>15#n_pf
             figure(10)
             path_x,xl,xr = s_to_x(s_track,c_track)
             plot(path_x[:,1],path_x[:,2],"b--",xl[:,1],xl[:,2],"b-",xr[:,1],xr[:,2],"b-")
@@ -226,11 +226,11 @@ function run_sim()
         end
     end
     # Save simulation data
+    #log_path = "sim_$(Dates.format(now(), "yyyy_mm_dd_HH_MM")).jld"
     log_path = "sim.jld"
-    save(log_path,"t",t,"z",log_z,"u",log_u,"x",log_xy)
+    save(log_path,"t",t,"z",log_z,"u",log_u,"x",log_xy,"totalCost",oldTraj.oldCost)
     println("Saved simulation data.")
 end
-
 function prepareTrack(s_track,c_track)
     sz = size(s_track,1)
     s_target = s_track[end]
