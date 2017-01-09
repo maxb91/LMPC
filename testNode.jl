@@ -38,7 +38,7 @@ function run_sim()
 
     # Simulation parameters
     dt                          = modelParams.dt::Float64
-    t                           = collect(0:dt:60)          # time vector
+    t                           = collect(0:dt:100)          # time vector
     zCurr                       = zeros(length(t),6)        # these are the simulated states
     uCurr                       = zeros(length(t),2)        # these are the inputs
     cost                        = zeros(length(t),6)        # these are MPC cost values at each step
@@ -51,7 +51,7 @@ function run_sim()
     # Logging parameters
     posInfo.s_target            = 50.49
 
-    z_final         = zeros(4)
+    z_final         = zeros(6)
 
     uPrev           = zeros(10,2)
 
@@ -81,6 +81,8 @@ function run_sim()
 
     s_track_p, c_track_p = prepareTrack(s_track, c_track)
 
+    no_solution_found = 0
+
     # Run 10 laps
     for j=1:15
         # Initialize Lap
@@ -103,7 +105,7 @@ function run_sim()
         # --------------------------------
         i = 1
         while i<length(t) && !finished
-            println("///////////////////////////////// STARTING ONE ITERATION /////////////////////////////////")
+            #println("///////////////////////////////// STARTING ONE ITERATION /////////////////////////////////")
             # Define track curvature
             trackCoeff.coeffCurvature = find_curvature(s_track_p,c_track_p,zCurr[i,6],trackCoeff)
 
@@ -118,9 +120,29 @@ function run_sim()
                 z_pf = zCurr[i,[6,5,4,1]]
                 solveMpcProblem_pathFollow(mdl_pF,mpcSol,mpcParams_pF,trackCoeff,posInfo,modelParams,z_pf',uPrev)
             else                            # otherwise: LMPC
-                solveMpcProblem_LMPC(mdl,mpcSol,mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr[i,:]',uPrev)
+                solstat = solveMpcProblem_LMPC(mdl,mpcSol,mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr[i,:]',uPrev)
+                if solstat == false
+                    no_solution_found += 1
+                else
+                    no_solution_found = 0
+                end
+                if no_solution_found == 5
+                    break
+                end
+                # Plot predictions
+                # figure(101)
+                # for k=1:5
+                #     subplot(5,1,k)
+                #     s = mpcSol.z[:,6]
+                #     poly1 = [s.^5 s.^4 s.^3 s.^2 s.^1 s.^0]*mpcCoeff.coeffConst[:,1,k]
+                #     poly2 = [s.^5 s.^4 s.^3 s.^2 s.^1 s.^0]*mpcCoeff.coeffConst[:,2,k]
+                #     plot(mpcSol.z[:,6],mpcSol.z[:,k],"-o")
+                #     plot(s,poly1)
+                #     plot(s,poly2)
+                #     grid("on")
+                # end
+                # readline()
             end
-            
             cost[i,:]   = mpcSol.cost
 
             # Simulate the model -> calculate x_i+1 = f(x_i, u_i)
@@ -131,8 +153,11 @@ function run_sim()
             zCurr[i+1,:]        = simDynModel(zCurr[i,:],uCurr[i,:],modelParams.dt,modelParams,trackCoeff)
 
             println("Solving step $i of $(length(t)) - Status: $(mpcSol.solverStatus)")
-
-            println("Prediction error = ",zCurr[i+1,[6,5,4,1]]-mpcSol.z[2,:])
+            # if size(mpcSol.z,2) == 4
+            #     println("Prediction error = ",zCurr[i+1,[6,5,4,1]]-mpcSol.z[2,:])
+            # else
+            #     println("Prediction error = ",zCurr[i+1,:]-mpcSol.z[2,:])
+            # end
             # Check if we're crossing the finish line
             if zCurr[i+1,6] >= posInfo.s_target
                 oldTraj.idx_end[lapStatus.currentLap] = oldTraj.count[lapStatus.currentLap]
@@ -172,7 +197,9 @@ function run_sim()
             end
             i = i + 1
         end
-
+        if no_solution_found == 5
+            break
+        end
         # i = number of steps to *cross* the finish line -> s[i] >= s_target
         z_final             = zCurr[i,:]
 
@@ -182,7 +209,7 @@ function run_sim()
         x_xy = transf_s_to_x(s_track,c_track,zCurr[1:i,6],zCurr[1:i,5])
         log_xy[1:i,:,lapStatus.currentLap] = x_xy
 
-        if j>0#n_pf
+        if j>n_pf
             figure(10)
             path_x,xl,xr = s_to_x(s_track,c_track)
             plot(path_x[:,1],path_x[:,2],"b--",xl[:,1],xl[:,2],"b-",xr[:,1],xr[:,2],"b-")
@@ -194,12 +221,12 @@ function run_sim()
             figure(4)
             subplot(211)
             title("Old Trajectory #1")
-            plot(oldTraj.oldTraj[:,1,1],oldTraj.oldTraj[:,2:4,1])
+            plot(oldTraj.oldTraj[:,6,1],oldTraj.oldTraj[:,1:5,1])
             grid("on")
             legend(["eY","ePsi","v"])
             subplot(212)
             title("Old Trajectory #2")
-            plot(oldTraj.oldTraj[:,1,2],oldTraj.oldTraj[:,2:4,2])
+            plot(oldTraj.oldTraj[:,6,2],oldTraj.oldTraj[:,1:5,2])
             grid("on")
             legend(["eY","ePsi","v"])
 
@@ -228,7 +255,7 @@ function run_sim()
         end
     end
     # Save simulation data
-    log_path = "sim.jld"
+    log_path = "sim_$(Dates.format(now(), "yyyy_mm_dd_HH_MM")).jld"
     save(log_path,"t",t,"z",log_z,"u",log_u,"x",log_xy)
     println("Saved simulation data.")
 end

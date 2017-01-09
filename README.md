@@ -18,4 +18,5 @@ Further info:
 Branches:
 ---------
 simple-sim: Kinematic model for path following and Learning MPC, no system ID ("perfect mathematical equivalent models")
+dyn-sim: Kinematic model for path following, dynamic model for LMPC (same system for simulation and for prediction)
 master: Kinematic model for path following, dynamic model with system ID for LMPC
