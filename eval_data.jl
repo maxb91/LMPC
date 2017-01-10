@@ -22,6 +22,16 @@ function initPlot()
     #rc("pgf", texsystem="pdflatex",preamble=L"""\usepackage[utf8x]{inputenc}\usepackage[T1]{fontenc}\usepackage{lmodern}""")
 end
 
+function smooth(x,n)
+    y = zeros(size(x))
+    for i=1:size(x,1)
+        start = max(1,i-n)
+        fin = min(size(x,1),start + 2*n)
+        y[i,:] = mean(x[start:fin,:],1)
+    end
+    return y
+end
+
 initPlot()
 
 include("barc_lib/classes.jl")
@@ -65,7 +75,7 @@ c_track[4403:4702] = linspace(-2*pi/2/6,0,300)
 path_x,xl,xr = s_to_x(s_track,c_track)
 
 # Plot and save e_Y
-lapn = [1,4,8,13,14]      # specify which laps should be plotted
+lapn = [2,4,14,15]      # specify which laps should be plotted
 figure(1)
 for i=1:size(lapn,1)
     plot(z[:,6,lapn[i]],z[:,5,lapn[i]],label="Lap $(lapn[i])")
@@ -129,4 +139,23 @@ ylim([0,maximum(cost)*0.11])
 tight_layout()
 path_to_file = "/Users/Maximilian/Documents/ETH/Master/Master thesis/6. Final report/Figures/Simulation/Dyn_cost.pgf"
 savefig(path_to_file)
+
+# Plot friction circle/accelerations
+figure()
+pstyle = ("--","-")
+for i=1:size(lapn,1)
+    a_x = diff(z[:,1,lapn[i]])./diff(t)
+    a_y = diff(z[:,2,lapn[i]])./diff(t)
+    #plot(a_x,a_y)
+    plot(smooth(a_x,2),smooth(a_y,1),pstyle[i],label="Lap $(lapn[i])")
+end
+grid("on")
+legend()
+axis("equal")
+xlabel("\$a_x \\ \\left[\\frac{m}{s^2}\\right]\$")
+ylabel("\$a_y \\ \\left[\\frac{m}{s^2}\\right]\$")
+tight_layout()
+path_to_file = "/Users/Maximilian/Documents/ETH/Master/Master thesis/6. Final report/Figures/Simulation/Dyn_fcircle.pgf"
+savefig(path_to_file)
+
 

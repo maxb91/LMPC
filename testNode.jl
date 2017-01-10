@@ -30,11 +30,11 @@ function run_sim()
     mpcParams                   = MpcParams()
     mpcParams_pF                = MpcParams()       # for 1st lap (path following)
 
-    buffersize                  = 5000
+    buffersize                  = 10000
 
     InitializeParameters(mpcParams,mpcParams_pF,trackCoeff,modelParams,posInfo,oldTraj,mpcCoeff,lapStatus,buffersize)
     mdl    = MpcModel(mpcParams,mpcCoeff,modelParams,trackCoeff)
-    mdl_pF = MpcModel_pF(mpcParams_pF,modelParams,trackCoeff)
+    mdl_pF = MpcModel_dyn_pF(mpcParams_pF,modelParams,trackCoeff)
 
     # Simulation parameters
     dt                          = modelParams.dt::Float64
@@ -117,8 +117,8 @@ function run_sim()
 
             # Calculate optimal inputs u_i (solve MPC problem)
             if j <= n_pf                    # if we are in the first x laps of path following
-                z_pf = zCurr[i,[6,5,4,1]]
-                solveMpcProblem_pathFollow(mdl_pF,mpcSol,mpcParams_pF,trackCoeff,posInfo,modelParams,z_pf',uPrev)
+                #z_pf = zCurr[i,[6,5,4,1]]
+                solveMpcProblem_pathFollow(mdl_pF,mpcSol,mpcParams_pF,trackCoeff,posInfo,modelParams,zCurr[i,:]',uPrev)
             else                            # otherwise: LMPC
                 solstat = solveMpcProblem_LMPC(mdl,mpcSol,mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr[i,:]',uPrev)
                 if solstat == false
@@ -209,7 +209,7 @@ function run_sim()
         x_xy = transf_s_to_x(s_track,c_track,zCurr[1:i,6],zCurr[1:i,5])
         log_xy[1:i,:,lapStatus.currentLap] = x_xy
 
-        if j>n_pf
+        if j>0#n_pf
             figure(10)
             path_x,xl,xr = s_to_x(s_track,c_track)
             plot(path_x[:,1],path_x[:,2],"b--",xl[:,1],xl[:,2],"b-",xr[:,1],xr[:,2],"b-")
