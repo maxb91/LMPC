@@ -218,45 +218,46 @@ function run_sim()
             title("x-y-view")
             axis("equal")
 
-            figure(4)
-            subplot(211)
-            title("Old Trajectory #1")
-            plot(oldTraj.oldTraj[:,6,1],oldTraj.oldTraj[:,1:5,1])
-            grid("on")
-            legend(["eY","ePsi","v"])
-            subplot(212)
-            title("Old Trajectory #2")
-            plot(oldTraj.oldTraj[:,6,2],oldTraj.oldTraj[:,1:5,2])
-            grid("on")
-            legend(["eY","ePsi","v"])
+            # figure(4)
+            # subplot(211)
+            # title("Old Trajectory #1")
+            # plot(oldTraj.oldTraj[:,6,1],oldTraj.oldTraj[:,1:5,1])
+            # grid("on")
+            # legend(["eY","ePsi","v"])
+            # subplot(212)
+            # title("Old Trajectory #2")
+            # plot(oldTraj.oldTraj[:,6,2],oldTraj.oldTraj[:,1:5,2])
+            # grid("on")
+            # legend(["eY","ePsi","v"])
 
-            # Print results
-            # --------------------------------
-            figure(2)
-            subplot(211)
-            plot(zCurr[1:i,6],zCurr[1:i,[5,4,1]])
-            title("Real")
-            legend(["eY","ePsi","v"])
-            xlabel("s [m]")
-            grid("on")
-            subplot(212)
-            plot(zCurr[1:i,6],uCurr[1:i,:])
-            legend(["a","d_f"])
-            grid("on")
+            # # Print results
+            # # --------------------------------
+            # figure(2)
+            # subplot(211)
+            # plot(zCurr[1:i,6],zCurr[1:i,[5,4,1]])
+            # title("Real")
+            # legend(["eY","ePsi","v"])
+            # xlabel("s [m]")
+            # grid("on")
+            # subplot(212)
+            # plot(zCurr[1:i,6],uCurr[1:i,:])
+            # legend(["a","d_f"])
+            # grid("on")
 
-            figure(8)
-            plot(zCurr[1:i,6],cost[1:i,1],"r",zCurr[1:i,6],cost[1:i,2],"g",zCurr[1:i,6],cost[1:i,3],"b",zCurr[1:i,6],cost[1:i,4],"y",zCurr[1:i,6],cost[1:i,5],"m",zCurr[1:i,6],cost[1:i,6],"c")
-            grid(1)
-            title("Cost distribution")
-            legend(["z","z_Term","z_Term_const","deriv","control","lane"])
-            println("Press Enter to continue")
+            # figure(8)
+            # plot(zCurr[1:i,6],cost[1:i,1],"r",zCurr[1:i,6],cost[1:i,2],"g",zCurr[1:i,6],cost[1:i,3],"b",zCurr[1:i,6],cost[1:i,4],"y",zCurr[1:i,6],cost[1:i,5],"m",zCurr[1:i,6],cost[1:i,6],"c")
+            # grid(1)
+            # title("Cost distribution")
+            # legend(["z","z_Term","z_Term_const","deriv","control","lane"])
+            # println("Press Enter to continue")
 
-            readline()
+            # readline()
         end
     end
     # Save simulation data
-    log_path = "sim_$(Dates.format(now(), "yyyy_mm_dd_HH_MM")).jld"
-    save(log_path,"t",t,"z",log_z,"u",log_u,"x",log_xy)
+    #log_path = "sim_$(Dates.format(now(), "yyyy_mm_dd_HH_MM")).jld"
+    log_path = "sim_dyn.jld"
+    save(log_path,"t",t,"z",log_z,"u",log_u,"x",log_xy,"totalCost",oldTraj.oldCost)
     println("Saved simulation data.")
 end
 
