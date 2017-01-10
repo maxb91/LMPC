@@ -27,7 +27,7 @@ initPlot()
 include("barc_lib/classes.jl")
 include("barc_lib/LMPC/functions.jl")
 
-log_path_sim = "sim.jld"
+log_path_sim = "sim_kin.jld"
 d_sim = load(log_path_sim)
 
 z    = d_sim["z"]
@@ -91,7 +91,7 @@ for i=1:size(lapn,1)
 end
 legend()
 grid("on")
-title("Comparison of lateral deviation")
+title("x-y-view")
 xlabel("\$x\$ [m]")
 ylabel("\$y\$ [m]")
 tight_layout()
@@ -106,7 +106,7 @@ for i=1:size(lapn,1)
 end
 legend()
 grid("on")
-title("Comparison of lateral deviation")
+title("Velocities")
 xlabel("\$s\$ [m]")
 ylabel("\$v\$ \$\\left[\\frac{m}{s}\\right]\$")
 tight_layout()
@@ -128,7 +128,7 @@ savefig(path_to_file)
 figure(5)
 plot(s_track, c_track)
 grid("on")
-xlabel("\$s\$ [\$ m\$ ]")
+xlabel("\$s\$ [\$ m\$]")
 ylabel("\$ c(s) \$ \$\\left[ \\frac{1}{m} \\right] \$")
 tight_layout()
 path_to_file = "/Users/Maximilian/Documents/ETH/Master/Master thesis/6. Final report/Figures/Simulation/Kin_curv.pgf"
