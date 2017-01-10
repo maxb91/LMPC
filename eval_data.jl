@@ -108,7 +108,7 @@ legend()
 grid("on")
 title("Comparison of lateral deviation")
 xlabel("\$s\$ [m]")
-ylabel("\$v\$ [\$\\frac{m}{s}\$]")
+ylabel("\$v\$ \$\\left[\\frac{m}{s}\\right]\$")
 tight_layout()
 path_to_file = "/Users/Maximilian/Documents/ETH/Master/Master thesis/6. Final report/Figures/Simulation/Kin_v.pgf"
 savefig(path_to_file)
@@ -124,4 +124,14 @@ ylim([0,600])
 tight_layout()
 path_to_file = "/Users/Maximilian/Documents/ETH/Master/Master thesis/6. Final report/Figures/Simulation/Kin_cost.pgf"
 savefig(path_to_file)
+
+figure(5)
+plot(s_track, c_track)
+grid("on")
+xlabel("\$s\$ [\$ m\$ ]")
+ylabel("\$ c(s) \$ \$\\left[ \\frac{1}{m} \\right] \$")
+tight_layout()
+path_to_file = "/Users/Maximilian/Documents/ETH/Master/Master thesis/6. Final report/Figures/Simulation/Kin_curv.pgf"
+savefig(path_to_file)
+
 
