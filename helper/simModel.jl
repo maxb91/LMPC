@@ -38,3 +38,69 @@ function simModel_x(z::Array{Float64},u::Array{Float64},dt::Float64,modelParams:
 
     return zNext
 end
+
+function simModel_dyn_x(z::Array{Float64},u::Array{Float64},dt::Float64,modelParams::classes.ModelParams)
+
+    local zNext::Array{Float64}
+    l_A = modelParams.l_A
+    l_B = modelParams.l_B
+    zNext = z
+    x = z[1]
+    y = z[2]
+    v_x = z[3]
+    v_y = z[4]
+    psi = z[5]
+    psi_dot = z[6]
+    # u[1] = acceleration
+    # u[2] = steering angle
+
+    m = 1.98 # kg
+    mu  = 0.8
+    g = 9.81 # m/s^2
+    I_z = 0.03 # kg * m^2
+    B = 1.0
+    C = 1.25
+
+
+
+
+    F_xr = m*u[1]    
+    FxMax = mu*m*g / 2.0    
+    if F_xr > FxMax      
+        F_xr = FxMax    
+    end
+
+    # determine slip angles      
+    if v_x < 0.1        
+        alpha_f = 0.0        
+        alpha_r = 0.0      
+    else        
+        alpha_f = atan( (v_y+l_A*psi_dot) / v_x ) - u[2]        
+        alpha_r = atan( (v_y-l_B*psi_dot) / v_x)      
+    end
+    
+    F_yf = mu*m*g/2.0 * sin(C*atan(B*alpha_f))
+    F_yr = mu*m*g/2.0 * sin(C*atan(B*alpha_r))
+    if F_yr > sqrt(FxMax^2 - F_xr^2)        
+        F_yr = sqrt(FxMax^2 - F_xr^2)      
+    end
+
+
+    zNext[1] = x + dt*(v_x*cos(psi) - v_y*sin(psi))
+    zNext[2] = y + dt*(v_x*sin(psi) + v_y*cos(psi))
+    zNext[3] = v_x + dt*(psi_dot*v_y+1/m*(F_xr-F_yf*sin(u[2])))
+    zNext[4] = v_y + dt*(-psi_dot*v_x+1/m*(F_yf*cos(u[2])+F_yr))
+    zNext[5] = psi + dt*psi_dot
+    zNext[6] = psi_dot + dt*(1/I_z*(l_A*F_yf*cos(u[2])-l_B*F_yr))
+
+    return zNext
+end
+
+
+
+
+
+
+
+
+
