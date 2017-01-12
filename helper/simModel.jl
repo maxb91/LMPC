@@ -79,11 +79,11 @@ function simModel_dyn_x(z::Array{Float64},u::Array{Float64},dt::Float64,modelPar
         alpha_r = atan( (v_y-l_B*psi_dot) / v_x)      
     end
     
-    F_yf = mu*m*g/2.0 * sin(C*atan(B*alpha_f))
-    F_yr = mu*m*g/2.0 * sin(C*atan(B*alpha_r))
-    if F_yr > sqrt(FxMax^2 - F_xr^2)        
-        F_yr = sqrt(FxMax^2 - F_xr^2)      
-    end
+    F_yf = -mu*m*g/2.0 * sin(C*atan(B*alpha_f))
+    F_yr = -mu*m*g/2.0 * sin(C*atan(B*alpha_r))
+    # if F_yr > sqrt(FxMax^2 - F_xr^2)        
+    #     F_yr = sqrt(FxMax^2 - F_xr^2)      
+    # end
 
 
     zNext[1] = x + dt*(v_x*cos(psi) - v_y*sin(psi))

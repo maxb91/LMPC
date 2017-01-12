@@ -124,7 +124,7 @@ function InitializeParameters(mpcParams::classes.MpcParams,trackCoeff::classes.T
 
     oldTraj.n_oldTraj     = 20 #number of old Trajectories for safe set
     oldTraj.oldTraj             = zeros(buffersize,4,oldTraj.n_oldTraj)
-    oldTraj.oldTrajXY           = zeros(buffersize,4,oldTraj.n_oldTraj)
+    oldTraj.oldTrajXY           = zeros(buffersize,6,oldTraj.n_oldTraj)
     oldTraj.distance2obst       = zeros(buffersize,oldTraj.n_oldTraj)
     oldTraj.curvature           = zeros(buffersize,oldTraj.n_oldTraj)
     oldTraj.oldInput            = zeros(buffersize,2,oldTraj.n_oldTraj)

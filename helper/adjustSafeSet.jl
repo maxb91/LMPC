@@ -1,6 +1,6 @@
-function deleteInfeasibleTrajectories!(oldTraj,posInfo::classes.PosInfo,obstacle, pred_obst::Array{Float64,2}, i::Int64, zCurr_x::Array{Float64,2},dt::Float64)
+function deleteInfeasibleTrajectories!(oldTraj,posInfo::classes.PosInfo,obstacle, pred_obst::Array{Float64,2}, i::Int64, zCurr_s::Array{Float64,2},dt::Float64)
 
-    v_ego = zCurr_x[i,4]
+    v_ego = zCurr_s[i,4]
 
     safety_factor = 0.95
 
@@ -114,7 +114,7 @@ if distance2obst < 2.0 && distance2obst > - 2*obstacle.rs
     end
 end
 
-if exist_feas_traj == 1
+if exist_feas_traj == 1 && 0 == 1
     index_of_traj_2_copy = findmax(v_feas_traj)[2] #finds the maximum velocity at a later point of the trajectory . If velocities are equal takes first value in array. least old trajectory
     ind_start = convert(Int64,feasible_starting_indeces[index_of_traj_2_copy])
     s_start = oldTraj.oldTraj[ind_start,1,index_of_traj_2_copy]

@@ -41,13 +41,15 @@
 
 
     #######################################
-    z_Init = zeros(4)
+    z_Init = zeros(6)
     z_Init[1] = 1.81 # x = 1.81 for s = 32     14 in curve
     z_Init[2] = 2.505 # y = 2.505 for s = 32  12.6
-    z_Init[3] = 0.94
-    z_Init[4]  = 0.4
+    z_Init[5] = 0.94
+    z_Init[3] = 0.4*cos(z_Init[5]) #v_x
+    z_Init[4]  = 0.4*sin(z_Init[5]) #v_y
+    z_Init[6] = 0.0
    
-    load_safeset = true#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
+    load_safeset = false#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
     safeset = "data/2017-01-08-22-10-SafeSet.jld"
 
     #########
@@ -67,7 +69,7 @@
     ##define obstacle x and xy vlaues not used at the moment 
     #for a clean definition of the x,y points the value of s_obstacle has to be the same as one of the points of the source map. 
     # the end semi axes are approximated over the secant of the points of the track. drawing might not be 100% accurate
-    s_obst_init = 31.0 
+    s_obst_init = 81.0 
     sy_obst_init = -0.2
     v_obst_init = 0#1.5##1.8
     obstacle.rs = 0.5 # if we load old trajecory these values get overwritten
@@ -93,7 +95,7 @@
     trackCoeff.coeffCurvature   = [0.0;0.0;0.0;0.0;0.0]        # polynomial coefficients for curvature approximation (zeros for straight line)
     trackCoeff.nPolyCurvature = 4 # has to be 4 cannot be changed freely at the moment orders are still hardcoded in some parts of localizeVehicleCurvAbslizeVehicleCurvAbs
     trackCoeff.nPolyXY = 6  # has to be 6 cannot be changed freely at the moment orders are still hardcoded in some parts of localizeVehicleCurvAbslizeVehicleCurvAbs
-    n_rounds = 1 
+    n_rounds = 6
     z_pred_log = zeros(mpcParams.N+1,4,length(t),n_rounds)
     u_pred_log = zeros(mpcParams.N,2,length(t),n_rounds)
     lambda_log = zeros(oldTraj.n_oldTraj,length(t),n_rounds)
@@ -119,7 +121,7 @@
         tt          = zeros(length(t),1)
         tt1         = zeros(length(t),1)
         zCurr_s     = zeros(length(t),4)          # s, ey, epsi, v
-        zCurr_x     = zeros(length(t),4)          # x, y, psi, v
+        zCurr_x     = zeros(length(t),6)          # x, y, v_x,v_y, psi, psi_dot
         uCurr       = zeros(length(t),2)
         distance2obst = zeros(length(t))
         curvature_curr = zeros(length(t))
@@ -138,13 +140,20 @@
         zCurr_x[1,2] = z_Init[2] # y = 2.505 for s = 32  12.6
         zCurr_x[1,3] = z_Init[3]
         zCurr_x[1,4] = z_Init[4]  # compare value to v_pathfollowing
+        zCurr_x[1,5] = z_Init[5]
+        zCurr_x[1,6] = z_Init[6]
         
         if j>1               #setup point for vehicle after first round                   # if we are in the second or higher lap
             zCurr_x[1,:] = z_final_x
             # because the track is not closed we always set up the car at the same place each round
             zCurr_x[1,1] = z_Init[1] # x = 1.81 for s = 32     14 in curve
             zCurr_x[1,2] = z_Init[2] # y = 2.505 for s = 32  12.6
-            zCurr_x[1,3] = z_Init[3]
+            zCurr_x[1,5] = z_Init[5]
+            zCurr_x[1,6] = z_Init[6]
+            v_abs = sqrt(z_final_x[3]^.2+z_final_x[4]^.2)
+            zCurr_x[1,3] = v_abs * cos(z_Init[5])
+            zCurr_x[1,4] = v_abs * sin(z_Init[5])
+
             uCurr[1,:] = u_final
         end
             
@@ -190,7 +199,7 @@
             if j > 1 || load_safeset == true
                 tic()
                 addOldtoNewPos(oldTraj, distance2obst[i],obstacle,i,pred_obst, mpcParams,zCurr_s,modelParams.dt,mpcCoeff)
-                deleteInfeasibleTrajectories!(oldTraj,posInfo,obstacle, pred_obst, i, zCurr_x,modelParams.dt)
+                deleteInfeasibleTrajectories!(oldTraj,posInfo,obstacle, pred_obst, i, zCurr_s,modelParams.dt)
 		        
                 tt1[i] = toq()
                 #println(" time to add/remove traj $(tt1[i])")
@@ -222,7 +231,7 @@
 
             uCurr[i,:]  = [mpcSol.a_x mpcSol.d_f]
             #have Zcurr as states XY and simulate from there return XY values of states 
-            zCurr_x[i+1,:]  = simModel_x(zCurr_x[i,:],uCurr[i,:],modelParams.dt,modelParams) #!! @show
+            zCurr_x[i+1,:]  = simModel_dyn_x(zCurr_x[i,:],uCurr[i,:],modelParams.dt,modelParams) #!! @show
 
             #update Position of the Obstacle car        
             computeObstaclePos!(obstacle, dt, i, x_track, trackCoeff) #this funciton computes values for row i+1

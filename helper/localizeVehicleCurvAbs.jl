@@ -10,7 +10,7 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
     # grab current states of the vehicle
     x       = states_x[1]
     y       = states_x[2]
-    psi     = states_x[3]
+    psi     = states_x[5]
 
     nodes_center      = [x_track; y_track]
      # if (x == 0) && (y == 0) && (psi == 0)
@@ -49,9 +49,9 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
         nodes_near = nodes_center[:,ind_start:ind_end]
     elseif idx_min+N_nodes_poly_front >= N_nodes_center
         # then stack the end and beginning of the lap together
-        nodes_near = append!(nodes_center[:,ind_start:N_nodes_center],nodes_center[:,0:idx_min+N_nodes_poly_front+1-N_nodes_center])
         ind_start   = idx_min-N_nodes_poly_back 
         ind_end     = idx_min+N_nodes_poly_front
+        nodes_near = append!(nodes_center[:,ind_start:N_nodes_center],nodes_center[:,0:idx_min+N_nodes_poly_front+1-N_nodes_center])
         error("stacking nodes from beginning of track not yet implemented")
     else 
         ind_start   = idx_min-N_nodes_poly_back #max(1,idx_min-N_nodes_poly_back)
@@ -351,6 +351,7 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
 
     #return s_start, s, ey, coeffX,coeffY, coeffTheta, coeffCurv, epsi
     zCurr_s = zeros(4)
-    zCurr_s = [s ey epsi states_x[4]]
+    v_abs = sqrt(states_x[3].^2 + states_x[4].^2)
+    zCurr_s = [s ey epsi v_abs]
     return zCurr_s, coeffCurv
 end
