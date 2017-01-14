@@ -1,4 +1,5 @@
-function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64},y_track::Array{Float64},trackCoeff::classes.TrackCoeff, itercount::Int64)
+function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64},y_track::Array{Float64},trackCoeff::classes.TrackCoeff, itercount::Int64, Pcurvature)
+    #Pcurvature just for plotting bugfixing
     # Outputs: zCurr_s, coeffCurv 
     # zCurr_s = [s, ey, epsi, states_x[4]]
     # itercount is solely used for debugging purposes plots
@@ -280,12 +281,25 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
    #      s_curv=collect(0.0:nPoints)
         
    #      #calculate the curvature back from the coefficients
-   #      Count = 1
-   #      polyt = zeros(201)
-   #      for s_t = 10:0.2:50
-   #      polyt[Count] = dot(coeffCurv, [s_t^4 s_t^3 s_t^2 s_t 1])
-   #      Count+=1
-   #      end
+        # Count = 1
+        # s_p = collect(s-N_nodes_poly_back*ds:0.01:s+N_nodes_poly_front*ds)
+        # polyt = zeros(size(s_p))
+        # for s_t = s-N_nodes_poly_back*ds:0.01:s+N_nodes_poly_front*ds
+        #     polyt[Count] = dot(coeffCurv, [s_t^4 s_t^3 s_t^2 s_t 1])
+        #     Count+=1
+        # end
+        # plot(s_p,polyt, color = "blue")
+        # readline()
+
+
+        j = s
+        dX = dot(coeffX,[6*j^5, 5*j^4, 4*j^3, 3*j^2, 2*j, 1, 0]) 
+        dY = dot(coeffY,[6*j^5, 5*j^4, 4*j^3, 3*j^2, 2*j, 1, 0])
+        ddX = dot(coeffX,[30*j^4, 20*j^3, 12*j^2, 6*j, 2, 0, 0])
+        ddY = dot(coeffY,[30*j^4, 20*j^3, 12*j^2, 6*j, 2, 0, 0])
+        Pcurvature[itercount,1] = s
+        Pcurvature[itercount,2] = (dX*ddY-dY*ddX)/(dX^2+dY^2)^(3/2)
+        
    #      s_t = collect(10:0.2:50)
    #      # # s_t = zeros(25:0.1:35)
    #      # # for i = 1:size(s_t)[1]

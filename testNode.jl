@@ -42,13 +42,13 @@
 
     #######################################
     z_Init = zeros(4)
-    z_Init[1] = 1.81 # x = 1.81 for s = 32     14 in curve
-    z_Init[2] = 2.505 # y = 2.505 for s = 32  12.6
-    z_Init[3] = 0.94
+    z_Init[1] = 0# 1.81 # x = 1.81 for s = 32     14 in curve
+    z_Init[2] = 0#2.505 # y = 2.505 for s = 32  12.6
+    z_Init[3] = 0.94#0.94
     z_Init[4]  = 0.4
    
     load_safeset = true#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
-    safeset = "data/2017-01-08-22-10-SafeSet.jld"
+    safeset = "data/2017-01-14-14-01-SafeSet.jld"
 
     #########
     InitializeParameters(mpcParams,trackCoeff,modelParams,posInfo,oldTraj,mpcCoeff,lapStatus,obstacle,buffersize)
@@ -67,11 +67,11 @@
     ##define obstacle x and xy vlaues not used at the moment 
     #for a clean definition of the x,y points the value of s_obstacle has to be the same as one of the points of the source map. 
     # the end semi axes are approximated over the secant of the points of the track. drawing might not be 100% accurate
-    s_obst_init = 31.0 
-    sy_obst_init = -0.2
-    v_obst_init = 0#1.5##1.8
+    s_obst_init =2.0 
+    sy_obst_init = 0.15
+    v_obst_init = 1.7#1.5#1.5##1.8
     obstacle.rs = 0.5 # if we load old trajecory these values get overwritten
-    obstacle.ry = 0.19 # if we load old trajecory these values get overwritten
+    obstacle.ry = 0.14 # if we load old trajecory these values get overwritten
     
     
 
@@ -89,11 +89,13 @@
     dt                          = modelParams.dt
     t                           = collect(0:dt:(buffersize-1)*dt) #40
 
+    Pcurvature = zeros(length(t),2)
+
     
     trackCoeff.coeffCurvature   = [0.0;0.0;0.0;0.0;0.0]        # polynomial coefficients for curvature approximation (zeros for straight line)
     trackCoeff.nPolyCurvature = 4 # has to be 4 cannot be changed freely at the moment orders are still hardcoded in some parts of localizeVehicleCurvAbslizeVehicleCurvAbs
     trackCoeff.nPolyXY = 6  # has to be 6 cannot be changed freely at the moment orders are still hardcoded in some parts of localizeVehicleCurvAbslizeVehicleCurvAbs
-    n_rounds = 1 
+    n_rounds = 1
     z_pred_log = zeros(mpcParams.N+1,4,length(t),n_rounds)
     u_pred_log = zeros(mpcParams.N,2,length(t),n_rounds)
     lambda_log = zeros(oldTraj.n_oldTraj,length(t),n_rounds)
@@ -166,7 +168,7 @@
             # the argument i in localizeVehicleCurvAbs  is solely used for debugging purposes plots not needed for control
             # localize takes some time see ProfileView.view()
             tic()
-            zCurr_s[i,:], trackCoeff.coeffCurvature = localizeVehicleCurvAbs(zCurr_x[i,:],x_track,y_track,trackCoeff, i)
+            zCurr_s[i,:], trackCoeff.coeffCurvature = localizeVehicleCurvAbs(zCurr_x[i,:],x_track,y_track,trackCoeff, i, Pcurvature)
             posInfo.s   = zCurr_s[i,1]
             curvature_curr[i] = trackCoeff.coeffCurvature[1]*posInfo.s^4+trackCoeff.coeffCurvature[2]*posInfo.s^3+trackCoeff.coeffCurvature[3]*posInfo.s^2+trackCoeff.coeffCurvature[4]*posInfo.s +trackCoeff.coeffCurvature[5]
             distance2obst[i] = (obstacle.s_obstacle[i,1]-obstacle.rs) - posInfo.s
@@ -284,9 +286,12 @@
         ###############
 
         oldTraj.oldNIter[1] = i
-        if j>1 && oldTraj.oldNIter[2] <= oldTraj.oldNIter[1]
-            warn("round was not faster.")
+        if j>1 && oldTraj.cost2Target[1,2] <= oldTraj.cost2Target[1,1]
+            warn("round was not faster. cost : $(oldTraj.cost2Target[1,1])")
+
             println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+        else
+            println("cost of round: $(oldTraj.cost2Target[1,1])")
         end
 
         println("*************************************************************************")
@@ -299,11 +304,11 @@
         # if a == "c\r\n" 
         #         break
         # end
+        # figure()
+        #plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j],oldTraj.curvature[1:oldTraj.oldNIter[j],j], color = "red")
+        #plot(Pcurvature[1:oldTraj.oldNIter[j],1], Pcurvature[1:oldTraj.oldNIter[j],2], color = "green")
     end
     n_rounds = j #update n_rounds to represent actual number of simualated rounds
-########save date
-          
-          
 
     #filename = string("../LMPCdata/"string(Dates.today()),"-Data.jld")
     #### alternative numbering to generate results to keep 

@@ -6,7 +6,7 @@ include("classes.jl")
     j = 1
     interactive_plot = 1
 
-    plot_costs = 0
+    plot_costs = 1
     plot_states_over_t = 0
     plot_xy = 1
     plot_lambda = 1
@@ -15,8 +15,8 @@ include("classes.jl")
     plot_inputs = 0
     plot_eps = 0
     interactive_plot_steps = 2
-    n_oldTrajPlots = 2
-    file = "data/2017-01-08-22-17-Data.jld"
+    n_oldTrajPlots = 5
+    file = "data/overtake_possible.jld"
     close("all")
 
     ####load data from file
@@ -196,11 +196,12 @@ include("classes.jl")
         #plot the boundary lines
         ax10[:plot](boundary_up[1,:], boundary_up[2,:],color="green",linestyle=":")
         ax10[:plot](boundary_down[1,:], boundary_down[2,:],color="green",linestyle=":")
-        for l=1:20
+        for l=1:13
             ax10[:plot]([boundary_down[1,l*50+1],boundary_up[1,l*50+1]],[boundary_down[2,l*50+1],boundary_up[2,l*50+1]], color = "black", linestyle = ":", linewidth = 0.5)
             text(boundary_down[1,l*50+1]+1,boundary_down[2,l*50+1],"s = $(l*5)",fontsize=8)
         end
         gca()[:set_aspect]("equal", adjustable="box")
+        # ax10[:set_ylim]([-5.1,5.1])
         grid() 
         legend(bbox_to_anchor=(1.001, 1), loc=2, borderaxespad=0.)
     end    
@@ -214,10 +215,10 @@ include("classes.jl")
         for k=1: oldTraj.n_oldTraj//4
             k = convert(Int64,k)
             colorLambda = colorModule.getColor(colorObjectLambda)
-            scatter(t[1:oldTraj.oldNIter[j]-1],oldTraj.lambda_sol[k,1:oldTraj.oldNIter[j]-1,j].*oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j], color = colorLambda, marker = "x", label = string(L"\lambda","k"))
+            scatter(oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.lambda_sol[k,1:oldTraj.oldNIter[j]-1,j].*oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j], color = colorLambda, marker = "x", label = string(L"\lambda","k"))
         end
         act_lambda_plot = ax11[:plot]([],[], label="_nolegend_")
-        xlabel("t in [s]")
+        xlabel("s in [m]")
         ylabel("lambda")
         grid()
         #ax11[:set_ylim]([-0.1,1.1])
@@ -228,9 +229,9 @@ include("classes.jl")
         for k=oldTraj.n_oldTraj//4+1: oldTraj.n_oldTraj//2
             k = convert(Int64,k)
             colorLambda = colorModule.getColor(colorObjectLambda)
-            scatter(t[1:oldTraj.oldNIter[j]-1],oldTraj.lambda_sol[k,1:oldTraj.oldNIter[j]-1,j].*oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j], color = colorLambda, marker = "x")
+            scatter(oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.lambda_sol[k,1:oldTraj.oldNIter[j]-1,j].*oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j], color = colorLambda, marker = "x")
         end
-        xlabel("t in [s]")
+        xlabel("s in [m]")
         ylabel("lambda")
         grid()
         legend([L"\lambda /4+1",L"\lambda /4+2",L"\lambda 3",L"\lambda 4",L"\lambda 5", L"\lambda 6"],bbox_to_anchor=(1.001, 1), loc=2, borderaxespad=0.)
@@ -239,9 +240,9 @@ include("classes.jl")
         for k=oldTraj.n_oldTraj//2+1: oldTraj.n_oldTraj//4*3
             k = convert(Int64,k)
             colorLambda = colorModule.getColor(colorObjectLambda)
-            scatter(t[1:oldTraj.oldNIter[j]-1],oldTraj.lambda_sol[k,1:oldTraj.oldNIter[j]-1,j].*oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j], color = colorLambda, marker = "x")
+            scatter(oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.lambda_sol[k,1:oldTraj.oldNIter[j]-1,j].*oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j], color = colorLambda, marker = "x")
         end
-        xlabel("t in [s]")
+        xlabel("s in [m]")
         ylabel("lambda")
         grid()
         legend([L"\lambda /2+1",L"\lambda /2+2",L"\lambda 3",L"\lambda ",L"\lambda 5"],bbox_to_anchor=(-0.201, 1), loc=2, borderaxespad=0.)
@@ -250,9 +251,9 @@ include("classes.jl")
         for k=oldTraj.n_oldTraj*3//4+1: oldTraj.n_oldTraj
             k = convert(Int64,k)
             colorLambda = colorModule.getColor(colorObjectLambda)
-            scatter(t[1:oldTraj.oldNIter[j]-1],oldTraj.lambda_sol[k,1:oldTraj.oldNIter[j]-1,j].*oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j], color = colorLambda, marker = "x")
+            scatter(oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.lambda_sol[k,1:oldTraj.oldNIter[j]-1,j].*oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j], color = colorLambda, marker = "x")
         end
-        xlabel("t in [s]")
+        xlabel("s in [m]")
         ylabel("lambda")
         grid()
         legend([L"\lambda *3/4+1",L"\lambda *3/4+2",L"\lambda 3",L"\lambda 4",L"\lambda 5"],bbox_to_anchor=(1.001, 1), loc=2, borderaxespad=0.)
@@ -265,9 +266,9 @@ include("classes.jl")
         for k=1: oldTraj.n_oldTraj//4
             k = convert(Int64,k)
             colorSafeSet= colorModule.getColor(colorObjectSafeSet)
-            scatter(t[1:oldTraj.oldNIter[j]-1],oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j], color = colorSafeSet, marker = "x")
+            scatter(oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j], color = colorSafeSet, marker = "x")
         end
-        xlabel("t in [s]")
+        xlabel("s in [m]")
         ylabel("ssOn")
         grid()
         legend(["ssOn1","ssOn2","ssOn3","ssOn4","ssOn5", "ssOn6","ssOn7","ssOn8","ssOn9","ssOn10"],bbox_to_anchor=(1.001, 1), loc=2, borderaxespad=0.)
@@ -276,9 +277,9 @@ include("classes.jl")
         for k=oldTraj.n_oldTraj//4+1: oldTraj.n_oldTraj//2
             k = convert(Int64,k)
             colorSafeSet= colorModule.getColor(colorObjectSafeSet)
-            scatter(t[1:oldTraj.oldNIter[j]-1],oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j],color = colorSafeSet, marker = "x")
+            scatter(oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j],color = colorSafeSet, marker = "x")
         end
-        xlabel("t in [s]")
+        xlabel("s in [m]")
         ylabel("ssOn")
         grid()
         legend(["ssOn/4+1","ssOn/4+2","ssOn3","ssOn4","ssOn5", "ssOn6","ssOn7","ssOn8","ssOn9","ssOn10"],bbox_to_anchor=(1.001, 1), loc=2, borderaxespad=0.)
@@ -286,9 +287,9 @@ include("classes.jl")
         for k=oldTraj.n_oldTraj//2+1: oldTraj.n_oldTraj*3//4
             k = convert(Int64,k)
             colorSafeSet= colorModule.getColor(colorObjectSafeSet)
-            scatter(t[1:oldTraj.oldNIter[j]-1],oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j],color = colorSafeSet, marker = "x")
+            scatter(oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j],color = colorSafeSet, marker = "x")
         end
-        xlabel("t in [s]")
+        xlabel("s in [m]")
         ylabel("ssOn")
         grid()
         legend(["ssOn/2+1","ssOn/2+2","ssOn3","ssOn4","ssOn5", "ssOn6","ssOn7","ssOn8","ssOn9","ssOn10"],bbox_to_anchor=(1.001, 1), loc=2, borderaxespad=0.)
@@ -296,9 +297,9 @@ include("classes.jl")
         for k=oldTraj.n_oldTraj*3//4+1: oldTraj.n_oldTraj
             k = convert(Int64,k)
             colorSafeSet= colorModule.getColor(colorObjectSafeSet)
-            scatter(t[1:oldTraj.oldNIter[j]-1],oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j],color = colorSafeSet, marker = "x")
+            scatter(oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j],color = colorSafeSet, marker = "x")
         end
-        xlabel("t in [s]")
+        xlabel("s in [m]")
         ylabel("ssOn")
         grid()
         legend(["ssOn*3/4+1","ssOn/2+2","ssOn3","ssOn4","ssOn5", "ssOn6","ssOn7","ssOn8","ssOn9","ssOn10"],bbox_to_anchor=(1.001, 1), loc=2, borderaxespad=0.)
@@ -384,7 +385,8 @@ include("classes.jl")
     if plot_curvature_approx==1
         f_curv_app = figure(7)
         f_curv_app[:canvas][:set_window_title]("Curvature approximation over s")  
-        plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j],curv_approx[1,1:oldTraj.oldNIter[j],j])
+        #plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j],curv_approx[1,1:oldTraj.oldNIter[j],j])
+        plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j],oldTraj.curvature[1:oldTraj.oldNIter[j],j])
         grid()
     end
 
