@@ -17,7 +17,7 @@ function initPlot()
     rc("legend", fontsize="small")
     rc("font",family="serif")
     rc("font",size=10)
-    rc("figure",figsize=[4.5,3])
+    rc("figure",figsize=[5.5,3.0])
     #rc("text.latex", preamble = """\\usepackage[utf8x]{inputenc}\\usepackage[T1]{fontenc}\\usepackage{lmodern}""")               # <- tricky! -- gotta actually tell tex to use!
     #rc("pgf", texsystem="pdflatex",preamble=L"""\usepackage[utf8x]{inputenc}\usepackage[T1]{fontenc}\usepackage{lmodern}""")
 end
@@ -40,14 +40,14 @@ z[z.==0] = NaN
 x[x.==0] = NaN
 
 # Create Track
-s_track = 0.01:.01:50.49
-c_track = zeros(5049)
-c_track[1:300] = 0
-c_track[301:400] = linspace(0,-pi/2,100)
-c_track[401:500] = linspace(-pi/2,0,100)
-c_track[501:900] = 0
-c_track[901:1000] = linspace(0,-pi/2,100)
-c_track[1001:1100] = linspace(-pi/2,0,100)
+s_track = 0.01:.01:50.87
+c_track = zeros(5087)
+c_track[1:200] = 0
+c_track[201:400] = linspace(0,-pi/4,200)
+c_track[401:600] = linspace(-pi/4,0,200)
+c_track[601:700] = 0
+c_track[701:900] = linspace(0,-pi/4,200)
+c_track[901:1100] = linspace(-pi/4,0,200)
 c_track[1101:1200] = linspace(0,-pi/4,100)
 c_track[1201:1300] = linspace(-pi/4,0,100)
 c_track[1301:1600] = 0
@@ -58,14 +58,15 @@ c_track[2901:3200] = linspace(-pi/3,0,300)
 c_track[3201:3500] = 0
 c_track[3501:3700] = linspace(0,-2*pi/2/4,200)
 c_track[3701:3900] = linspace(-2*pi/2/4,0,200)
-c_track[3901:4102] = 0
-c_track[4103:4402] = linspace(0,-2*pi/2/6,300)
-c_track[4403:4702] = linspace(-2*pi/2/6,0,300)
+c_track[3901:3902] = 0
+c_track[4041:4340] = linspace(0,-2*pi/2/6,300)
+c_track[4341:4640] = linspace(-2*pi/2/6,0,300)
 
 path_x,xl,xr = s_to_x(s_track,c_track)
-
+#xl[end,:] = xl[1,:]
+#xr[end,:] = xr[1,:]
 # Plot and save e_Y
-lapn = [1,4,8]      # specify which laps should be plotted
+lapn = [1,2,10]      # specify which laps should be plotted
 figure(1)
 for i=1:size(lapn,1)
     plot(z[:,1,lapn[i]],z[:,2,lapn[i]],label="Lap $(lapn[i])")
@@ -115,12 +116,12 @@ savefig(path_to_file)
 
 # Plot and save cost
 figure(4)
-plot(cost[1:9],"-o")
+plot(cost[1:10]/10,"-o")
 grid("on")
 title("Total cost")
 xlabel("Iteration")
 ylabel("Iteration cost")
-ylim([0,600])
+ylim([0,60])
 tight_layout()
 path_to_file = "/Users/Maximilian/Documents/ETH/Master/Master thesis/6. Final report/Figures/Simulation/Kin_cost.pgf"
 savefig(path_to_file)

@@ -49,22 +49,22 @@ function run_sim()
     log_ParInt                  = zeros(length(t),30)       # log ParInt data
 
     # Logging parameters
-    posInfo.s_target            = 50.49
+    posInfo.s_target            = 50.87
 
     z_final         = zeros(4)
 
     uPrev           = zeros(10,2)
 
-    n_pf            = 3             # number of path-following laps
+    n_pf            = 1             # number of path-following laps
 
-    s_track = 0.01:.01:50.49
-    c_track = zeros(5049)
-    c_track[1:300] = 0
-    c_track[301:400] = linspace(0,-pi/2,100)
-    c_track[401:500] = linspace(-pi/2,0,100)
-    c_track[501:900] = 0
-    c_track[901:1000] = linspace(0,-pi/2,100)
-    c_track[1001:1100] = linspace(-pi/2,0,100)
+    s_track = 0.01:.01:50.87
+    c_track = zeros(5087)
+    c_track[1:200] = 0
+    c_track[201:400] = linspace(0,-pi/4,200)
+    c_track[401:600] = linspace(-pi/4,0,200)
+    c_track[601:700] = 0
+    c_track[701:900] = linspace(0,-pi/4,200)
+    c_track[901:1100] = linspace(-pi/4,0,200)
     c_track[1101:1200] = linspace(0,-pi/4,100)
     c_track[1201:1300] = linspace(-pi/4,0,100)
     c_track[1301:1600] = 0
@@ -75,9 +75,9 @@ function run_sim()
     c_track[3201:3500] = 0
     c_track[3501:3700] = linspace(0,-2*pi/2/4,200)
     c_track[3701:3900] = linspace(-2*pi/2/4,0,200)
-    c_track[3901:4102] = 0
-    c_track[4103:4402] = linspace(0,-2*pi/2/6,300)
-    c_track[4403:4702] = linspace(-2*pi/2/6,0,300)
+    c_track[3901:3902] = 0
+    c_track[4041:4340] = linspace(0,-2*pi/2/6,300)
+    c_track[4341:4640] = linspace(-2*pi/2/6,0,300)
 
     s_track_p, c_track_p = prepareTrack(s_track, c_track)
 
@@ -105,7 +105,7 @@ function run_sim()
         while i<length(t) && !finished
             #println("///////////////////////////////// STARTING ONE ITERATION /////////////////////////////////")
             # Define track curvature
-            trackCoeff.coeffCurvature = find_curvature(s_track_p,c_track_p,zCurr[i,1],trackCoeff)
+            trackCoeff.coeffCurvature = find_curvature(s_track_p,c_track_p,zCurr[i,1],trackCoeff,zCurr[i,4],modelParams.dt,mpcParams.N)
 
             # Calculate coefficients for LMPC (if at least in the 2nd lap)
             posInfo.s   = zCurr[i,1]
@@ -118,6 +118,19 @@ function run_sim()
                 solveMpcProblem_pathFollow(mdl_pF,mpcSol,mpcParams_pF,trackCoeff,posInfo,modelParams,zCurr[i,:]',uPrev)
             else                            # otherwise: LMPC
                 solveMpcProblem_LMPC(mdl,mpcSol,mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr[i,:]',uPrev)
+                # Plot predictions
+                # figure(101)
+                # for k=1:3
+                #     subplot(3,1,k)
+                #     s = mpcSol.z[:,1]
+                #     poly1 = [s.^5 s.^4 s.^3 s.^2 s.^1 s.^0]*mpcCoeff.coeffConst[:,1,k]
+                #     #poly2 = [s.^5 s.^4 s.^3 s.^2 s.^1 s.^0]*mpcCoeff.coeffConst[:,2,k]
+                #     plot(mpcSol.z[:,1],mpcSol.z[:,k+1],"-o")
+                #     plot(s,poly1)
+                #     #plot(s,poly2)
+                #     grid("on")
+                # end
+                # readline()
             end
             
             cost[i,:]   = mpcSol.cost
@@ -137,6 +150,9 @@ function run_sim()
                 oldTraj.oldCost[lapStatus.currentLap] = oldTraj.idx_end[lapStatus.currentLap] - oldTraj.idx_start[lapStatus.currentLap]
                 println("Reaching finish line at step $(i+1), cost = $(oldTraj.oldCost[lapStatus.currentLap])")
                 finished = true
+                if j>1
+                    setvalue(mdl.z_Ol[:,1],mpcSol.z[:,1]-posInfo.s_target)
+                end
             end
 
             # Append new states and inputs to old trajectories
@@ -166,7 +182,7 @@ function run_sim()
             log_z[i,:,lapStatus.currentLap] = zCurr[i,:]
             log_u[i,:,lapStatus.currentLap] = uCurr[i,:]
             if lapStatus.currentLap > n_pf
-                log_ParInt[i,lapStatus.currentLap] = getvalue(mdl.ParInt)
+                log_ParInt[i,lapStatus.currentLap] = 0#getvalue(mdl.ParInt)
             end
             i = i + 1
         end
@@ -180,7 +196,7 @@ function run_sim()
         x_xy = transf_s_to_x(s_track,c_track,zCurr[1:i,1],zCurr[1:i,2])
         log_xy[1:i,:,lapStatus.currentLap] = x_xy
 
-        if j>15#n_pf
+        if j>1#15#n_pf
             figure(10)
             path_x,xl,xr = s_to_x(s_track,c_track)
             plot(path_x[:,1],path_x[:,2],"b--",xl[:,1],xl[:,2],"b-",xr[:,1],xr[:,2],"b-")
@@ -189,31 +205,31 @@ function run_sim()
             title("x-y-view")
             axis("equal")
 
-            figure(4)
-            subplot(211)
-            title("Old Trajectory #1")
-            plot(oldTraj.oldTraj[:,1,1],oldTraj.oldTraj[:,2:4,1])
-            grid("on")
-            legend(["eY","ePsi","v"])
-            subplot(212)
-            title("Old Trajectory #2")
-            plot(oldTraj.oldTraj[:,1,2],oldTraj.oldTraj[:,2:4,2])
-            grid("on")
-            legend(["eY","ePsi","v"])
+            # figure(4)
+            # subplot(211)
+            # title("Old Trajectory #1")
+            # plot(oldTraj.oldTraj[:,1,1],oldTraj.oldTraj[:,2:4,1])
+            # grid("on")
+            # legend(["eY","ePsi","v"])
+            # subplot(212)
+            # title("Old Trajectory #2")
+            # plot(oldTraj.oldTraj[:,1,2],oldTraj.oldTraj[:,2:4,2])
+            # grid("on")
+            # legend(["eY","ePsi","v"])
 
             # Print results
             # --------------------------------
-            figure(2)
-            subplot(211)
-            plot(zCurr[1:i,1],zCurr[1:i,2:4])
-            title("Real")
-            legend(["eY","ePsi","v"])
-            xlabel("s [m]")
-            grid("on")
-            subplot(212)
-            plot(zCurr[1:i,1],uCurr[1:i,:])
-            legend(["a","d_f"])
-            grid("on")
+            # figure(2)
+            # subplot(211)
+            # plot(zCurr[1:i,1],zCurr[1:i,2:4])
+            # title("Real")
+            # legend(["eY","ePsi","v"])
+            # xlabel("s [m]")
+            # grid("on")
+            # subplot(212)
+            # plot(zCurr[1:i,1],uCurr[1:i,:])
+            # legend(["a","d_f"])
+            # grid("on")
 
             figure(8)
             plot(zCurr[1:i,1],cost[1:i,1],"r",zCurr[1:i,1],cost[1:i,2],"g",zCurr[1:i,1],cost[1:i,3],"b",zCurr[1:i,1],cost[1:i,4],"y",zCurr[1:i,1],cost[1:i,5],"m",zCurr[1:i,1],cost[1:i,6],"c")
@@ -222,12 +238,12 @@ function run_sim()
             legend(["z","z_Term","z_Term_const","deriv","control","lane"])
             println("Press Enter to continue")
 
-            readline()
+            #readline()
         end
     end
     # Save simulation data
     #log_path = "sim_$(Dates.format(now(), "yyyy_mm_dd_HH_MM")).jld"
-    log_path = "sim.jld"
+    log_path = "sim_kin.jld"
     save(log_path,"t",t,"z",log_z,"u",log_u,"x",log_xy,"totalCost",oldTraj.oldCost)
     println("Saved simulation data.")
 end
@@ -244,10 +260,10 @@ function prepareTrack(s_track,c_track)
     c_new[2*sz+1:3*sz] = c_track
     return s_new, c_new
 end
-function find_curvature(s_track,c_track,s,trackCoeff)
+function find_curvature(s_track,c_track,s,trackCoeff,v_curr,dt,N)
     sz = size(s_track,1)
-    prev = 100                  # 100*0.01 = 1 meter back
-    ahea = 200                  # 200*0.01 = 2 meter ahead
+    ahea = Int64(round(2.0*v_curr*dt*N/0.01))                  # 300*0.01 = 3 meter ahead
+    prev = Int64(round(1.0*v_curr*dt*N/0.01))                  # 100*0.01 = 1 meter back
     n_tot = prev+ahea+1
     idx_min = indmin((s-s_track).^2)
     idx = idx_min-prev:idx_min+ahea
