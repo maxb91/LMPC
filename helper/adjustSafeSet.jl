@@ -57,7 +57,7 @@ s_horizon[1] = zCurr_s[iter,1]
 v_ego = zCurr_s[iter,4]
 N_points        = size(oldTraj.oldTraj,1) 
 
-eps0 = 0.2 #tol distance
+eps0 = 0.1 #tol distance
 eps1 = 0.01 #tol v_obst
 eps2 = 0.01 #tol e_y
 eps3 = 0.01#tol curvature
@@ -66,7 +66,7 @@ for i = 1:mpcParams.N
     s_horizon[i+1] = s_horizon[i]+v_ego*dt
 end
 s_diff = s_horizon[end]-s_horizon[1]
-s_diff = 0.3
+#s_diff = 0.3
 
 
             #####plot test
@@ -149,7 +149,7 @@ if exist_feas_traj == 1
     # @show ind_start
     # @show oldTraj.cost2Target[ind_start:ind_start+pLength,index_of_traj_2_copy]
     oldTraj.cost2Target[ind_start:ind_start+pLength,end] = oldTraj.cost2Target[ind_start:ind_start+pLength,index_of_traj_2_copy]-(oldTraj.cost2Target[ind_start,index_of_traj_2_copy][1]-oldTraj.cost2Target[index_s[index_of_traj_2_copy]-N_points*(index_of_traj_2_copy-1),index_of_traj_2_copy][1])
-    println("copied s :$(oldTraj.oldTraj[ind_start,1,index_of_traj_2_copy]) from old round : $index_of_traj_2_copy, curr s: $(zCurr_s[iter,1])")
+    println("copied s :$(oldTraj.oldTraj[ind_start,1,index_of_traj_2_copy]) from old round : $index_of_traj_2_copy, curr s: $(zCurr_s[iter,1]), iterartion : $iter")
     # println("cost copied $(oldTraj.cost2Target[ind_start,end])")
     # l=1
     # println("cost last traj $(oldTraj.cost2Target[index_s[l]-N_points*(l-1),l])")
@@ -161,7 +161,5 @@ else
     oldTraj.cost2Target[:,end] = oldTraj.cost2Target[:,end-1]
 end
 end
-# solve mpc problem
-# deactivate dummy trajectory
 
 

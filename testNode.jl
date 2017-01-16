@@ -48,7 +48,7 @@
     z_Init[4]  = 0.4
    
     load_safeset = true#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
-    safeset = "data/2017-01-15-16-49-Data.jld"#"data/2017-01-15-02-22-Data.jld"
+    safeset = "data/2017-01-15-16-49-Data.jld"
 
     #########
     InitializeParameters(mpcParams,trackCoeff,modelParams,posInfo,oldTraj,mpcCoeff,lapStatus,obstacle,buffersize)
@@ -67,7 +67,7 @@
     ##define obstacle x and xy vlaues not used at the moment 
     #for a clean definition of the x,y points the value of s_obstacle has to be the same as one of the points of the source map. 
     # the end semi axes are approximated over the secant of the points of the track. drawing might not be 100% accurate
-    s_obst_init = 31.0 
+    s_obst_init = 81.0 
     sy_obst_init = -0.2
     v_obst_init = 0#1.8#1.5#1.5##1.8
     obstacle.rs = 0.5 # if we load old trajecory these values get overwritten
