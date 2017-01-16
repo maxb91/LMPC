@@ -21,8 +21,8 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
 
 
     # Select order of interpolation (Now hard coded)
-    nPoints = 60
-    N_nodes_poly_back = 30 
+    nPoints = 40
+    N_nodes_poly_back = 10 
     N_nodes_poly_front = nPoints-N_nodes_poly_back
 
 
@@ -43,26 +43,36 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
     # i assumed that idx_min is the index of the closest node  
 
     N_nodes_center  = size(nodes_center,2) # how many nodes define the track 
-
+    ind_start   = idx_min-N_nodes_poly_back #max(1,idx_min-N_nodes_poly_back)
+    ind_end     = idx_min+N_nodes_poly_front #min(N_nodes_center,idx_min+N_nodes_poly_front)
+    
     if idx_min <= N_nodes_poly_back #if the nearest point is less meters away from the start of the track then we need to change the structure and interpolate just from 1 to the future
-        ind_start   = 1  #!!sometimes cars turns weird at start hasnt found optimal solution maybe interpolation plays a role in this
-        ind_end     = nPoints+1
-        nodes_near = nodes_center[:,ind_start:ind_end]
+          ###not closed used this:
+        # ind_start   = 1
+        # ind_end     = nPoints+1
+        # nodes_near = nodes_center[:,ind_start:ind_end]
+        #if closed use this:
+        nodes_near= hcat(nodes_center[:,N_nodes_center+ind_start:N_nodes_center],nodes_center[:,1:ind_end]) 
     elseif idx_min+N_nodes_poly_front >= N_nodes_center
-        # then stack the end and beginning of the lap together
-        nodes_near = append!(nodes_center[:,ind_start:N_nodes_center],nodes_center[:,0:idx_min+N_nodes_poly_front+1-N_nodes_center])
-        ind_start   = idx_min-N_nodes_poly_back 
-        ind_end     = idx_min+N_nodes_poly_front
-        error("stacking nodes from beginning of track not yet implemented")
+       ###not closed used this:
+        # ind_start   = N_nodes_center-nPoints 
+        # ind_end     = N_nodes_center
+        # nodes_near = nodes_center[:,ind_start:ind_end]
+        #if closed use this:stack the end and beginning of the lap together
+       
+        # ind_start   = idx_min-N_nodes_poly_back 
+        # ind_end     = idx_min+N_nodes_poly_front
+        # nodes_near = append!(nodes_center[:,ind_start:N_nodes_center],nodes_center[:,0:idx_min+N_nodes_poly_front+1-N_nodes_center])
+         nodes_near= hcat(nodes_center[:,ind_start:N_nodes_center],nodes_center[:,1:ind_end-N_nodes_center]) 
+        # error("stacking nodes from beginning of track not yet implemented")
     else 
-        ind_start   = idx_min-N_nodes_poly_back #max(1,idx_min-N_nodes_poly_back)
-        ind_end     = idx_min+N_nodes_poly_front #min(N_nodes_center,idx_min+N_nodes_poly_front)
+        
         nodes_near = nodes_center[:,ind_start:ind_end]
     end
     
 
     s_interp_start = (ind_start-1)*ds # in the first index s is equal 0. (always one less)
-    s_interp_end = (ind_end-1)*ds
+    #s_interp_end = (ind_end-1)*ds
     s_nearest = (idx_min-1)*ds
     # Select node for X Y
     nodes_near_X = vec(nodes_near[1,:])
@@ -71,7 +81,8 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
     index = 0 
 #this just works because s = 1 m between points
         Matrix = zeros(nPoints+1,OrderXY+1)
-    for i = s_interp_start:ds:s_interp_end
+    # for i = s_interp_start:ds:s_interp_end
+    for i = s_interp_start:ds:s_interp_start+nPoints*ds
         for k = 0:OrderXY
             index = convert(Int,(i-s_interp_start)/ds+1)
             Matrix[index,OrderXY+1-k] = i^k
@@ -79,7 +90,7 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
     end
 
     Matrix4th = zeros(nPoints+1,OrderThetaCurv+1) #generate a matrix of 4th order to approximate Theta and the curvature
-    for i = s_interp_start:ds:s_interp_end
+    for i = s_interp_start:ds:s_interp_start+nPoints*ds
         for k = 0:OrderThetaCurv
             index = convert(Int,(i-s_interp_start)/ds+1)
             Matrix4th[index,OrderThetaCurv+1-k] = i^k
@@ -229,8 +240,8 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
     jd_vec = zeros(OrderXY+1,1)::Array{Float64,2}
     jdd_vec = zeros(OrderXY+1,1)::Array{Float64,2}
     #we go from s = 0 because s is 0 at s_start and then we interpolate over the interval we defined above 
-    for j=s_interp_start:ds:s_interp_end #j must be 0.0 to be initialized as a float to be able to do j^-1 in for loop
-    
+    #for j=s_interp_start:ds:s_interp_end #j must be 0.0 to be initialized as a float to be able to do j^-1 in for loop
+    for j = s_interp_start:ds:s_interp_start+nPoints*ds
        
         #this generic approach did not work because last elements become NaN
         #for i = 1:OrderXY+1
@@ -346,8 +357,20 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
     #         @show epsi = (psi - 2*pi) - angle          
     #     end
     # end
-    epsi = (psi+pi)%(2*pi)-pi-angle
-    epsi = (epsi+pi)%(2*pi)-pi
+    # @show psi
+    # @show angle
+    # @show s
+    # println("#####################")
+    # epsi = (psi+pi)%(2*pi)-pi-angle
+    # epsi = (epsi+pi)%(2*pi)-pi
+
+
+    # if psi- angle< -pi
+    #     epsi +=2*pi
+    # end
+
+    epsi = mod((psi+pi),(2*pi))-pi-angle
+    epsi = mod((epsi+pi),(2*pi))-pi
 
     #T
     #this was yjust to test correcntess of teh dfrisr derivative

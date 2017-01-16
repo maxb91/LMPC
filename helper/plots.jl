@@ -6,7 +6,7 @@ include("classes.jl")
     j = 1
     interactive_plot = 1
 
-    plot_costs = 1
+    plot_costs = 0
     plot_states_over_t = 0
     plot_xy = 1
     plot_lambda = 1
@@ -14,9 +14,9 @@ include("classes.jl")
     plot_curvature_approx=0
     plot_inputs = 0
     plot_eps = 0
-    interactive_plot_steps = 2
+    interactive_plot_steps = 4
     n_oldTrajPlots = 5
-    file = "data/overtake_possible.jld"
+    file = "data/2017-01-15-17-52-Data.jld"
     close("all")
 
     ####load data from file
@@ -196,7 +196,7 @@ include("classes.jl")
         #plot the boundary lines
         ax10[:plot](boundary_up[1,:], boundary_up[2,:],color="green",linestyle=":")
         ax10[:plot](boundary_down[1,:], boundary_down[2,:],color="green",linestyle=":")
-        for l=1:13
+        for l=1:11
             ax10[:plot]([boundary_down[1,l*50+1],boundary_up[1,l*50+1]],[boundary_down[2,l*50+1],boundary_up[2,l*50+1]], color = "black", linestyle = ":", linewidth = 0.5)
             text(boundary_down[1,l*50+1]+1,boundary_down[2,l*50+1],"s = $(l*5)",fontsize=8)
         end

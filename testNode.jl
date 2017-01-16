@@ -42,13 +42,13 @@
 
     #######################################
     z_Init = zeros(4)
-    z_Init[1] = 0# 1.81 # x = 1.81 for s = 32     14 in curve
-    z_Init[2] = 0#2.505 # y = 2.505 for s = 32  12.6
-    z_Init[3] = 0.94#0.94
+    z_Init[1] =  0 # x = 1.81 for s = 32     14 in curve
+    z_Init[2] = 0#-8.85 # y = 2.505 for s = 32  12.6
+    z_Init[3] = 0#3.14#0.94
     z_Init[4]  = 0.4
    
     load_safeset = true#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
-    safeset = "data/2017-01-14-14-01-SafeSet.jld"
+    safeset = "data/2017-01-15-16-49-Data.jld"#"data/2017-01-15-02-22-Data.jld"
 
     #########
     InitializeParameters(mpcParams,trackCoeff,modelParams,posInfo,oldTraj,mpcCoeff,lapStatus,obstacle,buffersize)
@@ -62,16 +62,16 @@
 
 
     posInfo.s_start             = 0.0 #does not get changed with the current version
-    posInfo.s_target            = 45.2 #has to be fitted to track , current test track form ugo has 113.2 meters
+    posInfo.s_target            = 58.0 #has to be fitted to track , current test track form ugo has 113.2 meters
      
     ##define obstacle x and xy vlaues not used at the moment 
     #for a clean definition of the x,y points the value of s_obstacle has to be the same as one of the points of the source map. 
     # the end semi axes are approximated over the secant of the points of the track. drawing might not be 100% accurate
-    s_obst_init =2.0 
-    sy_obst_init = 0.15
-    v_obst_init = 1.7#1.5#1.5##1.8
+    s_obst_init = 31.0 
+    sy_obst_init = -0.2
+    v_obst_init = 0#1.8#1.5#1.5##1.8
     obstacle.rs = 0.5 # if we load old trajecory these values get overwritten
-    obstacle.ry = 0.14 # if we load old trajecory these values get overwritten
+    obstacle.ry = 0.19 # if we load old trajecory these values get overwritten
     
     
 
@@ -123,7 +123,7 @@
         zCurr_s     = zeros(length(t),4)          # s, ey, epsi, v
         zCurr_x     = zeros(length(t),4)          # x, y, psi, v
         uCurr       = zeros(length(t),2)
-        distance2obst = zeros(length(t))
+        distance2obst = 1000*ones(length(t))
         curvature_curr = zeros(length(t))
         
         #T
@@ -141,7 +141,10 @@
         zCurr_x[1,3] = z_Init[3]
         zCurr_x[1,4] = z_Init[4]  # compare value to v_pathfollowing
         
-        if j>1               #setup point for vehicle after first round                   # if we are in the second or higher lap
+        if j == 1 && load_safeset == true
+            zCurr_x[1,4] =oldTraj.oldTraj[oldTraj.oldNIter[1],4,1]
+        end
+        if j>1             #setup point for vehicle after first round                   # if we are in the second or higher lap
             zCurr_x[1,:] = z_final_x
             # because the track is not closed we always set up the car at the same place each round
             zCurr_x[1,1] = z_Init[1] # x = 1.81 for s = 32     14 in curve
@@ -149,6 +152,7 @@
             zCurr_x[1,3] = z_Init[3]
             uCurr[1,:] = u_final
         end
+
             
         if j == 1 && load_safeset == false
             # path following cost in first round
@@ -227,7 +231,7 @@
             zCurr_x[i+1,:]  = simModel_x(zCurr_x[i,:],uCurr[i,:],modelParams.dt,modelParams) #!! @show
 
             #update Position of the Obstacle car        
-            computeObstaclePos!(obstacle, dt, i, x_track, trackCoeff) #this funciton computes values for row i+1
+            computeObstaclePos!(obstacle, dt, i, x_track, trackCoeff, zCurr_s[i,1]) #this funciton computes values for row i+1
             
 
             cost[:,i,j]         = mpcSol.cost
@@ -248,11 +252,11 @@
                 # println("calculate abs: $t_absci s")
                 # println("get curve-approx = $t_curv")
             end
-            if tt[i] >0.08 #if solving takes long
-                println(" Time: $(tt[i]) s, Solving step $i of $(length(t)) - Status: $(mpcSol.solverStatus)")
-                println(" Time: $(tt2) s for the whole step of the loop ")
-                println("                           ")
-            end
+            # if tt[i] >0.08 #if solving takes long
+            #     println(" Time: $(tt[i]) s, Solving step $i of $(length(t)) - Status: $(mpcSol.solverStatus)")
+            #     println(" Time: $(tt2) s for the whole step of the loop ")
+            #     println("                           ")
+            # end
 
             
 
@@ -332,18 +336,5 @@
         JLD.write(file, "oldTraj", oldTraj)
         JLD.write(file, "mpcCoeff",mpcCoeff)
 
-    end
-
-    #save the safeset
-    filenameS = string("data/"string(Dates.today()),"-",Dates.format(now(), "HH-MM"),"-SafeSet.jld")
-    if isfile(filenameS)
-        filenameS = string("data/"string(Dates.today()),"-",Dates.format(now(), "HH-MM"),"-SafeSet-2.jld")
-        warn("SafeSet file already exists. Added extension \"-2\" ")
-    end
-    println("Save SafeSet to $filenameS .......")
-    jldopen(filenameS, "w") do file
-        #addrequire(file, classes) #ensures that custom data types are working when loaded
-        JLD.write(file, "oldTraj", oldTraj)
-        JLD.write(file,"obstacle", obstacle)
     end
     println("finished")

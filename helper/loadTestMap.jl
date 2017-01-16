@@ -6,7 +6,13 @@ function loadTestMap()
 # x = Array(0:0.1:69.9)'
 # y = zeros(700)'
 
-x = readcsv("C:/Users/Felix/AppData/Local/Julia-0.5.0/LMPC/helper/x_dm.dat")
-y = readcsv("C:/Users/Felix/AppData/Local/Julia-0.5.0/LMPC/helper/y_dm.dat")
+# x = readcsv("C:/Users/Felix/AppData/Local/Julia-0.5.0/LMPC/helper/x_dm.dat")
+# y = readcsv("C:/Users/Felix/AppData/Local/Julia-0.5.0/LMPC/helper/y_dm.dat")
+
+# file = "trackdata.jld"
+file = "oval.jld"
+Data = load(file)
+x = Data["x"]'
+y = Data["y"]'
 return x, y
 end
