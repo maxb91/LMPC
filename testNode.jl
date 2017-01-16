@@ -42,29 +42,31 @@ function run_sim()
     zCurr                       = zeros(length(t),6)        # these are the simulated states
     uCurr                       = zeros(length(t),2)        # these are the inputs
     cost                        = zeros(length(t),6)        # these are MPC cost values at each step
+    curv                        = zeros(length(t),mpcParams.N+1)
+    lasts                       = zeros(length(t),mpcParams.N+1)
 
-    log_z                       = zeros(length(t),6,30)     # log z for 30 laps
-    log_u                       = zeros(length(t),2,30)     # log u for 30 laps
-    log_xy                      = zeros(length(t),2,30)     # log x-y-data for 30 laps
-    log_ParInt                  = zeros(length(t),30)       # log ParInt data
+    log_z                       = zeros(length(t),6,40)     # log z for 30 laps
+    log_u                       = zeros(length(t),2,40)     # log u for 30 laps
+    log_xy                      = zeros(length(t),2,40)     # log x-y-data for 30 laps
+    log_ParInt                  = zeros(length(t),40)       # log ParInt data
 
     # Logging parameters
-    posInfo.s_target            = 50.49
+    posInfo.s_target            = 50.87
 
     z_final         = zeros(6)
 
     uPrev           = zeros(10,2)
 
-    n_pf            = 3             # number of path-following laps
+    n_pf            = 1             # number of path-following laps
 
-    s_track = 0.01:.01:50.49
-    c_track = zeros(5049)
-    c_track[1:300] = 0
-    c_track[301:400] = linspace(0,-pi/2,100)
-    c_track[401:500] = linspace(-pi/2,0,100)
-    c_track[501:900] = 0
-    c_track[901:1000] = linspace(0,-pi/2,100)
-    c_track[1001:1100] = linspace(-pi/2,0,100)
+    s_track = 0.01:.01:50.87
+    c_track = zeros(5087)
+    c_track[1:200] = 0
+    c_track[201:400] = linspace(0,-pi/4,200)
+    c_track[401:600] = linspace(-pi/4,0,200)
+    c_track[601:700] = 0
+    c_track[701:900] = linspace(0,-pi/4,200)
+    c_track[901:1100] = linspace(-pi/4,0,200)
     c_track[1101:1200] = linspace(0,-pi/4,100)
     c_track[1201:1300] = linspace(-pi/4,0,100)
     c_track[1301:1600] = 0
@@ -75,23 +77,23 @@ function run_sim()
     c_track[3201:3500] = 0
     c_track[3501:3700] = linspace(0,-2*pi/2/4,200)
     c_track[3701:3900] = linspace(-2*pi/2/4,0,200)
-    c_track[3901:4102] = 0
-    c_track[4103:4402] = linspace(0,-2*pi/2/6,300)
-    c_track[4403:4702] = linspace(-2*pi/2/6,0,300)
+    c_track[3901:3902] = 0
+    c_track[4041:4340] = linspace(0,-2*pi/2/6,300)
+    c_track[4341:4640] = linspace(-2*pi/2/6,0,300)
 
     s_track_p, c_track_p = prepareTrack(s_track, c_track)
 
     no_solution_found = 0
 
     # Run 10 laps
-    for j=1:15
+    for j=1:30
         # Initialize Lap
         lapStatus.currentLap = j
 
         tt          = zeros(length(t),1)
         zCurr       = zeros(length(t),6)
         uCurr       = zeros(length(t),2)
-        zCurr[1,1]  = 0.2
+        zCurr[1,1]  = 2.0
 
         if j>1                                  # if we are in the second or higher lap
             zCurr[1,:]          = z_final       # use final state as initial state
@@ -107,7 +109,7 @@ function run_sim()
         while i<length(t) && !finished
             #println("///////////////////////////////// STARTING ONE ITERATION /////////////////////////////////")
             # Define track curvature
-            trackCoeff.coeffCurvature = find_curvature(s_track_p,c_track_p,zCurr[i,6],trackCoeff)
+            trackCoeff.coeffCurvature = find_curvature(s_track_p,c_track_p,zCurr[i,6],trackCoeff,zCurr[i,1],modelParams.dt,mpcParams.N)
 
             # Calculate coefficients for LMPC (if at least in the 2nd lap)
             posInfo.s   = zCurr[i,6]
@@ -144,7 +146,13 @@ function run_sim()
                 # readline()
             end
             cost[i,:]   = mpcSol.cost
-
+            lasts[i,:]  = mpcSol.z[:,6]
+            intM = zeros(mpcParams.N+1,trackCoeff.nPolyCurvature+1)
+            for k=1:trackCoeff.nPolyCurvature+1
+                intM[:,k] = mpcSol.z[:,6].^(trackCoeff.nPolyCurvature+1-k)
+            end
+            curv[i,:] = intM*trackCoeff.coeffCurvature
+            println("s = ",mpcSol.z[1,6],", last s = ",lasts[i,end],", curv = ",curv[i,end])
             # Simulate the model -> calculate x_i+1 = f(x_i, u_i)
             uCurr[i,:]          = [mpcSol.a_x mpcSol.d_f]
             uPrev               = circshift(uPrev,1)
@@ -153,17 +161,14 @@ function run_sim()
             zCurr[i+1,:]        = simDynModel(zCurr[i,:],uCurr[i,:],modelParams.dt,modelParams,trackCoeff)
 
             println("Solving step $i of $(length(t)) - Status: $(mpcSol.solverStatus)")
-            # if size(mpcSol.z,2) == 4
-            #     println("Prediction error = ",zCurr[i+1,[6,5,4,1]]-mpcSol.z[2,:])
-            # else
-            #     println("Prediction error = ",zCurr[i+1,:]-mpcSol.z[2,:])
-            # end
+            # println("Prediction error = ",zCurr[i+1,:]-mpcSol.z[2,:])
             # Check if we're crossing the finish line
             if zCurr[i+1,6] >= posInfo.s_target
                 oldTraj.idx_end[lapStatus.currentLap] = oldTraj.count[lapStatus.currentLap]
                 oldTraj.oldCost[lapStatus.currentLap] = oldTraj.idx_end[lapStatus.currentLap] - oldTraj.idx_start[lapStatus.currentLap]
                 println("Reaching finish line at step $(i+1), cost = $(oldTraj.oldCost[lapStatus.currentLap])")
                 finished = true
+                setvalue(mdl.z_Ol[:,6],mpcSol.z[:,6]-posInfo.s_target)
             end
 
             # Append new states and inputs to old trajectories
@@ -193,7 +198,7 @@ function run_sim()
             log_z[i,:,lapStatus.currentLap] = zCurr[i,:]
             log_u[i,:,lapStatus.currentLap] = uCurr[i,:]
             if lapStatus.currentLap > n_pf
-                log_ParInt[i,lapStatus.currentLap] = getvalue(mdl.ParInt)
+                log_ParInt[i,lapStatus.currentLap] = 0#getvalue(mdl.ParInt)
             end
             i = i + 1
         end
@@ -217,6 +222,14 @@ function run_sim()
             grid("on")
             title("x-y-view")
             axis("equal")
+            figure(11)
+            clf()
+            for k=1:10:i
+                plot(lasts[k,:]',curv[k,:]')
+            end
+            plot(s_track,c_track)
+            grid("on")
+            title("Last predicted curvature")
 
             # figure(4)
             # subplot(211)
@@ -244,11 +257,11 @@ function run_sim()
             # legend(["a","d_f"])
             # grid("on")
 
-            # figure(8)
-            # plot(zCurr[1:i,6],cost[1:i,1],"r",zCurr[1:i,6],cost[1:i,2],"g",zCurr[1:i,6],cost[1:i,3],"b",zCurr[1:i,6],cost[1:i,4],"y",zCurr[1:i,6],cost[1:i,5],"m",zCurr[1:i,6],cost[1:i,6],"c")
-            # grid(1)
-            # title("Cost distribution")
-            # legend(["z","z_Term","z_Term_const","deriv","control","lane"])
+            figure(8)
+            plot(zCurr[1:i,6],cost[1:i,1],"r",zCurr[1:i,6],cost[1:i,2],"g",zCurr[1:i,6],cost[1:i,3],"b",zCurr[1:i,6],cost[1:i,4],"y",zCurr[1:i,6],cost[1:i,5],"m",zCurr[1:i,6],cost[1:i,6],"c")
+            grid(1)
+            title("Cost distribution")
+            legend(["z","z_Term","z_Term_const","deriv","control","lane"])
             # println("Press Enter to continue")
 
             # readline()
@@ -274,10 +287,10 @@ function prepareTrack(s_track,c_track)
     c_new[2*sz+1:3*sz] = c_track
     return s_new, c_new
 end
-function find_curvature(s_track,c_track,s,trackCoeff)
+function find_curvature(s_track,c_track,s,trackCoeff,v_curr,dt,N)
     sz = size(s_track,1)
-    prev = 100                  # 100*0.01 = 1 meter back
-    ahea = 200                  # 200*0.01 = 2 meter ahead
+    ahea = Int64(round(2.0*v_curr*dt*N/0.01))                  # 300*0.01 = 3 meter ahead
+    prev = Int64(round(1.0*v_curr*dt*N/0.01))                  # 100*0.01 = 1 meter back
     n_tot = prev+ahea+1
     idx_min = indmin((s-s_track).^2)
     idx = idx_min-prev:idx_min+ahea

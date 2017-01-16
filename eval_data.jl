@@ -75,7 +75,7 @@ c_track[4403:4702] = linspace(-2*pi/2/6,0,300)
 path_x,xl,xr = s_to_x(s_track,c_track)
 
 # Plot and save e_Y
-lapn = [2,4,14,15]      # specify which laps should be plotted
+lapn = [2,5,18,19]      # specify which laps should be plotted
 figure(1)
 for i=1:size(lapn,1)
     plot(z[:,6,lapn[i]],z[:,5,lapn[i]],label="Lap $(lapn[i])")
@@ -130,16 +130,17 @@ savefig(path_to_file)
 
 # Plot and save cost
 figure(4)
-plot(cost[1:14]/10,"-o")
+plot(cost[1:20]/50,"-o")
 grid("on")
 title("Total cost")
 xlabel("Iteration")
 ylabel("Iteration cost (\$t\$ [\$s\$])")
-ylim([0,maximum(cost)*0.11])
+ylim([0,maximum(cost)/50*1.1])
 tight_layout()
 path_to_file = "/Users/Maximilian/Documents/ETH/Master/Master thesis/6. Final report/Figures/Simulation/Dyn_cost.pgf"
 savefig(path_to_file)
 
+lapn = [2,20]
 # Plot friction circle/accelerations
 figure()
 pstyle = ("--","-")
@@ -156,6 +157,20 @@ xlabel("\$a_x \\ \\left[\\frac{m}{s^2}\\right]\$")
 ylabel("\$a_y \\ \\left[\\frac{m}{s^2}\\right]\$")
 tight_layout()
 path_to_file = "/Users/Maximilian/Documents/ETH/Master/Master thesis/6. Final report/Figures/Simulation/Dyn_fcircle.pgf"
+savefig(path_to_file)
+
+# Plot velocity over 2D-track
+i = 20
+v = sqrt(z[:,1,i].^2+z[:,2,i].^2)
+figure()
+plot(path_x[:,1],path_x[:,2],"b--",xl[:,1],xl[:,2],"b-",xr[:,1],xr[:,2],"b-")
+scatter(x[:,1,i],x[:,2,i],c=v,cmap=ColorMap("jet"),edgecolors="face",vmin=minimum(v),vmax=maximum(v))
+grid("on")
+axis("equal")
+cb = colorbar()
+cb[:set_label]("Velocity \$\\left[\\frac{m}{s}\\right]\$")
+tight_layout()
+path_to_file = "/Users/Maximilian/Documents/ETH/Master/Master thesis/6. Final report/Figures/Simulation/Dyn_v_over_xy.pgf"
 savefig(path_to_file)
 
 
