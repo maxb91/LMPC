@@ -110,7 +110,7 @@ function InitializeParameters(mpcParams::classes.MpcParams,trackCoeff::classes.T
     trackCoeff.width            = 0.6                   # width of the track (0.6m)
     trackCoeff.ds               = 1//10 # is defined as a rational number so we can use it to calculate indices in matrix. with float becomes error
 
-    modelParams.u_lb            = ones(mpcParams.N,1) * [-1.0  -pi/6]                    # lower bounds on steering
+    modelParams.u_lb            = ones(mpcParams.N,1) * [-0.6  -pi/6]  #-0.6 for braking                  # lower bounds on steering
     modelParams.u_ub            = ones(mpcParams.N,1) * [ 5.0   pi/6]       #1.2           # upper bounds
     modelParams.z_lb            = ones(mpcParams.N+1,1) * [-Inf -Inf -Inf -0.1]                    # lower bounds on states
     modelParams.z_ub            = ones(mpcParams.N+1,1) * [ Inf  Inf  Inf  2.0]                 # upper bounds

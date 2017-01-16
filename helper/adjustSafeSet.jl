@@ -2,7 +2,8 @@ function deleteInfeasibleTrajectories!(oldTraj,posInfo::classes.PosInfo,obstacle
 
     v_ego = zCurr_s[i,4]
 
-    safety_factor = 0.95
+    courage_factor = 1.0 # courage factor between 0 and 1 smaller factor excludes infeas traj late
+    a_breakmax = 0.0
 
     index_first = Array{Int64}(oldTraj.n_oldTraj)
     index_last = Array{Int64}(oldTraj.n_oldTraj)
@@ -11,13 +12,17 @@ function deleteInfeasibleTrajectories!(oldTraj,posInfo::classes.PosInfo,obstacle
             index_first[k]  = findfirst(x -> x > posInfo.s, oldTraj.oldTraj[:,1,k])
             index_last[k] = findfirst(y -> y > pred_obst[end,1]+obstacle.rs, oldTraj.oldTraj[:,1,k])
             for ii = index_first[k]:index_last[k], kk = 1:mpcParams.N+1
-                v_diff = v_ego - obstacle.v[i,k]#+a_max*dt*N
+                obstacle_v = obstacle.v[i,k]-a_breakmax*dt*kk #robust control assume maximum break acceleration
+                if obstacle_v < 0
+                    obstacle_v = 0
+                end
+                v_diff = v_ego - obstacle_v
                 premeter2collision = (oldTraj.oldTraj[ii,1,k] - oldTraj.oldTraj[index_first[k],1,k])
                 
                 # meter2collision = (premeter2collision - (kk-1)*v_ego*dt)
                 # t2collision = (meter2collision/v_diff +(kk-1)*dt)/safety_factor
                 meter2collision = (premeter2collision - (kk-1)*obstacle.v[i,k]*dt)
-                t2collision = (meter2collision/v_diff)/safety_factor
+                t2collision = (meter2collision/v_diff)/courage_factor
                 if ((oldTraj.oldTraj[ii,1,k]-pred_obst[kk,1])/obstacle.rs )^2 + ( (oldTraj.oldTraj[ii,2,k]-pred_obst[kk,2])/obstacle.ry )^2 <= 1 && t2collision<=1.0
                   
                     # @show kk
@@ -52,15 +57,16 @@ s_horizon[1] = zCurr_s[iter,1]
 v_ego = zCurr_s[iter,4]
 N_points        = size(oldTraj.oldTraj,1) 
 
-eps0 = 0.05 #tol distance
-eps1 = 0.1 #tol v_obst
+eps0 = 0.1 #tol distance
+eps1 = 0.01 #tol v_obst
 eps2 = 0.01 #tol e_y
-eps3 = 0.1 #tol curvature
+eps3 = 0.01#tol curvature
 
 for i = 1:mpcParams.N
     s_horizon[i+1] = s_horizon[i]+v_ego*dt
 end
 s_diff = s_horizon[end]-s_horizon[1]
+#s_diff = 0.3
 
 
             #####plot test
@@ -100,13 +106,17 @@ if distance2obst < 2.0 && distance2obst > - 2*obstacle.rs
                         compare_curv+=1
                     end       
                 end
-                
+
                 if curv_points == compare_curv && compare_v_ey == mpcParams.N+1
                     feasible_starting_indeces[k]=i
                     v_feas_traj[k] = oldTraj.oldTraj[i+mpcParams.N,4,k] # use high velocity and not low cost because trajectories in diffrent point of track have different magnitufe of cost despite the speed of completion
                     exist_feas_traj = 1
-                    # plot(s_curv,curvature_curr, color = "blue")#, label ="curr curvature")
-                    # plot(s_curv,oldTraj.curvature[i:i+curv_points-1,k], color= "red")#, label ="old curvature")
+                    # if k ==1
+                    #     clf()
+                    #     plot(s_curv,curvature_curr, color = "blue")#, label ="curr curvature")
+                    #     plot(s_curv,oldTraj.curvature[i:i+curv_points-1,k], color= "red")#, label ="old curvature")
+                    #     readline()
+                    # end
                     break #break out of for loop to check next trajectory
                 end
             end
@@ -118,13 +128,13 @@ if exist_feas_traj == 1 && 0 == 1 #!! change
     index_of_traj_2_copy = findmax(v_feas_traj)[2] #finds the maximum velocity at a later point of the trajectory . If velocities are equal takes first value in array. least old trajectory
     ind_start = convert(Int64,feasible_starting_indeces[index_of_traj_2_copy])
     s_start = oldTraj.oldTraj[ind_start,1,index_of_traj_2_copy]
-    oldTraj.oldTraj[:,1,end] =  oldTraj.oldTraj[:,1,index_of_traj_2_copy]-s_start+zCurr_s[iter,1] #copy a s postion 
+    oldTraj.oldTraj[:,1,end] = oldTraj.oldTraj[:,1,index_of_traj_2_copy]-s_start+zCurr_s[iter,1] #copy a s postion 
     oldTraj.oldTraj[:,2:4,end] = oldTraj.oldTraj[:,2:4,index_of_traj_2_copy]
 
-    distance_s =(oldTraj.oldTraj[:,1,1:end-1]-zCurr_s[iter,1]).^2
+    distance_s = (oldTraj.oldTraj[:,1,1:end-1]-zCurr_s[iter,1]).^2
     index_s = findmin(distance_s,1)[2]
     costs = zeros(oldTraj.n_oldTraj-1)
-    for k =1:oldTraj.n_oldTraj-1
+    for k = 1:oldTraj.n_oldTraj-1
         costs[k]= oldTraj.cost2Target[index_s[k]-N_points*(k-1),k]
     end
     curr_min_cost, traj_min = findmin(costs,1)
@@ -134,9 +144,15 @@ if exist_feas_traj == 1 && 0 == 1 #!! change
     # plot oldTRaj aprox
     # @show curr_min_cost
     # @show oldTraj.cost2Target[ind_start,traj_min][1]
-    # @show oldTraj.cost2Target[ind_start:ind_start+pLength,traj_min]
-    oldTraj.cost2Target[ind_start:ind_start+pLength,end] = oldTraj.cost2Target[ind_start:ind_start+pLength,traj_min]-oldTraj.cost2Target[ind_start,traj_min][1]+curr_min_cost[1]
-    # println("$(oldTraj.cost2Target[ind_start:ind_start+pLength,end])")
+     #oldTraj.cost2Target[ind_start:ind_start+pLength,traj_min]
+    #@show oldTraj.cost2Target[index_s[1]:index_s[1]+pLength,1]
+    # @show ind_start
+    # @show oldTraj.cost2Target[ind_start:ind_start+pLength,index_of_traj_2_copy]
+    oldTraj.cost2Target[ind_start:ind_start+pLength,end] = oldTraj.cost2Target[ind_start:ind_start+pLength,index_of_traj_2_copy]-(oldTraj.cost2Target[ind_start,index_of_traj_2_copy][1]-oldTraj.cost2Target[index_s[index_of_traj_2_copy]-N_points*(index_of_traj_2_copy-1),index_of_traj_2_copy][1])
+    println("copied s :$(oldTraj.oldTraj[ind_start,1,index_of_traj_2_copy]) from old round : $index_of_traj_2_copy, curr s: $(zCurr_s[iter,1]), iterartion : $iter")
+    # println("cost copied $(oldTraj.cost2Target[ind_start,end])")
+    # l=1
+    # println("cost last traj $(oldTraj.cost2Target[index_s[l]-N_points*(l-1),l])")
     # println("$(oldTraj.oldTraj[ind_start:ind_start+pLength+3,1,end])")
     # println("$(zCurr_s[iter,1])")
 else
@@ -145,7 +161,5 @@ else
     oldTraj.cost2Target[:,end] = oldTraj.cost2Target[:,end-1]
 end
 end
-# solve mpc problem
-# deactivate dummy trajectory
 
 

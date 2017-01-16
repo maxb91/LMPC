@@ -1,4 +1,4 @@
-function computeObstaclePos!(obstacle, dt::Float64, i::Int64, x_track::Array{Float64,2}, trackCoeff::classes.TrackCoeff)
+function computeObstaclePos!(obstacle, dt::Float64, i::Int64, x_track::Array{Float64,2}, trackCoeff::classes.TrackCoeff, sCurr::Float64)
     
     # s_obstacle
     # sy_obstacle
@@ -9,12 +9,18 @@ function computeObstaclePos!(obstacle, dt::Float64, i::Int64, x_track::Array{Flo
     s_length_track =size(x_track)[2]*trackCoeff.ds
 
     obstacle.s_obstacle[i+1,1] = obstacle.s_obstacle[i,1] + obstacle.v[i,1] * dt
-    obstacle.s_obstacle[i+1,1] = obstacle.s_obstacle[i+1,1]%s_length_track# if the obstale makes morfe than one round it start at the begining again
+    #!! obstacle.s_obstacle[i+1,1] = obstacle.s_obstacle[i+1,1]%s_length_track# if the obstale makes morfe than one round it start at the begining again
     
     obstacle.sy_obstacle[i+1,1] = obstacle.sy_obstacle[i,1]
 
     obstacle.v[i+1,1] = obstacle.v[i,1]
-
+    # if obstacle.s_obstacle[i,1] >30
+    # if sCurr >29.0
+    #     obstacle.v[i+1,1] = obstacle.v[i,1]+0.2
+    #     if obstacle.v[i+1,1] >1.8
+    #         obstacle.v[i+1,1] =1.8
+    #     end
+    # end
     # obstacleNext.sy_obstacle = obstacleNext.sy_obstacle + rand(1,1)[1]/2*dt #!! this give only pos rand values
     # if - tol_mid <= obstacleNext.sy_obstacle <= tol_mid
     #     obstacleNext.sy_obstacle  = obstacleNext.sy_obstacle-0.01
