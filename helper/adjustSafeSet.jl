@@ -60,7 +60,7 @@ N_points        = size(oldTraj.oldTraj,1)
 eps0 = 0.1 #tol distance
 eps1 = 0.01 #tol v_obst
 eps2 = 0.01 #tol e_y
-eps3 = 0.01#tol curvature
+eps3 = 0.1#tol curvature
 
 for i = 1:mpcParams.N
     s_horizon[i+1] = s_horizon[i]+v_ego*dt
@@ -124,7 +124,7 @@ if distance2obst < 2.0 && distance2obst > - 2*obstacle.rs
     end
 end
 
-if exist_feas_traj == 1 #&& 0 == 1 #!! change 
+if exist_feas_traj == 1 && 0 == 1 #!! change 
     index_of_traj_2_copy = findmax(v_feas_traj)[2] #finds the maximum velocity at a later point of the trajectory . If velocities are equal takes first value in array. least old trajectory
     ind_start = convert(Int64,feasible_starting_indeces[index_of_traj_2_copy])
     s_start = oldTraj.oldTraj[ind_start,1,index_of_traj_2_copy]

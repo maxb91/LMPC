@@ -14,13 +14,18 @@ function computeObstaclePos!(obstacle, dt::Float64, i::Int64, x_track::Array{Flo
     obstacle.sy_obstacle[i+1,1] = obstacle.sy_obstacle[i,1]
 
     obstacle.v[i+1,1] = obstacle.v[i,1]
-    # if obstacle.s_obstacle[i,1] >30
-    # if sCurr >29.0
-    #     obstacle.v[i+1,1] = obstacle.v[i,1]+0.2
-    #     if obstacle.v[i+1,1] >1.8
-    #         obstacle.v[i+1,1] =1.8
+    # if obstacle.s_obstacle[i,1] >28
+    #      obstacle.v[i+1,1] = obstacle.v[i,1]-0.2
+    #     if obstacle.v[i+1,1] <0
+    #         obstacle.v[i+1,1] =0
     #     end
     # end
+    if sCurr >29.0
+        obstacle.v[i+1,1] = obstacle.v[i,1]+0.2
+        if obstacle.v[i+1,1] >1.8
+            obstacle.v[i+1,1] =1.8
+        end
+    end
     # obstacleNext.sy_obstacle = obstacleNext.sy_obstacle + rand(1,1)[1]/2*dt #!! this give only pos rand values
     # if - tol_mid <= obstacleNext.sy_obstacle <= tol_mid
     #     obstacleNext.sy_obstacle  = obstacleNext.sy_obstacle-0.01

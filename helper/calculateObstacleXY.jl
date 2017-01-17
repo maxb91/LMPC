@@ -73,12 +73,19 @@ function calculatePredictedXY(z_log::Array{Float64}, mpcParams, trackCoeff, xy_t
 			warn("predicted negative s \"big\": = $(z_log[j,1,i])")
 		end
 
+		#if over index zu gross dannn an anfang plotte
 		s_over_ind[j] = convert(Int64,s_over[j]/trackCoeff.ds+1)
 		s_under_ind[j] = convert(Int64,s_under[j]/trackCoeff.ds+1)
 		if s_under_ind[j] == s_over_ind[j]
 			s_over_ind[j] = s_under_ind[j]+1
 			s_over[j] = s_over[j]+trackCoeff.ds
 		end   
+		if s_over_ind[j] > size(xy_track)[2]
+			s_over_ind[j] = s_over_ind[j] - size(xy_track)[2]
+		end
+		if s_under_ind[j] > size(xy_track)[2]
+			s_under_ind[j] = s_under_ind[j] - size(xy_track)[2]
+		end
 		s_over_ind  = convert(Array{Int64},s_over_ind)
 		s_under_ind  = convert(Array{Int64},s_under_ind)
 		weight1[j] = (z_log[j,1,i]-s_under[j])/trackCoeff.ds

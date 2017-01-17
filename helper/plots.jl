@@ -16,7 +16,7 @@ include("classes.jl")
     plot_eps = 0
     interactive_plot_steps = 4
     n_oldTrajPlots = 5
-    file = "data/2017-01-16-16-15-Data.jld"
+    file = "data/2017-01-17-02-08-Data.jld"
     close("all")
 
     ####load data from file

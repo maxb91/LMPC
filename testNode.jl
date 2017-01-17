@@ -50,7 +50,7 @@
     z_Init[6] = 0.0
    
     load_safeset = true#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
-    safeset = "data/2017-01-16-16-02-Data.jld"
+    safeset = "data/2017-01-17-02-02-Data.jld"
 
     #########
     InitializeParameters(mpcParams,trackCoeff,modelParams,posInfo,oldTraj,mpcCoeff,lapStatus,obstacle,buffersize)
@@ -64,14 +64,14 @@
 
 
     posInfo.s_start             = 0.0 #does not get changed with the current version
-    posInfo.s_target            = 58.0 #has to be fitted to track , current test track form ugo has 113.2 meters
+    posInfo.s_target            = 59.5 #has to be fitted to track , current test track form ugo has 113.2 meters
      
     ##define obstacle x and xy vlaues not used at the moment 
     #for a clean definition of the x,y points the value of s_obstacle has to be the same as one of the points of the source map. 
     # the end semi axes are approximated over the secant of the points of the track. drawing might not be 100% accurate
-    s_obst_init = 81.0 
+    s_obst_init = 31.0 
     sy_obst_init = -0.2
-    v_obst_init = 0#1.8#1.5#1.5##1.8
+    v_obst_init = 0.0#1.8#1.5#1.5##1.8
     obstacle.rs = 0.5 # if we load old trajecory these values get overwritten
     obstacle.ry = 0.19 # if we load old trajecory these values get overwritten
     
@@ -97,7 +97,7 @@
     trackCoeff.coeffCurvature   = [0.0;0.0;0.0;0.0;0.0]        # polynomial coefficients for curvature approximation (zeros for straight line)
     trackCoeff.nPolyCurvature = 4 # has to be 4 cannot be changed freely at the moment orders are still hardcoded in some parts of localizeVehicleCurvAbslizeVehicleCurvAbs
     trackCoeff.nPolyXY = 6  # has to be 6 cannot be changed freely at the moment orders are still hardcoded in some parts of localizeVehicleCurvAbslizeVehicleCurvAbs
-    n_rounds = 5
+    n_rounds = 2
     z_pred_log = zeros(mpcParams.N+1,4,length(t),n_rounds)
     u_pred_log = zeros(mpcParams.N,2,length(t),n_rounds)
     lambda_log = zeros(oldTraj.n_oldTraj,length(t),n_rounds)
@@ -146,8 +146,8 @@
         zCurr_x[1,6] = z_Init[6]
         
         if j == 1 && load_safeset == true
-            @show zCurr_x[1,3] =oldTraj.oldTraj[oldTraj.oldNIter[1],3,1]
-            @show zCurr_x[1,4] =oldTraj.oldTraj[oldTraj.oldNIter[1],4,1]
+            zCurr_x[1,3] =oldTraj.oldTrajXY[oldTraj.oldNIter[1],3,1]
+            zCurr_x[1,4] =oldTraj.oldTrajXY[oldTraj.oldNIter[1],4,1]
         end
         if j>1             #setup point for vehicle after first round                   # if we are in the second or higher lap
             zCurr_x[1,:] = z_final_x
