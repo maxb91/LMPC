@@ -49,8 +49,8 @@
     z_Init[4]  = 0.4*sin(z_Init[5]) #v_y
     z_Init[6] = 0.0
    
-    load_safeset = false#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
-    safeset = "data/2017-01-08-22-10-SafeSet.jld"
+    load_safeset = true#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
+    safeset = "data/2017-01-16-16-02-Data.jld"
 
     #########
     InitializeParameters(mpcParams,trackCoeff,modelParams,posInfo,oldTraj,mpcCoeff,lapStatus,obstacle,buffersize)
@@ -146,8 +146,8 @@
         zCurr_x[1,6] = z_Init[6]
         
         if j == 1 && load_safeset == true
-            zCurr_x[1,3] =oldTraj.oldTraj[oldTraj.oldNIter[1],3,1]
-            zCurr_x[1,4] =oldTraj.oldTraj[oldTraj.oldNIter[1],4,1]
+            @show zCurr_x[1,3] =oldTraj.oldTraj[oldTraj.oldNIter[1],3,1]
+            @show zCurr_x[1,4] =oldTraj.oldTraj[oldTraj.oldNIter[1],4,1]
         end
         if j>1             #setup point for vehicle after first round                   # if we are in the second or higher lap
             zCurr_x[1,:] = z_final_x
