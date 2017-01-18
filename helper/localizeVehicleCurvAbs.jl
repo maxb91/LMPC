@@ -1,4 +1,4 @@
-function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64},y_track::Array{Float64},trackCoeff::classes.TrackCoeff, itercount::Int64, Pcurvature)
+function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64},y_track::Array{Float64},trackCoeff::classes.TrackCoeff, itercount::Int64, N::Int64, dt::Float64 , Pcurvature)
     #Pcurvature just for plotting bugfixing
     # Outputs: zCurr_s, coeffCurv 
     # zCurr_s = [s, ey, epsi, states_x[4]]
@@ -12,6 +12,7 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
     x       = states_x[1]
     y       = states_x[2]
     psi     = states_x[5]
+    v_abs = sqrt(states_x[3].^2 + states_x[4].^2)
 
     nodes_center      = [x_track; y_track]
      # if (x == 0) && (y == 0) && (psi == 0)
@@ -21,10 +22,14 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
 
 
     # Select order of interpolation (Now hard coded)
-    nPoints = 40
-    N_nodes_poly_back = 10 
-    N_nodes_poly_front = nPoints-N_nodes_poly_back
 
+    # N_nodes_poly_back = 10
+    # N_nodes_poly_front = 30
+    # nPoints = N_nodes_poly_back + N_nodes_poly_front
+    
+    N_nodes_poly_back = convert(Int64,ceil(0.5*v_abs*N*dt/trackCoeff.ds))
+    N_nodes_poly_front = convert(Int64,ceil(1.5*v_abs*N*dt/trackCoeff.ds))
+    nPoints = N_nodes_poly_back + N_nodes_poly_front
 
 
     #--- HERE I am assuming that the distance between two points in the map is
@@ -388,7 +393,6 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
 
     #return s_start, s, ey, coeffX,coeffY, coeffTheta, coeffCurv, epsi
     zCurr_s = zeros(4)
-    v_abs = sqrt(states_x[3].^2 + states_x[4].^2)
     zCurr_s = [s ey epsi v_abs]
     return zCurr_s, coeffCurv
 end

@@ -81,10 +81,10 @@ function calculatePredictedXY(z_log::Array{Float64}, mpcParams, trackCoeff, xy_t
 			s_over[j] = s_over[j]+trackCoeff.ds
 		end   
 		if s_over_ind[j] > size(xy_track)[2]
-			s_over_ind[j] = s_over_ind[j] - size(xy_track)[2]
+			s_over_ind[j] = s_over_ind[j]%size(xy_track)[2]
 		end
 		if s_under_ind[j] > size(xy_track)[2]
-			s_under_ind[j] = s_under_ind[j] - size(xy_track)[2]
+			s_under_ind[j] = s_under_ind[j]%size(xy_track)[2]
 		end
 		s_over_ind  = convert(Array{Int64},s_over_ind)
 		s_under_ind  = convert(Array{Int64},s_under_ind)

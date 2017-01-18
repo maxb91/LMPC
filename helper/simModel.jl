@@ -68,6 +68,8 @@ function simModel_dyn_x(z::Array{Float64},u::Array{Float64},dt::Float64,modelPar
     FxMax = mu*m*g / 2.0    
     if F_xr > FxMax      
         F_xr = FxMax    
+    elseif F_xr < -FxMax  
+        F_xr = -FxMax 
     end
 
     # determine slip angles      
@@ -87,7 +89,9 @@ function simModel_dyn_x(z::Array{Float64},u::Array{Float64},dt::Float64,modelPar
     # F_yf = -(mu*m*g / 2.0) * 1.02*alpha_f      
     # F_yr = -(mu*m*g / 2.0) * 1.02*alpha_r
     if F_yr > sqrt(FxMax^2 - F_xr^2)        
-        F_yr = sqrt(FxMax^2 - F_xr^2)      
+        F_yr = sqrt(FxMax^2 - F_xr^2)    
+    elseif  F_yr < -sqrt(FxMax^2 - F_xr^2)  
+        F_yr = -sqrt(FxMax^2 - F_xr^2) 
     end
 
 

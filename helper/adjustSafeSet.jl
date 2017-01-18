@@ -77,10 +77,13 @@ s_diff = s_horizon[end]-s_horizon[1]
                 #     curvature_curr[inp] = trackCoeff.coeffCurvature[1]*s_curv[inp]^4+trackCoeff.coeffCurvature[2]*s_curv[inp]^3+trackCoeff.coeffCurvature[3]*s_curv[inp]^2+trackCoeff.coeffCurvature[4]*s_curv[inp] + trackCoeff.coeffCurvature[5]
                 # end
                 # plot(s_curv,curvature_curr, color = "blue") 
+
                 # distance_s =(oldTraj.oldTraj[:,1,1]-zCurr_s[iter,1]).^2
                 # index_s = findmin(distance_s,1)[2]
-                # plot_old = oldTraj.curvature[index_s[1]:index_s[1]+curv_points-1,1]
-                # plot(s_curv,plot_old, color = "red")
+                # ind_last_old  = findfirst(x -> x > (oldTraj.oldTraj[index_s,1,1]+s_diff)[1], oldTraj.oldTraj[:,1,1])
+                # plot_old = oldTraj.curvature[index_s[1]:ind_last_old,1]
+                # plot_old_s= linspace(oldTraj.oldTraj[index_s,1,1][1],(oldTraj.oldTraj[index_s,1,1]+s_diff)[1],size(plot_old)[1])
+                # plot(plot_old_s,plot_old, color = "red")
                  #######end test
 
 if distance2obst < 2.0 && distance2obst > - 2*obstacle.rs
@@ -124,7 +127,7 @@ if distance2obst < 2.0 && distance2obst > - 2*obstacle.rs
     end
 end
 
-if exist_feas_traj == 1 && 0 == 1 #!! change 
+if exist_feas_traj == 1  #&& 0 == 1 #!! change 
     index_of_traj_2_copy = findmax(v_feas_traj)[2] #finds the maximum velocity at a later point of the trajectory . If velocities are equal takes first value in array. least old trajectory
     ind_start = convert(Int64,feasible_starting_indeces[index_of_traj_2_copy])
     s_start = oldTraj.oldTraj[ind_start,1,index_of_traj_2_copy]
@@ -149,7 +152,11 @@ if exist_feas_traj == 1 && 0 == 1 #!! change
     # @show ind_start
     # @show oldTraj.cost2Target[ind_start:ind_start+pLength,index_of_traj_2_copy]
     oldTraj.cost2Target[ind_start:ind_start+pLength,end] = oldTraj.cost2Target[ind_start:ind_start+pLength,index_of_traj_2_copy]-(oldTraj.cost2Target[ind_start,index_of_traj_2_copy][1]-oldTraj.cost2Target[index_s[index_of_traj_2_copy]-N_points*(index_of_traj_2_copy-1),index_of_traj_2_copy][1])
+   
+
     println("copied s :$(oldTraj.oldTraj[ind_start,1,index_of_traj_2_copy]) from old round : $index_of_traj_2_copy, curr s: $(zCurr_s[iter,1]), iterartion : $iter")
+   
+
     # println("cost copied $(oldTraj.cost2Target[ind_start,end])")
     # l=1
     # println("cost last traj $(oldTraj.cost2Target[index_s[l]-N_points*(l-1),l])")

@@ -16,7 +16,7 @@ include("classes.jl")
     plot_eps = 0
     interactive_plot_steps = 4
     n_oldTrajPlots = 5
-    file = "data/2017-01-17-02-08-Data.jld"
+    file = "data/2017-01-17-23-56-Data.jld"
     close("all")
 
     ####load data from file
@@ -40,6 +40,7 @@ include("classes.jl")
     #end of data loading
 
     #####create additional data for plotting
+    ds = trackCoeff.ds
     dt = modelParams.dt
     xy_track  = [x_track; y_track]
     t   = collect(0:dt:(buffersize-1)*dt)
@@ -196,9 +197,10 @@ include("classes.jl")
         #plot the boundary lines
         ax10[:plot](boundary_up[1,:], boundary_up[2,:],color="green",linestyle=":")
         ax10[:plot](boundary_down[1,:], boundary_down[2,:],color="green",linestyle=":")
-        for l=1:11
+        
+        for l=1:convert(Int64,trunc(trackL/51))
             ax10[:plot]([boundary_down[1,l*50+1],boundary_up[1,l*50+1]],[boundary_down[2,l*50+1],boundary_up[2,l*50+1]], color = "black", linestyle = ":", linewidth = 0.5)
-            text(boundary_down[1,l*50+1]+1,boundary_down[2,l*50+1],"s = $(l*5)",fontsize=8)
+            text(boundary_down[1,l*50+1]+1,boundary_down[2,l*50+1],"s = $(convert(Int64,l*50*ds))",fontsize=8)
         end
         gca()[:set_aspect]("equal", adjustable="box")
         # ax10[:set_ylim]([-5.1,5.1])

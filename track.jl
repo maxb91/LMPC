@@ -1,12 +1,15 @@
 using JLD
+using PyPlot
+
 function create_track(w = 0.3)
+    close("all")
     x = [0.0]           # starting point
     y = [0.0]
     x_l = [0.0]           # starting point
     y_l = [w]
     x_r = [0.0]           # starting point
     y_r = [-w]
-    ds = 0.02
+    ds = 0.04
 
     theta = [0.0]
 
@@ -27,11 +30,11 @@ function create_track(w = 0.3)
     # add_curve(theta,28,0.0)
 
     # # SIMPLE track
-    add_curve(theta,50,0)
+    add_curve(theta,7,0)
     add_curve(theta,200,-pi)
-    add_curve(theta,100,0)
+    add_curve(theta,14,0)
     add_curve(theta,200,-pi)
-    add_curve(theta,49,0)
+    add_curve(theta,5,0)
 
     # GOGGLE TRACK
     # add_curve(theta,30,0)
@@ -75,6 +78,7 @@ function create_track(w = 0.3)
     # track = cat(2, x, y, x_l, y_l, x_r, y_r)
     track =[x'; y']
     plot(track[1,:],track[2,:])
+    grid()
     return track
     # plot(x,y,x_l,y_l,x_r,y_r)
 end

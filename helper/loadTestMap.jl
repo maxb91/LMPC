@@ -10,8 +10,8 @@ function loadTestMap()
 # y = readcsv("C:/Users/Felix/AppData/Local/Julia-0.5.0/LMPC/helper/y_dm.dat")
 
 # file = "trackdata.jld"
-file = "oval.jld"
-# file = "small_oval.jld"
+# file = "oval.jld"
+file = "small_oval.jld"
 Data = load(file)
 x = Data["x"]'
 y = Data["y"]'

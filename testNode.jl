@@ -36,7 +36,7 @@
     mpcParams                   = classes.MpcParams()
     m                           = classes.MpcModel()
 
-    buffersize                  = 1501 #1501
+    buffersize                  = 501 #1501
     close("all")
 
 
@@ -50,7 +50,7 @@
     z_Init[6] = 0.0
    
     load_safeset = true#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
-    safeset = "data/2017-01-17-02-02-Data.jld"
+    safeset = "data/2017-01-17-23-29-Data.jld"
 
     #########
     InitializeParameters(mpcParams,trackCoeff,modelParams,posInfo,oldTraj,mpcCoeff,lapStatus,obstacle,buffersize)
@@ -64,14 +64,14 @@
 
 
     posInfo.s_start             = 0.0 #does not get changed with the current version
-    posInfo.s_target            = 59.5 #has to be fitted to track , current test track form ugo has 113.2 meters
+    posInfo.s_target            = (size(x_track)[2]-1)*trackCoeff.ds#59.5 #has to be fitted to track , current test track form ugo has 113.2 meters
      
     ##define obstacle x and xy vlaues not used at the moment 
     #for a clean definition of the x,y points the value of s_obstacle has to be the same as one of the points of the source map. 
     # the end semi axes are approximated over the secant of the points of the track. drawing might not be 100% accurate
-    s_obst_init = 31.0 
+    s_obst_init = 9.56 
     sy_obst_init = -0.2
-    v_obst_init = 0.0#1.8#1.5#1.5##1.8
+    v_obst_init = 0#1.8#1.5#1.5##1.8
     obstacle.rs = 0.5 # if we load old trajecory these values get overwritten
     obstacle.ry = 0.19 # if we load old trajecory these values get overwritten
     
@@ -97,7 +97,7 @@
     trackCoeff.coeffCurvature   = [0.0;0.0;0.0;0.0;0.0]        # polynomial coefficients for curvature approximation (zeros for straight line)
     trackCoeff.nPolyCurvature = 4 # has to be 4 cannot be changed freely at the moment orders are still hardcoded in some parts of localizeVehicleCurvAbslizeVehicleCurvAbs
     trackCoeff.nPolyXY = 6  # has to be 6 cannot be changed freely at the moment orders are still hardcoded in some parts of localizeVehicleCurvAbslizeVehicleCurvAbs
-    n_rounds = 2
+    n_rounds = 1
     z_pred_log = zeros(mpcParams.N+1,4,length(t),n_rounds)
     u_pred_log = zeros(mpcParams.N,2,length(t),n_rounds)
     lambda_log = zeros(oldTraj.n_oldTraj,length(t),n_rounds)
@@ -146,18 +146,24 @@
         zCurr_x[1,6] = z_Init[6]
         
         if j == 1 && load_safeset == true
+            zCurr_x[1,1] =oldTraj.oldTrajXY[oldTraj.oldNIter[1],1,1]#+convert(Float64,trackCoeff.ds)*0.5
+            zCurr_x[1,2] =oldTraj.oldTrajXY[oldTraj.oldNIter[1],2,1]
             zCurr_x[1,3] =oldTraj.oldTrajXY[oldTraj.oldNIter[1],3,1]
             zCurr_x[1,4] =oldTraj.oldTrajXY[oldTraj.oldNIter[1],4,1]
+            zCurr_x[1,5] =oldTraj.oldTrajXY[oldTraj.oldNIter[1],5,1]
+            zCurr_x[1,6] =oldTraj.oldTrajXY[oldTraj.oldNIter[1],6,1]
         end
         if j>1             #setup point for vehicle after first round                   # if we are in the second or higher lap
             zCurr_x[1,:] = z_final_x
+    
             # because the track is not closed we always set up the car at the same place each round
-            zCurr_x[1,1] = z_Init[1] # x = 1.81 for s = 32     14 in curve
-            zCurr_x[1,2] = z_Init[2] # y = 2.505 for s = 32  12.6
-            zCurr_x[1,5] = z_Init[5]
-            zCurr_x[1,6] = z_Init[6]
-            zCurr_x[1,3] = z_final_x[3]
-            zCurr_x[1,4] = z_final_x[4]
+            #zCurr_x[1,1] = z_Init[1]#+convert(Float64,trackCoeff.ds)*0.5 # x = 1.81 for s = 32     14 in curve
+            # zCurr_x[1,1] = z_Init[1]
+            # zCurr_x[1,2] = z_Init[2] # y = 2.505 for s = 32  12.6
+            # zCurr_x[1,5] = z_Init[5]
+            # zCurr_x[1,6] = z_Init[6]
+            # zCurr_x[1,3] = z_final_x[3]
+            # zCurr_x[1,4] = z_final_x[4]
             # @show z_final_x[3]
             # @show z_final_x[4]
             # v_abs = sqrt(z_final_x[3]^.2+z_final_x[4]^.2)
@@ -186,13 +192,26 @@
             # the argument i in localizeVehicleCurvAbs  is solely used for debugging purposes plots not needed for control
             # localize takes some time see ProfileView.view()
             tic()
-            zCurr_s[i,:], trackCoeff.coeffCurvature = localizeVehicleCurvAbs(zCurr_x[i,:],x_track,y_track,trackCoeff, i, Pcurvature)
+            zCurr_s[i,:], trackCoeff.coeffCurvature = localizeVehicleCurvAbs(zCurr_x[i,:],x_track,y_track,trackCoeff, i, mpcParams.N, modelParams.dt, Pcurvature)
+            if i == 1 && zCurr_s[1,1] > 2
+                warn("closest point was before finish line, forced s =0")
+                println("x:$(zCurr_x[i,1]), y:$(zCurr_x[i,2])")
+                zCurr_s[1,1]= 0
+            end
             posInfo.s   = zCurr_s[i,1]
             curvature_curr[i] = trackCoeff.coeffCurvature[1]*posInfo.s^4+trackCoeff.coeffCurvature[2]*posInfo.s^3+trackCoeff.coeffCurvature[3]*posInfo.s^2+trackCoeff.coeffCurvature[4]*posInfo.s +trackCoeff.coeffCurvature[5]
             distance2obst[i] = (obstacle.s_obstacle[i,1]-obstacle.rs) - posInfo.s
             #t_absci =toq()
             #if the car has crossed the finish line
             if zCurr_s[i,1] >= posInfo.s_target
+                println("Reached finish line at step $i")
+                finished = true
+                #we count up here as the first round ends just as we would do if the loop get terminiated because i is >= length(t). we count it down later on again to get right index
+                i = i + 1
+                lapStatus.currentIt = i
+                break
+            elseif i >1 && zCurr_s[i-1,1] >= posInfo.s_target-1 && zCurr_s[i,1]<1 # on a closed trakc the finish line lies close to the startinf point. it can be that the discrete calculated s postion is bigger than the end of the track and already in the new round. to still detect the finish line we added this statement
+                println("alternative detection of finish line")
                 println("Reached finish line at step $i")
                 finished = true
                 #we count up here as the first round ends just as we would do if the loop get terminiated because i is >= length(t). we count it down later on again to get right index
@@ -293,9 +312,6 @@
         # Save states in oldTraj:
         # --------------------------------
         tic()
-        mpcSol.cost[4]
-        mpcSol.cost[5]
-        mpcSol.cost[7]
         saveOldTraj(oldTraj,zCurr_s, zCurr_x,uCurr,lapStatus,buffersize,modelParams.dt, load_safeset, cost[:,:,j],
           lambda_log[:,:,j],z_pred_log[:,:,:,j],u_pred_log[:,:,:,j],ssInfOn_log[:,:,j], mpcSol, obstacle,distance2obst, curvature_curr)
         tt3= toq()
@@ -323,8 +339,8 @@
         #         break
         # end
         # figure()
-        #plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j],oldTraj.curvature[1:oldTraj.oldNIter[j],j], color = "red")
-        #plot(Pcurvature[1:oldTraj.oldNIter[j],1], Pcurvature[1:oldTraj.oldNIter[j],2], color = "green")
+        # plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j],oldTraj.curvature[1:oldTraj.oldNIter[j],j], color = "red")
+        # plot(Pcurvature[1:oldTraj.oldNIter[j],1], Pcurvature[1:oldTraj.oldNIter[j],2], color = "green")
     end
     n_rounds = j #update n_rounds to represent actual number of simualated rounds
 
