@@ -9,7 +9,7 @@ function create_track(w = 0.3)
     y_l = [w]
     x_r = [0.0]           # starting point
     y_r = [-w]
-    ds = 0.04
+    ds = 0.1
 
     theta = [0.0]
 
@@ -29,12 +29,31 @@ function create_track(w = 0.3)
     # add_curve(theta,50,-pi/2)
     # add_curve(theta,28,0.0)
 
-    # # SIMPLE track
-    add_curve(theta,7,0)
-    add_curve(theta,200,-pi)
-    add_curve(theta,14,0)
-    add_curve(theta,200,-pi)
-    add_curve(theta,5,0)
+
+     # # racetarck
+    add_curve(theta,20,0.0)
+    # add_curve(theta,40,-pi*3/4)
+    add_curve(theta,34,-pi/2)
+    add_curve(theta,10,-pi/5)
+    add_curve(theta,68,0.0)
+    add_curve(theta,10,-pi/4)
+    add_curve(theta,62,-pi)
+    add_curve(theta,10,pi/5)
+    add_curve(theta,11,0)
+    add_curve(theta,32,pi*3/4)
+    add_curve(theta,30,0.0)
+    add_curve(theta,94,-pi)
+    add_curve(theta,12,-pi*2/5*0.9366)
+    add_curve(theta,12,pi*2/5*0.9366)
+    add_curve(theta,17,0.0)
+
+
+    # # SIMPLE oval
+    # add_curve(theta,7,0)
+    # add_curve(theta,200,-pi)
+    # add_curve(theta,14,0)
+    # add_curve(theta,200,-pi)
+    # add_curve(theta,5,0)
 
     # GOGGLE TRACK
     # add_curve(theta,30,0)

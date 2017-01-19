@@ -36,7 +36,7 @@
     mpcParams                   = classes.MpcParams()
     m                           = classes.MpcModel()
 
-    buffersize                  = 501 #1501
+    buffersize                  = 1001 #1501
     close("all")
 
 
@@ -49,8 +49,8 @@
     z_Init[4]  = 0.4*sin(z_Init[5]) #v_y
     z_Init[6] = 0.0
    
-    load_safeset = true#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
-    safeset = "data/2017-01-17-23-29-Data.jld"
+    load_safeset = false#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
+    safeset = "data/2017-01-18-14-20-Data.jld"
 
     #########
     InitializeParameters(mpcParams,trackCoeff,modelParams,posInfo,oldTraj,mpcCoeff,lapStatus,obstacle,buffersize)
@@ -64,12 +64,12 @@
 
 
     posInfo.s_start             = 0.0 #does not get changed with the current version
-    posInfo.s_target            = (size(x_track)[2]-1)*trackCoeff.ds#59.5 #has to be fitted to track , current test track form ugo has 113.2 meters
+    @show posInfo.s_target            = (size(x_track)[2]-1)*trackCoeff.ds#59.5 #has to be fitted to track , current test track form ugo has 113.2 meters
      
     ##define obstacle x and xy vlaues not used at the moment 
     #for a clean definition of the x,y points the value of s_obstacle has to be the same as one of the points of the source map. 
     # the end semi axes are approximated over the secant of the points of the track. drawing might not be 100% accurate
-    s_obst_init = 9.56 
+    s_obst_init = 85#9.56 
     sy_obst_init = -0.2
     v_obst_init = 0#1.8#1.5#1.5##1.8
     obstacle.rs = 0.5 # if we load old trajecory these values get overwritten
@@ -97,7 +97,7 @@
     trackCoeff.coeffCurvature   = [0.0;0.0;0.0;0.0;0.0]        # polynomial coefficients for curvature approximation (zeros for straight line)
     trackCoeff.nPolyCurvature = 4 # has to be 4 cannot be changed freely at the moment orders are still hardcoded in some parts of localizeVehicleCurvAbslizeVehicleCurvAbs
     trackCoeff.nPolyXY = 6  # has to be 6 cannot be changed freely at the moment orders are still hardcoded in some parts of localizeVehicleCurvAbslizeVehicleCurvAbs
-    n_rounds = 1
+    n_rounds = 4
     z_pred_log = zeros(mpcParams.N+1,4,length(t),n_rounds)
     u_pred_log = zeros(mpcParams.N,2,length(t),n_rounds)
     lambda_log = zeros(oldTraj.n_oldTraj,length(t),n_rounds)
@@ -290,7 +290,10 @@
             #     println(" Time: $(tt2) s for the whole step of the loop ")
             #     println("                           ")
             # end
-
+            # @show mpcSol.solverStatus
+            if string(mpcSol.solverStatus) != "Optimal" #if solving takes long
+                println(" Time: $(tt[i]) s, Solving step $i of $(length(t)), s = $(zCurr_s[i,1]) - Status: $(mpcSol.solverStatus)")
+            end
             
 
             i = i + 1

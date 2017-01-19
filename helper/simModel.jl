@@ -39,7 +39,7 @@ function simModel_x(z::Array{Float64},u::Array{Float64},dt::Float64,modelParams:
     return zNext
 end
 
-function simModel_dyn_x(z::Array{Float64},u::Array{Float64},dt::Float64,modelParams::classes.ModelParams)
+function simModel_dyn_x(z::Array{Float64},u::Array{Float64},dt::Float64,modelParams::classes.ModelParams,exact_sim_i::Int64)
 
     local zNext::Array{Float64}
     l_A = modelParams.l_A
@@ -55,10 +55,10 @@ function simModel_dyn_x(z::Array{Float64},u::Array{Float64},dt::Float64,modelPar
     # u[2] = steering angle
 
     m = 1.98 # kg
-    mu  = 0.8
+    mu  = 0.85
     g = 9.81 # m/s^2
     I_z = 0.03 # kg * m^2
-    B = 1.0
+    B = 0.8#1.0
     C = 1.25
 
 
@@ -80,8 +80,8 @@ function simModel_dyn_x(z::Array{Float64},u::Array{Float64},dt::Float64,modelPar
         alpha_f = atan( (v_y+l_A*psi_dot) / v_x ) - u[2]        
         alpha_r = atan( (v_y-l_B*psi_dot) / v_x)      
     end
-    if max(abs(alpha_f),abs(alpha_r))>30/180*pi
-        warn("Large slip angles: alpha_f = $alpha_f, alpha_r = $alpha_r")
+    if exact_sim_i==1 && max(abs(alpha_f),abs(alpha_r))>30/180*pi
+        warn("Large slip angles: alpha_f = $(alpha_f*180/pi)°, alpha_r = $(alpha_r*180/pi)° , x =$x, y = $y")
     end
     
     F_yf = -mu*m*g/2.0 * sin(C*atan(B*alpha_f))
@@ -110,7 +110,7 @@ function simModel_exact_dyn_x(z::Array{Float64},u::Array{Float64},dt::Float64,mo
     t = 0:dtn:dt
     z_final = copy(z)
     for i=1:length(t)-1
-        z_final = simModel_dyn_x(z_final,u,dtn,modelParams)
+        z_final = simModel_dyn_x(z_final,u,dtn,modelParams,i)
     end
     return z_final
 end
