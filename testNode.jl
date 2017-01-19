@@ -76,14 +76,15 @@
     obstacle.ry = 0.19 # if we load old trajecory these values get overwritten
     
     
-
+    z_Init_s= zeros(6)
+    z_Init_s[1] = 0.6
 
     
     #####################################
     println("Initialize Model........")
-    InitializeModel(m,mpcParams,modelParams,trackCoeff,z_Init, obstacle,oldTraj)
+    InitializeModel(m,mpcParams,modelParams,trackCoeff,z_Init_s, obstacle,oldTraj)
     println("Initial solve........")
-    solve(m.mdl)
+    # solve(m.mdl)
     println("Initial solve done!")
     println("*******************************************************")
     println("*******************************************************")
@@ -98,7 +99,7 @@
     trackCoeff.nPolyCurvature = 4 # has to be 4 cannot be changed freely at the moment orders are still hardcoded in some parts of localizeVehicleCurvAbslizeVehicleCurvAbs
     trackCoeff.nPolyXY = 6  # has to be 6 cannot be changed freely at the moment orders are still hardcoded in some parts of localizeVehicleCurvAbslizeVehicleCurvAbs
     n_rounds = 4
-    z_pred_log = zeros(mpcParams.N+1,4,length(t),n_rounds)
+    z_pred_log = zeros(mpcParams.N+1,6,length(t),n_rounds)
     u_pred_log = zeros(mpcParams.N,2,length(t),n_rounds)
     lambda_log = zeros(oldTraj.n_oldTraj,length(t),n_rounds)
     cost        = zeros(7,length(t),n_rounds)
@@ -114,7 +115,7 @@
     end
 
     j = 1
-    z_final_x = zeros(1,4)::Array{Float64,2}
+    z_final_x = zeros(1,6)::Array{Float64,2}
     u_final = zeros(1,2)
     for j=1:n_rounds #10
         
@@ -122,7 +123,7 @@
         lapStatus.currentLap = j
         tt          = zeros(length(t),1)
         tt1         = zeros(length(t),1)
-        zCurr_s     = zeros(length(t),4)          # s, ey, epsi, v
+        zCurr_s     = zeros(length(t),6)          # s, ey, epsi, v
         zCurr_x     = zeros(length(t),6)          # x, y, v_x,v_y, psi, psi_dot
         uCurr       = zeros(length(t),2)
         distance2obst = 1000*ones(length(t))
@@ -193,24 +194,24 @@
             # localize takes some time see ProfileView.view()
             tic()
             zCurr_s[i,:], trackCoeff.coeffCurvature = localizeVehicleCurvAbs(zCurr_x[i,:],x_track,y_track,trackCoeff, i, mpcParams.N, modelParams.dt, Pcurvature)
-            if i == 1 && zCurr_s[1,1] > 2
+            if i == 1 && zCurr_s[1,6] > 2
                 warn("closest point was before finish line, forced s =0")
                 println("x:$(zCurr_x[i,1]), y:$(zCurr_x[i,2])")
-                zCurr_s[1,1]= 0
+                zCurr_s[1,6]= 0
             end
-            posInfo.s   = zCurr_s[i,1]
+            posInfo.s   = zCurr_s[i,6]
             curvature_curr[i] = trackCoeff.coeffCurvature[1]*posInfo.s^4+trackCoeff.coeffCurvature[2]*posInfo.s^3+trackCoeff.coeffCurvature[3]*posInfo.s^2+trackCoeff.coeffCurvature[4]*posInfo.s +trackCoeff.coeffCurvature[5]
             distance2obst[i] = (obstacle.s_obstacle[i,1]-obstacle.rs) - posInfo.s
             #t_absci =toq()
             #if the car has crossed the finish line
-            if zCurr_s[i,1] >= posInfo.s_target
+            if zCurr_s[i,6] >= posInfo.s_target
                 println("Reached finish line at step $i")
                 finished = true
                 #we count up here as the first round ends just as we would do if the loop get terminiated because i is >= length(t). we count it down later on again to get right index
                 i = i + 1
                 lapStatus.currentIt = i
                 break
-            elseif i >1 && zCurr_s[i-1,1] >= posInfo.s_target-1 && zCurr_s[i,1]<1 # on a closed trakc the finish line lies close to the startinf point. it can be that the discrete calculated s postion is bigger than the end of the track and already in the new round. to still detect the finish line we added this statement
+            elseif i >1 && zCurr_s[i-1,6] >= posInfo.s_target-1 && zCurr_s[i,6]<1 # on a closed trakc the finish line lies close to the startinf point. it can be that the discrete calculated s postion is bigger than the end of the track and already in the new round. to still detect the finish line we added this statement
                 println("alternative detection of finish line")
                 println("Reached finish line at step $i")
                 finished = true
@@ -254,7 +255,7 @@
             # setvalue(m.lambda, mpcSol.lambda)
             # setvalue(m.eps, mpcSol.eps)
             #####################
-          
+
             solveMpcProblem!(m,mpcSol,mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr_s[i,:]',[mpcSol.a_x;mpcSol.d_f], pred_obst,i)
             tt[i]       = toq()
             setvalue(m.ssInfOn,ones(oldTraj.n_oldTraj))# reset the all trajectories to on position
@@ -264,7 +265,7 @@
             zCurr_x[i+1,:]  = simModel_exact_dyn_x(zCurr_x[i,:],uCurr[i,:],modelParams.dt,modelParams) #!! @show
 
             #update Position of the Obstacle car        
-            computeObstaclePos!(obstacle, dt, i, x_track, trackCoeff, zCurr_s[i,1]) #this funciton computes values for row i+1
+            computeObstaclePos!(obstacle, dt, i, x_track, trackCoeff, zCurr_s[i,6]) #this funciton computes values for row i+1
             
 
             cost[:,i,j]         = mpcSol.cost
@@ -292,7 +293,7 @@
             # end
             # @show mpcSol.solverStatus
             if string(mpcSol.solverStatus) != "Optimal" #if solving takes long
-                println(" Time: $(tt[i]) s, Solving step $i of $(length(t)), s = $(zCurr_s[i,1]) - Status: $(mpcSol.solverStatus)")
+                println(" Time: $(tt[i]) s, Solving step $i of $(length(t)), s = $(zCurr_s[i,6]) - Status: $(mpcSol.solverStatus)")
             end
             
 

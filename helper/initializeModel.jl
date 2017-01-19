@@ -35,15 +35,17 @@ function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelP
     n_oldTraj   = oldTraj.n_oldTraj
     # Create function-specific parameters
     local z_Ref::Array{Float64,2}
-    z_Ref           = cat(2,s_target*ones(N+1,1),zeros(N+1,2),v_ref*ones(N+1,1))     # Reference trajectory: path following -> stay on line and keep constant velocity
+    z_Ref           = cat(2,v_ref*ones(N+1,1),zeros(N+1,4),s_target*ones(N+1,1))     # Reference trajectory: path following -> stay on line and keep constant velocity
     u_Ref           = zeros(N,2)
     
     #########################################################
     m.mdl = Model(solver = IpoptSolver(print_level=0))#mu_strategy=adaptive,warm_start_init_point="yes"))#, max_cpu_time=0.08))#,linear_solver="ma57",max_iter=500, print_user_options="yes",max_cpu_time=2.0,))
     #########################################################
+    c_Vx            = [-0.012521482551127934,-0.12341315079450611,0.24925430976232502] 
+    c_Vy            = [-0.4489520316881863,-0.003816534068778571,0.11170845000402227,-0.16451185081929146]
+    c_Psi           = [-0.6796565974307567,-0.2094159184787298, 2.84751043369531]
 
-
-    @variable( m.mdl, modelParams.z_lb[i,j]<= m.z_Ol[i =1:(N+1),j = 1:4]<= modelParams.z_ub[i,j])      # z = s, ey, epsi, v
+    @variable( m.mdl, modelParams.z_lb[i,j]<= m.z_Ol[i =1:(N+1),j = 1:6]<= modelParams.z_ub[i,j])      # z = s, ey, epsi, v
     @variable( m.mdl,  modelParams.u_lb[i,j] <= m.u_Ol[i=1:N,j=1:2]<= modelParams.u_ub[i,j])          # overwrtie dim of in classes.jl?
     @variable( m.mdl, 0 <= m.lambda[1:n_oldTraj] <= 1)
     @variable( m.mdl, m.eps[1:2] >=0)
@@ -55,13 +57,13 @@ function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelP
     #     end
     # end
     @NLparameter(m.mdl,m.ssInfOn[1:n_oldTraj]== 1)
-    @NLparameter(m.mdl, m.z0[i=1:4] == z_Init[i])
-    @NLconstraint(m.mdl, [i=1:4], m.z_Ol[1,i] == m.z0[i])
+    @NLparameter(m.mdl, m.z0[i=1:6] == z_Init[i])
+    @NLconstraint(m.mdl, [i=1:6], m.z_Ol[1,i] == m.z0[i])
 
     #@constraint(m.mdl, m.lambda[1]+m.lambda[2]+m.lambda[3]+m.lambda[4]+m.lambda[5]== 1)
     @NLconstraint(m.mdl, sum{m.lambda[j],j=1:n_oldTraj}== 1)
-    @NLconstraint(m.mdl,[i = 1:(N+1)], m.z_Ol[i,2] <=  trackCoeff.width/2 + m.eps[1] )
-    @NLconstraint(m.mdl,[i = 1:(N+1)], m.z_Ol[i,2] >= -trackCoeff.width/2 - m.eps[2] )
+    @NLconstraint(m.mdl,[i = 1:(N+1)], m.z_Ol[i,5] <=  trackCoeff.width/2 + m.eps[1] )
+    @NLconstraint(m.mdl,[i = 1:(N+1)], m.z_Ol[i,5] >= -trackCoeff.width/2 - m.eps[2] )
     # object avoidance constraint now done with slack cost instead slack constraint
     # set s and y obst as nlparamter
     #@NLconstraint(m.mdl, [i=1:N+1], ((m.z_Ol[i,1]-m.sCoord_obst[1])/rs )^2 + ( (m.z_Ol[i,2]-m.sCoord_obst[2])/ry )^2 >= 1 - m.eps[3])
@@ -70,29 +72,31 @@ function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelP
     @NLparameter(m.mdl, m.coeff[i=1:n_poly_curv+1] == trackCoeff.coeffCurvature[i])
     @NLparameter(m.mdl, m.uCurr[i=1:2] == 0)
     @NLparameter(m.mdl, m.sCoord_obst[j=1:(N+1),i=1:2] == 100)
-    @NLparameter(m.mdl, m.coeffTermConst[i=1:order+1,k=1:n_oldTraj,j=1:3] == coeffTermConst[i,k,j])
+    @NLparameter(m.mdl, m.coeffTermConst[i=1:order+1,k=1:n_oldTraj,j=1:5] == coeffTermConst[i,k,j])
     @NLparameter(m.mdl, m.coeffTermCost[i=1:order+1,k=1:n_oldTraj] == coeffTermCost[i,k])
 
     @NLexpression(m.mdl, m.c[i = 1:N],    m.coeff[1]*m.z_Ol[i,1]^4+m.coeff[2]*m.z_Ol[i,1]^3+m.coeff[3]*m.z_Ol[i,1]^2+m.coeff[4]*m.z_Ol[i,1]+m.coeff[5])
     #@NLexpression(m.mdl, m.c[i = 1:N],    sum{m.coeff[j]*m.z_Ol[i,1]^(n_poly_curv-j+1),j=1:n_poly_curv} + m.coeff[n_poly_curv+1]) 
     #@NLexpression(m.mdl, m.c[i = 1:N],0)
-    @NLexpression(m.mdl, m.bta[i = 1:N],  atan( L_b / (L_a + L_b) * tan(m.u_Ol[i,2]) ) )
+    # @NLexpression(m.mdl, m.bta[i = 1:N],  atan( L_b / (L_a + L_b) * tan(m.u_Ol[i,2]) ) )
     #@NLexpression(m.mdl, m.bta[i = 1:N],0)
-    @NLexpression(m.mdl, m.dsdt[i = 1:N], m.z_Ol[i,4]*cos(m.z_Ol[i,3]+m.bta[i])/(1-m.z_Ol[i,2]*m.c[i]))
+    # @NLexpression(m.mdl, m.dsdt[i = 1:N], m.z_Ol[i,4]*cos(m.z_Ol[i,3]+m.bta[i])/(1-m.z_Ol[i,2]*m.c[i]))
+    @NLexpression(m.mdl, m.dsdt[i = 1:N], (m.z_Ol[i,1]*cos(m.z_Ol[i,4]) - m.z_Ol[i,2]*sin(m.z_Ol[i,4]))/(1-m.z_Ol[i,5]*m.c[i]))
     # System dynamics
-    @NLconstraint(m.mdl, [i=1:N], m.z_Ol[i+1,1]  == m.z_Ol[i,1] + dt*m.dsdt[i]  )
-    @NLconstraint(m.mdl, [i=1:N], m.z_Ol[i+1,2]  == m.z_Ol[i,2] + dt*m.z_Ol[i,4]*sin(m.z_Ol[i,3]+m.bta[i])  )                     # ey
-    @NLconstraint(m.mdl, [i=1:N], m.z_Ol[i+1,3]  == m.z_Ol[i,3] + dt*(m.z_Ol[i,4]/L_b*sin(m.bta[i])-m.dsdt[i]*m.c[i])  )            # epsi
-    @NLconstraint(m.mdl, [i=1:N], m.z_Ol[i+1,4]  == m.z_Ol[i,4] + dt*(m.u_Ol[i,1]))#- 0.23*abs(m.z_Ol[i,4]) * m.z_Ol[i,4]))#0.63  # v
-    # @NLconstraint(m.mdl, [i=1:N+1], m.z_Ol[i,5]  == m.sCoord_obst[i,1] - m.z_Ol[i,1]  )
-    # @NLconstraint(m.mdl, [i=1:N+1], m.z_Ol[i,6]  == sy_obst - m.z_Ol[i,2] )
- 
+    
+    @NLconstraint(m.mdl, [i=1:N], m.z_Ol[i+1,1]  == m.z_Ol[i,1] + c_Vx[1]*m.z_Ol[i,2]*m.z_Ol[i,3] + c_Vx[2]*m.z_Ol[i,1] + c_Vx[3]*m.u_Ol[i,1]) #v_x
+    @NLconstraint(m.mdl, [i=1:N], m.z_Ol[i+1,2]  == m.z_Ol[i,2] + c_Vy[2]*m.z_Ol[i,1]*m.z_Ol[i,3] + c_Vy[1]*m.z_Ol[i,2]/m.z_Ol[i,1] + c_Vy[3]*m.z_Ol[i,3]/m.z_Ol[i,1] + c_Vy[4]*m.u_Ol[i,2]) #v_y
+    @NLconstraint(m.mdl, [i=1:N], m.z_Ol[i+1,3]  == m.z_Ol[i,3] + c_Psi[1]*m.z_Ol[i,3]/m.z_Ol[i,1] + c_Psi[2]*m.z_Ol[i,2]/m.z_Ol[i,1] +c_Psi[3]*m.u_Ol[i,2] )                     # psi_dot
+    @NLconstraint(m.mdl, [i=1:N], m.z_Ol[i+1,4]  == m.z_Ol[i,4] + dt*(m.z_Ol[i,3]-m.dsdt[i]*m.c[i]) )            # epsi
+    @NLconstraint(m.mdl, [i=1:N], m.z_Ol[i+1,5]  == m.z_Ol[i,5] + dt*(m.z_Ol[i,1]*sin(m.z_Ol[i,4])+m.z_Ol[i,2]*cos(m.z_Ol[i,4])))#e_y
+    @NLconstraint(m.mdl, [i=1:N], m.z_Ol[i+1,6]  == m.z_Ol[i,6] + dt*m.dsdt[i]) #s
+
 
 
     #define expressions for cost
     # Derivative cost
     # ---------------------------------
-    @NLexpression(m.mdl, derivCost, sum{QderivZ[j]*(sum{(m.z_Ol[i,j]-m.z_Ol[i+1,j])^2,i=1:N}),j=1:4} +  #(m.z0[j]-m.z_Ol[1,j])^2
+    @NLexpression(m.mdl, derivCost, sum{QderivZ[j]*(sum{(m.z_Ol[i,j]-m.z_Ol[i+1,j])^2,i=1:N}),j=1:6} +  #(m.z0[j]-m.z_Ol[1,j])^2
                                       sum{QderivU[j]*((m.uCurr[j]-m.u_Ol[1,j])^2+sum{(m.u_Ol[i,j]-m.u_Ol[i+1,j])^2,i=1:N-1}),j=1:2})
     m.derivCost= derivCost
     # Lane cost
@@ -110,7 +114,7 @@ function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelP
     # ---------------------------------  
    #@NLexpression(m.mdl, constZTerm, sum{Q_term[j]* sum{m.ssInfOn[k]*m.lambda[k]*(sum{m.coeffTermConst[i,k,j]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1}-m.z_Ol[N+1,j+1]),k=1:n_oldTraj}^2,j=1:3})                           
     
-    @NLexpression(m.mdl, constZTerm, sum{Q_term[j]* (sum{m.ssInfOn[k]*m.lambda[k]*sum{m.coeffTermConst[i,k,j]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1},k=1:n_oldTraj}-m.z_Ol[N+1,j+1])^2,j=1:3})                           
+    @NLexpression(m.mdl, constZTerm, sum{Q_term[j]* (sum{m.ssInfOn[k]*m.lambda[k]*sum{m.coeffTermConst[i,k,j]*m.z_Ol[N+1,6]^(order+1-i),i=1:order+1},k=1:n_oldTraj}-m.z_Ol[N+1,j])^2,j=1:5})                           
     m.constZTerm = constZTerm           
    #basic idea:
     #@NLexpression(m.mdl, constZTerm, sum{Q_term[j]*(sum{coeffTermConst[i,1,j]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1}-m.z_Ol[N+1,j+1])^2,j=1:3})
@@ -119,7 +123,7 @@ function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelP
     # Terminal cost
     # ---------------------------------
     # The value of this cost determines how fast the algorithm learns. The higher this cost, the faster the control tries to reach the finish line.
-    @NLexpression(m.mdl, costZTerm,  sum{m.ssInfOn[k]*m.lambda[k]*sum{m.coeffTermCost[i,k]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1},k=1:n_oldTraj})
+    @NLexpression(m.mdl, costZTerm,  sum{m.ssInfOn[k]*m.lambda[k]*sum{m.coeffTermCost[i,k]*m.z_Ol[N+1,6]^(order+1-i),i=1:order+1},k=1:n_oldTraj})
     m.costZTerm = costZTerm
     #basic idea    
     #@NLexpression(m.mdl, costZTerm, Q_cost*sum{coeffTermCost[i,1]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1})
@@ -127,7 +131,7 @@ function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelP
     # State cost
     # ---------------------------------
     # if we're in the first lap, just do path following
-    @NLexpression(m.mdl, costPath, 0.5*sum{Q[i]*sum{(m.z_Ol[j,i]-z_Ref[j,i])^2,j=1:N+1},i=1:4})    # Follow trajectory
+    @NLexpression(m.mdl, costPath, 0.5*sum{Q[i]*sum{(m.z_Ol[j,i]-z_Ref[j,i])^2,j=1:N+1},i=1:6})    # Follow trajectory
     m.costPath = costPath
     #put cost on z (actually should put cost only on z before finishing the lap)
     #@NLexpression(m.mdl, costZ_h, 0)          # zero state cost after crossing the finish line
@@ -143,8 +147,8 @@ function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelP
 
         # sum{Q_obstacleNumer*1/(0.01+(Q_obstacle* (( (m.z_Ol[i,1]-m.sCoord_obst[i,1])/rs )^2 + ( (m.z_Ol[i,2]-m.sCoord_obst[i,2])/ry) ^2 - 1))^4),i=1:N+1})
 
-        sum{Q_obstacleNumer*1/(0.01+(Q_obstacle* (( (m.z_Ol[i,1]-m.sCoord_obst[i,1])/rs )^2 + ( (m.z_Ol[i,2]-m.sCoord_obst[i,2])/ry) ^2 - 1))^4)+
-        Q_obstacleNumer*3/(0.01+0.6*(((m.z_Ol[i,1]-m.sCoord_obst[i,1])/rs)^2+((m.z_Ol[i,2]-m.sCoord_obst[i,2])/ry)^2)),i=1:N+1})
+        sum{Q_obstacleNumer*1/(0.01+(Q_obstacle* (( (m.z_Ol[i,6]-m.sCoord_obst[i,1])/rs )^2 + ( (m.z_Ol[i,5]-m.sCoord_obst[i,2])/ry) ^2 - 1))^4)+
+        Q_obstacleNumer*3/(0.01+0.6*(((m.z_Ol[i,6]-m.sCoord_obst[i,1])/rs)^2+((m.z_Ol[i,5]-m.sCoord_obst[i,2])/ry)^2)),i=1:N+1})
 
 
 

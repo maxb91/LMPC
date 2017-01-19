@@ -1,6 +1,7 @@
 function deleteInfeasibleTrajectories!(oldTraj,posInfo::classes.PosInfo,obstacle, pred_obst::Array{Float64,2}, i::Int64, zCurr_s::Array{Float64,2},dt::Float64)
 
     v_ego = zCurr_s[i,4]
+    v_ego = sqrt(zCurr_s[i,1].^2 + zCurr_s[i,2].^2)
 
     courage_factor = 1.0 # courage factor between 0 and 1 smaller factor excludes infeas traj late
     a_breakmax = 0.0
@@ -9,21 +10,21 @@ function deleteInfeasibleTrajectories!(oldTraj,posInfo::classes.PosInfo,obstacle
     index_last = Array{Int64}(oldTraj.n_oldTraj)
     if (obstacle.s_obstacle[i,1]-obstacle.rs) - posInfo.s <=2.2 && (obstacle.s_obstacle[i,1]+obstacle.rs)>= posInfo.s #if our car is closer than one meter to obstacle and not fully after it
         for k =1:oldTraj.n_oldTraj
-            index_first[k]  = findfirst(x -> x > posInfo.s, oldTraj.oldTraj[:,1,k])
-            index_last[k] = findfirst(y -> y > pred_obst[end,1]+obstacle.rs, oldTraj.oldTraj[:,1,k])
+            index_first[k]  = findfirst(x -> x > posInfo.s, oldTraj.oldTraj[:,6,k])
+            index_last[k] = findfirst(y -> y > pred_obst[end,1]+obstacle.rs, oldTraj.oldTraj[:,6,k])
             for ii = index_first[k]:index_last[k], kk = 1:mpcParams.N+1
                 obstacle_v = obstacle.v[i,k]-a_breakmax*dt*kk #robust control assume maximum break acceleration
                 if obstacle_v < 0
                     obstacle_v = 0
                 end
                 v_diff = v_ego - obstacle_v
-                premeter2collision = (oldTraj.oldTraj[ii,1,k] - oldTraj.oldTraj[index_first[k],1,k])
+                premeter2collision = (oldTraj.oldTraj[ii,6,k] - oldTraj.oldTraj[index_first[k],6,k])
                 
                 # meter2collision = (premeter2collision - (kk-1)*v_ego*dt)
                 # t2collision = (meter2collision/v_diff +(kk-1)*dt)/safety_factor
                 meter2collision = (premeter2collision - (kk-1)*obstacle.v[i,k]*dt)
                 t2collision = (meter2collision/v_diff)/courage_factor
-                if ((oldTraj.oldTraj[ii,1,k]-pred_obst[kk,1])/obstacle.rs )^2 + ( (oldTraj.oldTraj[ii,2,k]-pred_obst[kk,2])/obstacle.ry )^2 <= 1 && t2collision<=1.0
+                if ((oldTraj.oldTraj[ii,6,k]-pred_obst[kk,1])/obstacle.rs )^2 + ( (oldTraj.oldTraj[ii,5,k]-pred_obst[kk,2])/obstacle.ry )^2 <= 1 && t2collision<=1.0
                   
                     # @show kk
                     # @show k
@@ -53,8 +54,8 @@ v_feas_traj = zeros(oldTraj.n_oldTraj)
 feasible_starting_indeces= zeros(oldTraj.n_oldTraj)
 exist_feas_traj = 0
 s_horizon = zeros(mpcParams.N+1)
-s_horizon[1] = zCurr_s[iter,1]
-v_ego = zCurr_s[iter,4]
+s_horizon[1] = zCurr_s[iter,6]
+v_ego = sqrt(zCurr_s[iter,1].^2 + zCurr_s[iter,2].^2)
 N_points        = size(oldTraj.oldTraj,1) 
 
 eps0 = 0.1 #tol distance
@@ -98,10 +99,10 @@ if distance2obst < 2.0 && distance2obst > - 2*obstacle.rs
                         compare_v_ey+=1
                     end
                 end
-                last_considered  = findfirst(x -> x > oldTraj.oldTraj[i,1,k]+s_diff, oldTraj.oldTraj[:,1,k]) #find the index forthe old trajectory whose s values is 2 meters greater than the current s value,where the distance the obstacle is the same
+                last_considered  = findfirst(x -> x > oldTraj.oldTraj[i,6,k]+s_diff, oldTraj.oldTraj[:,6,k]) #find the index forthe old trajectory whose s values is 2 meters greater than the current s value,where the distance the obstacle is the same
                 curv_points = last_considered-i+1
                 curvature_curr = zeros(curv_points)
-                s_curv = linspace(zCurr_s[iter,1],zCurr_s[iter,1]+s_diff,curv_points )
+                s_curv = linspace(zCurr_s[iter,6],zCurr_s[iter,6]+s_diff,curv_points )
                 compare_curv = 0
                 for inp = 1:curv_points
                     curvature_curr[inp] = trackCoeff.coeffCurvature[1]*s_curv[inp]^4+trackCoeff.coeffCurvature[2]*s_curv[inp]^3+trackCoeff.coeffCurvature[3]*s_curv[inp]^2+trackCoeff.coeffCurvature[4]*s_curv[inp] + trackCoeff.coeffCurvature[5]
@@ -112,7 +113,7 @@ if distance2obst < 2.0 && distance2obst > - 2*obstacle.rs
 
                 if curv_points == compare_curv && compare_v_ey == mpcParams.N+1
                     feasible_starting_indeces[k]=i
-                    v_feas_traj[k] = oldTraj.oldTraj[i+mpcParams.N,4,k] # use high velocity and not low cost because trajectories in diffrent point of track have different magnitufe of cost despite the speed of completion
+                    v_feas_traj[k] = sqrt(oldTraj.oldTraj[i+mpcParams.N,1,k].^2 + oldTraj.oldTraj[i+mpcParams.N,2,k].^2) # use high velocity and not low cost because trajectories in diffrent point of track have different magnitufe of cost despite the speed of completion
                     exist_feas_traj = 1
                     # if k ==1
                     #     clf()
@@ -130,11 +131,11 @@ end
 if exist_feas_traj == 1  #&& 0 == 1 #!! change 
     index_of_traj_2_copy = findmax(v_feas_traj)[2] #finds the maximum velocity at a later point of the trajectory . If velocities are equal takes first value in array. least old trajectory
     ind_start = convert(Int64,feasible_starting_indeces[index_of_traj_2_copy])
-    s_start = oldTraj.oldTraj[ind_start,1,index_of_traj_2_copy]
-    oldTraj.oldTraj[:,1,end] = oldTraj.oldTraj[:,1,index_of_traj_2_copy]-s_start+zCurr_s[iter,1] #copy a s postion 
-    oldTraj.oldTraj[:,2:4,end] = oldTraj.oldTraj[:,2:4,index_of_traj_2_copy]
+    s_start = oldTraj.oldTraj[ind_start,6,index_of_traj_2_copy]
+    oldTraj.oldTraj[:,6,end] = oldTraj.oldTraj[:,6,index_of_traj_2_copy]-s_start+zCurr_s[iter,6] #copy a s postion 
+    oldTraj.oldTraj[:,1:5,end] = oldTraj.oldTraj[:,1:5,index_of_traj_2_copy]
 
-    distance_s = (oldTraj.oldTraj[:,1,1:end-1]-zCurr_s[iter,1]).^2
+    distance_s = (oldTraj.oldTraj[:,6,1:end-1]-zCurr_s[iter,6]).^2
     index_s = findmin(distance_s,1)[2]
     costs = zeros(oldTraj.n_oldTraj-1)
     for k = 1:oldTraj.n_oldTraj-1

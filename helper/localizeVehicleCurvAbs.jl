@@ -12,6 +12,9 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
     x       = states_x[1]
     y       = states_x[2]
     psi     = states_x[5]
+    v_x     = states_x[3]
+    v_y     = states_x[4]
+    psi_dot     = states_x[6]
     v_abs = sqrt(states_x[3].^2 + states_x[4].^2)
 
     nodes_center      = [x_track; y_track]
@@ -392,7 +395,7 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
     
 
     #return s_start, s, ey, coeffX,coeffY, coeffTheta, coeffCurv, epsi
-    zCurr_s = zeros(4)
-    zCurr_s = [s ey epsi v_abs]
+    zCurr_s = zeros(6)
+    zCurr_s = [v_x v_y psi_dot epsi ey s] 
     return zCurr_s, coeffCurv
 end

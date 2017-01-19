@@ -10,7 +10,7 @@ function saveOldTraj(oldTraj,zCurr::Array{Float64}, zCurr_x::Array{Float64},uCur
     println(size(ones(buffersize-i+1,1)))
 
     #we just take i-1 beacuse the last s value is already the begining ogf the new round and we jsut coun from 0 <= s < s_target
-    zCurr_export    = cat(1,zCurr[1:i-1,:], [zCurr[i-1,1]+collect(1:buffersize-i+1)*dt*zCurr[i-1,4] ones(buffersize-i+1,1)*zCurr[i-1,2:4]']) # extrapolate values for after the finish line so that the old trjectory has feasible vlaues for the interpolation in the next round 
+    zCurr_export    = cat(1,zCurr[1:i-1,:], [ones(buffersize-i+1,1)*zCurr[i-1,1:5]' zCurr[i-1,6]+collect(1:buffersize-i+1)*dt*zCurr[i-1,1]]) # extrapolate values for after the finish line so that the old trjectory has feasible vlaues for the interpolation in the next round 
     uCurr_export    = cat(1,uCurr[1:i-1,:], zeros(buffersize-i+1,2)) # we need the i-1 as we do not want to keep the last vlaues which is s >= s_target
                    # the cost of the current lap is the time it took to reach the finish line
     
@@ -23,7 +23,7 @@ function saveOldTraj(oldTraj,zCurr::Array{Float64}, zCurr_x::Array{Float64},uCur
     #fill up the arrays for the additional costs with measured values, the additional cost are zeros for all i after the finish line
     #!! edit for new cost function
     #currCostObst[1:i] = flipdim(cumsum(flipdim(mpcParams.Q_obstacle*1./( ( (zCurr[1:i,1]-obstacle.s_obstacle[1:i,1])/obstacle.rs ).^2 + ( (zCurr[1:i,2]-obstacle.sy_obstacle[1:i,1])/obstacle.ry ).^2 - 1 ).^2,1),1),1)
-    for l = 1:4
+    for l = 1:6
         derivStateCost[1:i-1] += flipdim(mpcParams.QderivZ[l]*cumsum(flipdim((zCurr_export[1:i-1,l]-zCurr_export[2:i,l]).^2,1),1),1)
     end
     derivInpCost[1:i-2] = flipdim(mpcParams.QderivU[1]*cumsum(flipdim((uCurr_export[1:i-2,1]-uCurr_export[2:i-1,1]).^2,1),1)+mpcParams.QderivU[2]*cumsum(flipdim((uCurr_export[1:i-2,2]-uCurr_export[2:i-1,2]).^2,1),1),1)
@@ -93,15 +93,15 @@ end
 function InitializeParameters(mpcParams::classes.MpcParams,trackCoeff::classes.TrackCoeff,modelParams::classes.ModelParams,
                                 posInfo::classes.PosInfo,oldTraj::classes.OldTrajectory,mpcCoeff::classes.MpcCoeff,lapStatus::classes.LapStatus,obstacle::classes.Obstacle,buffersize::Int64)
     mpcParams.N                 = 10                        #lenght of prediction horizon
-    mpcParams.nz                = 4                         #number of States
-    mpcParams.Q                 = [0.0,10.0,0.1,10.0]  #0 10 0 1    # put weights on ey, epsi and v, just for first round of PathFollowing
-    mpcParams.Q_term            = 100*[10.0,2.0,1.0]           # weights for terminal constraints (LMPC, for e_y, e_psi, and v)
+    mpcParams.nz                = 6                         #number of States
+    mpcParams.Q                 = [10.0,0.1,0.1,0.1,10.0,0]  #0 10 0 1    # put weights on ey, epsi and v, just for first round of PathFollowing
+    mpcParams.Q_term            = 100*[1.0,1.0,1.0,2.0,10.0]           # weights for terminal constraints (LMPC, for e_y, e_psi, and v)
     mpcParams.Q_cost            = 0.7                           #factor for terminal cost
     mpcParams.Q_obstacle        = 0.3 #
     mpcParams.Q_obstacleNumer   = 0.002#0.04#0.0025#0.0019
     mpcParams.Q_lane            = 2000.0
     mpcParams.R                 = 0.0*[1.0,1.0]             # put weights on a and d_f
-    mpcParams.QderivZ           = 0.0*[0,0.0,0.1,0.1]             # cost matrix for derivative cost of states
+    mpcParams.QderivZ           = 0.0*[0.1,0.1,0.1,0.1,0.0,0.0]             # cost matrix for derivative cost of states
     mpcParams.QderivU           = 0.1*[1,10]               # cost matrix for derivative cost of inputs
     mpcParams.vPathFollowing    = 0.6                 # reference speed for first lap of path following
 
@@ -112,8 +112,8 @@ function InitializeParameters(mpcParams::classes.MpcParams,trackCoeff::classes.T
 
     modelParams.u_lb            = ones(mpcParams.N,1) * [-0.6  -pi/6]  #-0.6 for braking                  # lower bou9nds on steering
     modelParams.u_ub            = ones(mpcParams.N,1) * [ 1.0   pi/6]       #1.2           # upper bounds
-    modelParams.z_lb            = ones(mpcParams.N+1,1) * [-Inf -Inf -Inf -0.1]                    # lower bounds on states
-    modelParams.z_ub            = ones(mpcParams.N+1,1) * [ Inf  Inf  Inf  1.5]                 # upper bounds
+    modelParams.z_lb            = ones(mpcParams.N+1,1) * [-0.1 -Inf -Inf -Inf -Inf -Inf]                    # lower bounds on states
+    modelParams.z_ub            = ones(mpcParams.N+1,1) * [1.5   Inf  Inf  Inf  Inf  Inf]                 # upper bounds
     modelParams.l_A             = 0.125
     modelParams.l_B             = 0.125 #0.125
 
@@ -123,7 +123,7 @@ function InitializeParameters(mpcParams::classes.MpcParams,trackCoeff::classes.T
     posInfo.s_target            = 5.0
 
     oldTraj.n_oldTraj     = 20 #number of old Trajectories for safe set
-    oldTraj.oldTraj             = zeros(buffersize,4,oldTraj.n_oldTraj)
+    oldTraj.oldTraj             = zeros(buffersize,6,oldTraj.n_oldTraj)
     oldTraj.oldTrajXY           = zeros(buffersize,6,oldTraj.n_oldTraj)
     oldTraj.distance2obst       = zeros(buffersize,oldTraj.n_oldTraj)
     oldTraj.curvature           = zeros(buffersize,oldTraj.n_oldTraj)
@@ -131,7 +131,7 @@ function InitializeParameters(mpcParams::classes.MpcParams,trackCoeff::classes.T
     oldTraj.oldNIter             = 1000*ones(Int64,oldTraj.n_oldTraj)    # dummies for initialization
     oldTraj.costs = zeros(7,buffersize,oldTraj.n_oldTraj)
     oldTraj.lambda_sol = zeros(oldTraj.n_oldTraj,buffersize,oldTraj.n_oldTraj)
-    oldTraj.z_pred_sol =zeros(mpcParams.N+1,4,buffersize,oldTraj.n_oldTraj)
+    oldTraj.z_pred_sol =zeros(mpcParams.N+1,6,buffersize,oldTraj.n_oldTraj)
     oldTraj.u_pred_sol = zeros(mpcParams.N,2,buffersize,oldTraj.n_oldTraj)
     oldTraj.ssInfOn_sol = zeros(oldTraj.n_oldTraj,buffersize,oldTraj.n_oldTraj)
     oldTraj.eps = zeros(2,buffersize,oldTraj.n_oldTraj)
@@ -139,7 +139,7 @@ function InitializeParameters(mpcParams::classes.MpcParams,trackCoeff::classes.T
 
     mpcCoeff.order              = 5
     mpcCoeff.coeffCost          = zeros(buffersize,mpcCoeff.order+1,oldTraj.n_oldTraj)
-    mpcCoeff.coeffConst         = zeros(buffersize,mpcCoeff.order+1,oldTraj.n_oldTraj,3) # nz-1 because no coeff for s
+    mpcCoeff.coeffConst         = zeros(buffersize,mpcCoeff.order+1,oldTraj.n_oldTraj,5) # nz-1 because no coeff for s
     mpcCoeff.pLength            = 4*mpcParams.N        # small values here may lead to numerical problems since the functions are only approximated in a short horizon
 
     lapStatus.currentLap        = 1         # initialize lap number

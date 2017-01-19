@@ -32,13 +32,15 @@ function coeffConstraintCost!(oldTraj, mpcCoeff::classes.MpcCoeff, posInfo::clas
     pLength         = mpcCoeff.pLength              # interpolation length for polynomials
     n_oldTraj       = oldTraj.n_oldTraj
     coeffCost       = zeros(Order+1,n_oldTraj)            # polynomial coefficients for cost, second dimension for number of old trajectories
-    coeffConst      = zeros(Order+1,n_oldTraj,3)          # nz-1 beacuse no coeff for s
+    coeffConst      = zeros(Order+1,n_oldTraj,5)          # nz-1 beacuse no coeff for s
 
     # Select the old data
-    oldS            = oldTraj.oldTraj[:,1,:]::Array{Float64,2}
-    oldeY           = oldTraj.oldTraj[:,2,:]::Array{Float64,2}
-    oldePsi         = oldTraj.oldTraj[:,3,:]::Array{Float64,2}
-    oldV            = oldTraj.oldTraj[:,4,:]::Array{Float64,2}
+    oldS            = oldTraj.oldTraj[:,6,:]::Array{Float64,2}
+    oldeY           = oldTraj.oldTraj[:,5,:]::Array{Float64,2}
+    oldePsi         = oldTraj.oldTraj[:,4,:]::Array{Float64,2}
+    oldVx           = oldTraj.oldTraj[:,1,:]::Array{Float64,2}
+    oldVy           = oldTraj.oldTraj[:,2,:]::Array{Float64,2}
+    oldPsiDot       = oldTraj.oldTraj[:,3,:]::Array{Float64,2}
 
     
     N_points        = size(oldTraj.oldTraj,1)     #  dimension = length #how many points we saved so that we can subract these indeces to get values for second stroed trajectory which beginns at index NPoints+1
@@ -95,9 +97,11 @@ function coeffConstraintCost!(oldTraj, mpcCoeff::classes.MpcCoeff, posInfo::clas
 
     for i=1:n_oldTraj
         # Compute the constraint coefficients for all old trajectories
-        coeffConst[:,i,1]    = MatrixInterp[:,:,i]\oldeY[vec_range[i,:]]
-        coeffConst[:,i,2]    = MatrixInterp[:,:,i]\oldePsi[vec_range[i,:]]
-        coeffConst[:,i,3]    = MatrixInterp[:,:,i]\oldV[vec_range[i,:]]
+        coeffConst[:,i,1]    = MatrixInterp[:,:,i]\oldVx[vec_range[i,:]]
+        coeffConst[:,i,2]    = MatrixInterp[:,:,i]\oldVy[vec_range[i,:]]
+        coeffConst[:,i,3]    = MatrixInterp[:,:,i]\oldPsiDot[vec_range[i,:]]
+        coeffConst[:,i,4]    = MatrixInterp[:,:,i]\oldePsi[vec_range[i,:]]
+        coeffConst[:,i,5]    = MatrixInterp[:,:,i]\oldeY[vec_range[i,:]]
     
         # compute the final cost coefficients
         bQfunction_Vector = zeros(pLength+1)
