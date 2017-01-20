@@ -51,42 +51,49 @@ function run_sim()
     log_ParInt                  = zeros(length(t),40)       # log ParInt data
 
     # Logging parameters
-    posInfo.s_target            = 50.87
+    posInfo.s_target            = 52.48
 
     z_final         = zeros(6)
 
     uPrev           = zeros(10,2)
+    uPrev[1,1]      = 1.0
 
-    n_pf            = 1             # number of path-following laps
+    n_pf            = 2             # number of path-following laps
 
-    s_track = 0.01:.01:50.87
-    c_track = zeros(5087)
+    ds = 0.01
+    s_track = 0.01:.01:52.48
+    c_track = zeros(5248)
     c_track[1:200] = 0
-    c_track[201:400] = linspace(0,-pi/4,200)
-    c_track[401:600] = linspace(-pi/4,0,200)
-    c_track[601:700] = 0
-    c_track[701:900] = linspace(0,-pi/4,200)
-    c_track[901:1100] = linspace(-pi/4,0,200)
-    c_track[1101:1200] = linspace(0,-pi/4,100)
-    c_track[1201:1300] = linspace(-pi/4,0,100)
-    c_track[1301:1600] = 0
-    c_track[1601:2100] = linspace(0,10*pi/4/10,500)
-    c_track[2101:2600] = linspace(10*pi/4/10,0,500)
-    c_track[2601:2900] = linspace(0,-pi/3,300)
-    c_track[2901:3200] = linspace(-pi/3,0,300)
-    c_track[3201:3500] = 0
-    c_track[3501:3700] = linspace(0,-2*pi/2/4,200)
-    c_track[3701:3900] = linspace(-2*pi/2/4,0,200)
-    c_track[3901:3902] = 0
-    c_track[4041:4340] = linspace(0,-2*pi/2/6,300)
-    c_track[4341:4640] = linspace(-2*pi/2/6,0,300)
+    c_track[201:600] = createCurve(400,ds,-pi/2)
+    c_track[801:1400] = createCurve(600,ds,-3*pi/4)
+    c_track[1701:2900] = createCurve(1200,ds,5*pi/4)
+    c_track[2901:3400] = createCurve(500,ds,-pi)
+    c_track[3701:4100] = createCurve(400,ds,-pi/2)
+    c_track[4261:4860] = createCurve(600,ds,-pi/2)
+
+    # s_track = 0.01:.01:50.87
+    # c_track = zeros(5087)
+    # c_track[201:400] = linspace(0,-pi/4,200)
+    # c_track[401:600] = linspace(-pi/4,0,200)
+    # c_track[701:900] = linspace(0,-pi/4,200)
+    # c_track[901:1100] = linspace(-pi/4,0,200)
+    # c_track[1101:1200] = linspace(0,-pi/4,100)
+    # c_track[1201:1300] = linspace(-pi/4,0,100)
+    # c_track[1601:2100] = linspace(0,10*pi/4/10,500)
+    # c_track[2101:2600] = linspace(10*pi/4/10,0,500)
+    # c_track[2601:2900] = linspace(0,-pi/3,300)
+    # c_track[2901:3200] = linspace(-pi/3,0,300)
+    # c_track[3501:3700] = linspace(0,-2*pi/2/4,200)
+    # c_track[3701:3900] = linspace(-2*pi/2/4,0,200)
+    # c_track[4041:4340] = linspace(0,-2*pi/2/6,300)
+    # c_track[4341:4640] = linspace(-2*pi/2/6,0,300)
 
     s_track_p, c_track_p = prepareTrack(s_track, c_track)
 
     no_solution_found = 0
 
     # Run 10 laps
-    for j=1:30
+    for j=1:20
         # Initialize Lap
         lapStatus.currentLap = j
 
@@ -243,19 +250,19 @@ function run_sim()
             # grid("on")
             # legend(["eY","ePsi","v"])
 
-            # # Print results
-            # # --------------------------------
-            # figure(2)
-            # subplot(211)
-            # plot(zCurr[1:i,6],zCurr[1:i,[5,4,1]])
-            # title("Real")
-            # legend(["eY","ePsi","v"])
-            # xlabel("s [m]")
-            # grid("on")
-            # subplot(212)
-            # plot(zCurr[1:i,6],uCurr[1:i,:])
-            # legend(["a","d_f"])
-            # grid("on")
+            # Print results
+            # --------------------------------
+            figure(2)
+            subplot(211)
+            plot(zCurr[1:i,6],zCurr[1:i,[5,4,1]])
+            title("Real")
+            legend(["eY","ePsi","v"])
+            xlabel("s [m]")
+            grid("on")
+            subplot(212)
+            plot(zCurr[1:i,6],uCurr[1:i,:])
+            legend(["a","d_f"])
+            grid("on")
 
             figure(8)
             plot(zCurr[1:i,6],cost[1:i,1],"r",zCurr[1:i,6],cost[1:i,2],"g",zCurr[1:i,6],cost[1:i,3],"b",zCurr[1:i,6],cost[1:i,4],"y",zCurr[1:i,6],cost[1:i,5],"m",zCurr[1:i,6],cost[1:i,6],"c")
@@ -289,8 +296,10 @@ function prepareTrack(s_track,c_track)
 end
 function find_curvature(s_track,c_track,s,trackCoeff,v_curr,dt,N)
     sz = size(s_track,1)
-    ahea = Int64(round(2.0*v_curr*dt*N/0.01))                  # 300*0.01 = 3 meter ahead
+    ahea = Int64(round(3.0*v_curr*dt*N/0.01))                  # 300*0.01 = 3 meter ahead
     prev = Int64(round(1.0*v_curr*dt*N/0.01))                  # 100*0.01 = 1 meter back
+    #ahea = 200                  # 300*0.01 = 3 meter ahead
+    #prev = 50                  # 100*0.01 = 1 meter back
     n_tot = prev+ahea+1
     idx_min = indmin((s-s_track).^2)
     idx = idx_min-prev:idx_min+ahea
@@ -300,6 +309,17 @@ function find_curvature(s_track,c_track,s,trackCoeff,v_curr,dt,N)
     end
     coeff = intM\c_track[idx]
     return coeff
+end
+
+function createCurve(n,ds,alpha)
+    L = (n-1)*ds
+    M = [L^4 L^3 L^2;4*L^3 3*L^2 2*L;0.2*L^5 0.25*L^4 1/3*L^3]
+    b = [0;0;alpha]
+    c = M\b
+    s = 0:ds:(n-1)*ds
+    ss = [s.^4 s.^3 s.^2]
+    curv = ss*c
+    return curv
 end
 
 # Sequence of Laps:

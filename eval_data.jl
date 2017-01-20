@@ -17,7 +17,7 @@ function initPlot()
     rc("legend", fontsize="small")
     rc("font",family="serif")
     rc("font",size=10)
-    rc("figure",figsize=[4.5,3])
+    rc("figure",figsize=[2.8,2])
     #rc("text.latex", preamble = """\\usepackage[utf8x]{inputenc}\\usepackage[T1]{fontenc}\\usepackage{lmodern}""")               # <- tricky! -- gotta actually tell tex to use!
     #rc("pgf", texsystem="pdflatex",preamble=L"""\usepackage[utf8x]{inputenc}\usepackage[T1]{fontenc}\usepackage{lmodern}""")
 end
