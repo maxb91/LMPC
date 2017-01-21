@@ -49,7 +49,7 @@ function solveMpcProblem!(m::classes.MpcModel,mpcSol::classes.MpcSol,mpcCoeff::c
     mpcSol.z   = sol_z
     mpcSol.solverStatus = sol_status
     mpcSol.cost = zeros(7)
-    mpcSol.cost = [getvalue(m.costZ);getvalue(m.costZTerm);getvalue(m.constZTerm);getvalue(m.derivCost);getvalue(m.controlCost);getvalue(m.laneCost); getvalue(m.costObstacle)]
+    mpcSol.cost = [getvalue(m.costZ);getvalue(m.costZTerm);getvalue(m.constZTerm);getvalue(m.derivCost);getvalue(m.controlCost);getvalue(m.laneCost);getvalue(m.velocityCost); getvalue(m.costObstacle)]
     #objvl = getobjectivevalue(m.m)
     c_print= getvalue(m.costObstacle)
     nothing #nothing to return

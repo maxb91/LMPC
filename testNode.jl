@@ -36,7 +36,7 @@
     mpcParams                   = classes.MpcParams()
     m                           = classes.MpcModel()
 
-    buffersize                  = 1001 #1501
+    buffersize                  = 1401 #1501
     close("all")
 
 
@@ -49,8 +49,8 @@
     z_Init[4]  = 0.4*sin(z_Init[5]) #v_y
     z_Init[6] = 0.0
    
-    load_safeset = false#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
-    safeset = "data/2017-01-18-14-20-Data.jld"
+    load_safeset = true#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
+    safeset = "data/2017-01-21-01-49-Data.jld"
 
     #########
     InitializeParameters(mpcParams,trackCoeff,modelParams,posInfo,oldTraj,mpcCoeff,lapStatus,obstacle,buffersize)
@@ -58,13 +58,13 @@
     mpcSol.z  = zeros(mpcParams.N+1,4) 
     mpcSol.lambda = zeros(oldTraj.n_oldTraj)
     mpcSol.lambda[1] = 1
-    mpcSol.eps = zeros(2,buffersize)
+    mpcSol.eps = zeros(3,buffersize)
     #########
 
 
 
     posInfo.s_start             = 0.0 #does not get changed with the current version
-    @show posInfo.s_target            = (size(x_track)[2]-1)*trackCoeff.ds#59.5 #has to be fitted to track , current test track form ugo has 113.2 meters
+    posInfo.s_target            = (size(x_track)[2]-1)*trackCoeff.ds#59.5 #has to be fitted to track , current test track form ugo has 113.2 meters
      
     ##define obstacle x and xy vlaues not used at the moment 
     #for a clean definition of the x,y points the value of s_obstacle has to be the same as one of the points of the source map. 
@@ -84,7 +84,7 @@
     println("Initialize Model........")
     InitializeModel(m,mpcParams,modelParams,trackCoeff,z_Init_s, obstacle,oldTraj)
     println("Initial solve........")
-    # solve(m.mdl)
+    solve(m.mdl)
     println("Initial solve done!")
     println("*******************************************************")
     println("*******************************************************")
@@ -98,11 +98,11 @@
     trackCoeff.coeffCurvature   = [0.0;0.0;0.0;0.0;0.0]        # polynomial coefficients for curvature approximation (zeros for straight line)
     trackCoeff.nPolyCurvature = 4 # has to be 4 cannot be changed freely at the moment orders are still hardcoded in some parts of localizeVehicleCurvAbslizeVehicleCurvAbs
     trackCoeff.nPolyXY = 6  # has to be 6 cannot be changed freely at the moment orders are still hardcoded in some parts of localizeVehicleCurvAbslizeVehicleCurvAbs
-    n_rounds = 4
+    n_rounds = 5
     z_pred_log = zeros(mpcParams.N+1,6,length(t),n_rounds)
     u_pred_log = zeros(mpcParams.N,2,length(t),n_rounds)
     lambda_log = zeros(oldTraj.n_oldTraj,length(t),n_rounds)
-    cost        = zeros(7,length(t),n_rounds)
+    cost        = zeros(8,length(t),n_rounds)
 
     ssInfOn_log = zeros(oldTraj.n_oldTraj, length(t), n_rounds)
     curv_approx = zeros(mpcParams.N,length(t), n_rounds)
@@ -177,10 +177,10 @@
             
         if j == 1 && load_safeset == false
             # path following cost in first round
-            @NLobjective(m.mdl, Min, m.costPath + m.derivCost + m.controlCost + m.costObstacle)
+            @NLobjective(m.mdl, Min, m.costPath + m.derivCost + m.controlCost + m.velocityCost + m.costObstacle)
         elseif j == 2 || (load_safeset == true && j == 1)
             #learning objective formulation, minimize the sum of all parts of the objective
-            @NLobjective(m.mdl, Min, m.costZ + m.costZTerm + m.constZTerm + m.derivCost + m.controlCost + m.laneCost + m.costObstacle)
+            @NLobjective(m.mdl, Min, m.costZ + m.costZTerm + m.constZTerm + m.derivCost + m.controlCost + m.laneCost+ m.velocityCost + m.costObstacle)
         end
         
         ###########iterations learning
@@ -343,8 +343,8 @@
         #         break
         # end
         # figure()
-        # plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j],oldTraj.curvature[1:oldTraj.oldNIter[j],j], color = "red")
-        # plot(Pcurvature[1:oldTraj.oldNIter[j],1], Pcurvature[1:oldTraj.oldNIter[j],2], color = "green")
+        # plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],6,j],oldTraj.curvature[1:oldTraj.oldNIter[j],j], color = "red")
+        # plot(Pcurvature[1:oldTraj.oldNIter[j]-1,1], Pcurvature[1:oldTraj.oldNIter[j]-1,2], color = "green")
     end
     n_rounds = j #update n_rounds to represent actual number of simualated rounds
 

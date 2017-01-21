@@ -60,8 +60,8 @@ function calculatePredictedXY(z_log::Array{Float64}, mpcParams, trackCoeff, xy_t
 	weight1 = zeros(mpcParams.N+1)
 	weight2 = zeros(mpcParams.N+1)
 
-	s_over = ceil(Int64,z_log[:,1,i]/trackCoeff.ds)*trackCoeff.ds
-	s_under = floor(Int64,z_log[:,1,i]/trackCoeff.ds)*trackCoeff.ds
+	s_over = ceil(Int64,z_log[:,6,i]/trackCoeff.ds)*trackCoeff.ds
+	s_under = floor(Int64,z_log[:,6,i]/trackCoeff.ds)*trackCoeff.ds
 	
 	for j =1:mpcParams.N+1
 		if s_under[j] <0
@@ -70,7 +70,7 @@ function calculatePredictedXY(z_log::Array{Float64}, mpcParams, trackCoeff, xy_t
 		end
 		if s_over[j] <0
 			s_over[j] = 0
-			warn("predicted negative s \"big\": = $(z_log[j,1,i])")
+			warn("predicted negative s \"big\": = $(z_log[j,6,i])")
 		end
 
 		#if over index zu gross dannn an anfang plotte
@@ -88,8 +88,8 @@ function calculatePredictedXY(z_log::Array{Float64}, mpcParams, trackCoeff, xy_t
 		end
 		s_over_ind  = convert(Array{Int64},s_over_ind)
 		s_under_ind  = convert(Array{Int64},s_under_ind)
-		weight1[j] = (z_log[j,1,i]-s_under[j])/trackCoeff.ds
-		weight2[j] = (s_over[j]-z_log[j,1,i])/trackCoeff.ds
+		weight1[j] = (z_log[j,6,i]-s_under[j])/trackCoeff.ds
+		weight2[j] = (s_over[j]-z_log[j,6,i])/trackCoeff.ds
 		#!!index line77
 		xy_coord_infront[j,:] = [xy_track[1,s_over_ind[j]] xy_track[2,s_over_ind[j]]]
 		xy_coord_before[j,:] = [xy_track[1,s_under_ind[j]] xy_track[2,s_under_ind[j]]]
@@ -99,7 +99,7 @@ function calculatePredictedXY(z_log::Array{Float64}, mpcParams, trackCoeff, xy_t
 		y_secant[j] = xy_track[2,s_over_ind[j]] - xy_track[2,s_under_ind[j]]   
 		secant_vec[j,:] = [ x_secant[j] y_secant[j]]/norm([ x_secant[j] y_secant[j]])
 		normal_vec[j,:]= [-y_secant[j] x_secant[j]]/norm([-y_secant[j] x_secant[j]])
-		vector_sy[j,:] = normal_vec[j,:]*z_log[j,2,i]# explicit conversion to vector is necesary because the dimensions in next equations would not coincide Array{FLoat64,1}vs Array{FLoat64,2}
+		vector_sy[j,:] = normal_vec[j,:]*z_log[j,5,i]# explicit conversion to vector is necesary because the dimensions in next equations would not coincide Array{FLoat64,1}vs Array{FLoat64,2}
 		xy_pred[j,:] = xy_pred[j,:] + vector_sy[j,:]
 	end
 

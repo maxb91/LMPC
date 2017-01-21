@@ -73,17 +73,17 @@ s_diff = s_horizon[end]-s_horizon[1]
             #####plot test
                 # curv_points = 30
                 # curvature_curr = zeros(curv_points)
-                # s_curv = linspace(zCurr_s[iter,1],zCurr_s[iter,1]+s_diff,curv_points )
+                # s_curv = linspace(zCurr_s[iter,6],zCurr_s[iter,6]+s_diff,curv_points )
                 # for inp = 1:curv_points
                 #     curvature_curr[inp] = trackCoeff.coeffCurvature[1]*s_curv[inp]^4+trackCoeff.coeffCurvature[2]*s_curv[inp]^3+trackCoeff.coeffCurvature[3]*s_curv[inp]^2+trackCoeff.coeffCurvature[4]*s_curv[inp] + trackCoeff.coeffCurvature[5]
                 # end
                 # plot(s_curv,curvature_curr, color = "blue") 
 
-                # distance_s =(oldTraj.oldTraj[:,1,1]-zCurr_s[iter,1]).^2
+                # distance_s =(oldTraj.oldTraj[:,6,1]-zCurr_s[iter,6]).^2
                 # index_s = findmin(distance_s,1)[2]
-                # ind_last_old  = findfirst(x -> x > (oldTraj.oldTraj[index_s,1,1]+s_diff)[1], oldTraj.oldTraj[:,1,1])
+                # ind_last_old  = findfirst(x -> x > (oldTraj.oldTraj[index_s,6,1]+s_diff)[1], oldTraj.oldTraj[:,6,1])
                 # plot_old = oldTraj.curvature[index_s[1]:ind_last_old,1]
-                # plot_old_s= linspace(oldTraj.oldTraj[index_s,1,1][1],(oldTraj.oldTraj[index_s,1,1]+s_diff)[1],size(plot_old)[1])
+                # plot_old_s= linspace(oldTraj.oldTraj[index_s,6,1][1],(oldTraj.oldTraj[index_s,6,1]+s_diff)[1],size(plot_old)[1])
                 # plot(plot_old_s,plot_old, color = "red")
                  #######end test
 

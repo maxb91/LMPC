@@ -9,14 +9,14 @@ include("classes.jl")
     plot_costs = 1
     plot_states_over_t = 0
     plot_xy = 1
-    plot_lambda = 1
+    plot_lambda = 0
     plot_states_over_s = 1
     plot_curvature_approx=0
-    plot_inputs = 0
-    plot_eps = 0
+    plot_inputs = 1
+    plot_eps = 1
     interactive_plot_steps = 4
     n_oldTrajPlots = 5
-    file = "data/2017-01-18-16-07-Data.jld"
+    file = "data/2017-01-21-02-06-Data.jld"
     close("all")
 
     ####load data from file
@@ -111,9 +111,9 @@ include("classes.jl")
         fig_1 = figure(1)
         fig_1[:canvas][:set_window_title]("States and Inputs over t")
         ax1=subplot(211)
-        plot(t[1:oldTraj.oldNIter[j]],oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j],"y",t[1:oldTraj.oldNIter[j]],oldTraj.oldTraj[1:oldTraj.oldNIter[j],2,j],"r",t[1:oldTraj.oldNIter[j]],oldTraj.oldTraj[1:oldTraj.oldNIter[j],3,j],"g",t[1:oldTraj.oldNIter[j]],oldTraj.oldTraj[1:oldTraj.oldNIter[j],4,j],"b")
+        plot(t[1:oldTraj.oldNIter[j]],oldTraj.oldTraj[1:oldTraj.oldNIter[j],6,j],"y",t[1:oldTraj.oldNIter[j]],oldTraj.oldTraj[1:oldTraj.oldNIter[j],5,j],"r",t[1:oldTraj.oldNIter[j]],oldTraj.oldTraj[1:oldTraj.oldNIter[j],4,j],"g",t[1:oldTraj.oldNIter[j]],oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j],"b")
         grid(1)
-        legend(["s","eY","ePsi","v"], bbox_to_anchor=(1.001, 1), loc=2, borderaxespad=0.)
+        legend(["s","eY","ePsi","v_x"], bbox_to_anchor=(1.001, 1), loc=2, borderaxespad=0.)
         title("States")
         ax2=subplot(212,sharex=ax1)
         plot(t[1:oldTraj.oldNIter[j]-1],oldTraj.oldInput[1:oldTraj.oldNIter[j]-1,1,j],"r",t[1:oldTraj.oldNIter[j]-1],oldTraj.oldInput[1:oldTraj.oldNIter[j]-1,2,j],"g")
@@ -131,39 +131,44 @@ include("classes.jl")
     if plot_costs ==1
         plt_cost = figure(2)
         plt_cost[:canvas][:set_window_title]("Costs over s")
-        ax9 = subplot(3,2,1)
-        ax9[:plot](oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.costs[2,1:oldTraj.oldNIter[j]-1,j])  
+        ax9 = subplot(3,3,1)
+        ax9[:plot](oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,6,j],oldTraj.costs[2,1:oldTraj.oldNIter[j]-1,j])  
         grid()
         xlabel("s in [m]")
         ylabel("Terminal cost ") 
 
-        act_s_plot = ax9[:plot]([oldTraj.oldTraj[oldTraj.oldNIter[j]-1,1,j],oldTraj.oldTraj[oldTraj.oldNIter[j]-1,1,j]],[0,30])  #vertical line to show actual s
+        act_s_plot = ax9[:plot]([oldTraj.oldTraj[oldTraj.oldNIter[j]-1,6,j],oldTraj.oldTraj[oldTraj.oldNIter[j]-1,6,j]],[0,30])  #vertical line to show actual s
 
-        ax7= subplot(3,2,2,sharex=ax9)
-        ax7[:plot](oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.costs[3,1:oldTraj.oldNIter[j]-1,j])  
+        ax7= subplot(3,3,2,sharex=ax9)
+        ax7[:plot](oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,6,j],oldTraj.costs[3,1:oldTraj.oldNIter[j]-1,j])  
         grid()
         xlabel("s in [m]")
         ylabel("cost constraint")    
-        ax8= subplot(3,2,3,sharex=ax9)
-        ax8[:plot](oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.costs[7,1:oldTraj.oldNIter[j]-1,j])  
+        ax8= subplot(3,3,3,sharex=ax9)
+        ax8[:plot](oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,6,j],oldTraj.costs[8,1:oldTraj.oldNIter[j]-1,j])  
         grid()
         xlabel("s in [m]")
         ylabel("cost Obstacle")     
-        ax12= subplot(3,2,4,sharex=ax9)
-        ax12[:plot](oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.costs[4,1:oldTraj.oldNIter[j]-1,j])  
+        ax12= subplot(3,3,4,sharex=ax9)
+        ax12[:plot](oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,6,j],oldTraj.costs[4,1:oldTraj.oldNIter[j]-1,j])  
         grid()
         xlabel("s in [m]")
         ylabel("deriv cost")    
-        ax13= subplot(3,2,5,sharex=ax9)
-        ax13[:plot](oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.costs[6,1:oldTraj.oldNIter[j]-1,j])  
+        ax13= subplot(3,3,5,sharex=ax9)
+        ax13[:plot](oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,6,j],oldTraj.costs[6,1:oldTraj.oldNIter[j]-1,j])  
         grid()
         xlabel("s in [m]")
         ylabel("lane Cost")     
-        ax14= subplot(3,2,6,sharex=ax9)
-        ax14[:plot](oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.costs[1,1:oldTraj.oldNIter[j]-1,j])  
+        ax14= subplot(3,3,6,sharex=ax9)
+        ax14[:plot](oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,6,j],oldTraj.costs[1,1:oldTraj.oldNIter[j]-1,j])  
         grid()
         xlabel("s in [m]")
         ylabel("z Cost")  
+        ax_velCost= subplot(3,3,7,sharex=ax9)
+        ax_velCost[:plot](oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,6,j],oldTraj.costs[7,1:oldTraj.oldNIter[j]-1,j])  
+        grid()
+        xlabel("s in [m]")
+        ylabel("velocity cost")  
     end
 
     #x-y Plot of the racetrack and obstacle and car
@@ -217,7 +222,7 @@ include("classes.jl")
         for k=1: oldTraj.n_oldTraj//4
             k = convert(Int64,k)
             colorLambda = colorModule.getColor(colorObjectLambda)
-            scatter(oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.lambda_sol[k,1:oldTraj.oldNIter[j]-1,j].*oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j], color = colorLambda, marker = "x", label = string(L"\lambda","k"))
+            scatter(oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,6,j],oldTraj.lambda_sol[k,1:oldTraj.oldNIter[j]-1,j].*oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j], color = colorLambda, marker = "x", label = string(L"\lambda","k"))
         end
         act_lambda_plot = ax11[:plot]([],[], label="_nolegend_")
         xlabel("s in [m]")
@@ -231,7 +236,7 @@ include("classes.jl")
         for k=oldTraj.n_oldTraj//4+1: oldTraj.n_oldTraj//2
             k = convert(Int64,k)
             colorLambda = colorModule.getColor(colorObjectLambda)
-            scatter(oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.lambda_sol[k,1:oldTraj.oldNIter[j]-1,j].*oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j], color = colorLambda, marker = "x")
+            scatter(oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,6,j],oldTraj.lambda_sol[k,1:oldTraj.oldNIter[j]-1,j].*oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j], color = colorLambda, marker = "x")
         end
         xlabel("s in [m]")
         ylabel("lambda")
@@ -242,7 +247,7 @@ include("classes.jl")
         for k=oldTraj.n_oldTraj//2+1: oldTraj.n_oldTraj//4*3
             k = convert(Int64,k)
             colorLambda = colorModule.getColor(colorObjectLambda)
-            scatter(oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.lambda_sol[k,1:oldTraj.oldNIter[j]-1,j].*oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j], color = colorLambda, marker = "x")
+            scatter(oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,6,j],oldTraj.lambda_sol[k,1:oldTraj.oldNIter[j]-1,j].*oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j], color = colorLambda, marker = "x")
         end
         xlabel("s in [m]")
         ylabel("lambda")
@@ -253,7 +258,7 @@ include("classes.jl")
         for k=oldTraj.n_oldTraj*3//4+1: oldTraj.n_oldTraj
             k = convert(Int64,k)
             colorLambda = colorModule.getColor(colorObjectLambda)
-            scatter(oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.lambda_sol[k,1:oldTraj.oldNIter[j]-1,j].*oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j], color = colorLambda, marker = "x")
+            scatter(oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,6,j],oldTraj.lambda_sol[k,1:oldTraj.oldNIter[j]-1,j].*oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j], color = colorLambda, marker = "x")
         end
         xlabel("s in [m]")
         ylabel("lambda")
@@ -268,7 +273,7 @@ include("classes.jl")
         for k=1: oldTraj.n_oldTraj//4
             k = convert(Int64,k)
             colorSafeSet= colorModule.getColor(colorObjectSafeSet)
-            scatter(oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j], color = colorSafeSet, marker = "x")
+            scatter(oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,6,j],oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j], color = colorSafeSet, marker = "x")
         end
         xlabel("s in [m]")
         ylabel("ssOn")
@@ -279,7 +284,7 @@ include("classes.jl")
         for k=oldTraj.n_oldTraj//4+1: oldTraj.n_oldTraj//2
             k = convert(Int64,k)
             colorSafeSet= colorModule.getColor(colorObjectSafeSet)
-            scatter(oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j],color = colorSafeSet, marker = "x")
+            scatter(oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,6,j],oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j],color = colorSafeSet, marker = "x")
         end
         xlabel("s in [m]")
         ylabel("ssOn")
@@ -289,7 +294,7 @@ include("classes.jl")
         for k=oldTraj.n_oldTraj//2+1: oldTraj.n_oldTraj*3//4
             k = convert(Int64,k)
             colorSafeSet= colorModule.getColor(colorObjectSafeSet)
-            scatter(oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j],color = colorSafeSet, marker = "x")
+            scatter(oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,6,j],oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j],color = colorSafeSet, marker = "x")
         end
         xlabel("s in [m]")
         ylabel("ssOn")
@@ -299,7 +304,7 @@ include("classes.jl")
         for k=oldTraj.n_oldTraj*3//4+1: oldTraj.n_oldTraj
             k = convert(Int64,k)
             colorSafeSet= colorModule.getColor(colorObjectSafeSet)
-            scatter(oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j],color = colorSafeSet, marker = "x")
+            scatter(oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,6,j],oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j],color = colorSafeSet, marker = "x")
         end
         xlabel("s in [m]")
         ylabel("ssOn")
@@ -313,47 +318,64 @@ include("classes.jl")
         f_states_over_s = figure(5)
         f_states_over_s[:canvas][:set_window_title]("States and safe set over s")   
         clf()
-        ax4 = subplot(311)
-        plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j], oldTraj.oldTraj[1:oldTraj.oldNIter[j],4,j], color = "black")
+        ##############################################################
+        ax_vx = subplot(511)
+        plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],6,j], oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j], color = "black")
         k = j+1
         colorObjectV= colorModule.ColorManager()
         while k<=j+n_oldTrajPlots
             colorV = colorModule.getColor(colorObjectV)
-            plot(oldTraj.oldTraj[1:oldTraj.oldNIter[k],1,k], oldTraj.oldTraj[1:oldTraj.oldNIter[k],4,k], color = colorV)
+            plot(oldTraj.oldTraj[1:oldTraj.oldNIter[k],6,k], oldTraj.oldTraj[1:oldTraj.oldNIter[k],1,k], color = colorV)
             #plot(oldTraj.z_pred_sol[11,1,1:oldTraj.oldNIter[k]-1,k],state_approx[1:oldTraj.oldNIter[k]-1,k,3],color = colorV,label="_nolegend_", linestyle = "--")
             k  = k+1
         end
         grid()
         xlabel("s in [m]")
-        ylabel("v in [m/s]")
+        ylabel("v_x in [m/s]")
         legend(["v current","v 2nd", "3rd last","4th last ", "5th last"],bbox_to_anchor=(1.001, 1), loc=2, borderaxespad=0.)
-        p1 = ax4[:plot](1,1)
-        ax4[:set_ylim](0.0,2.1)
-
-        ax5 = subplot(312, sharex=ax4)
-        plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j], oldTraj.oldTraj[1:oldTraj.oldNIter[j],2,j], color = "black")
+        p1 = ax_vx[:plot](1,1)
+        ax_vx[:set_ylim](0.0,2.1)
+        ###############################################################
+        ax_vy = subplot(512, sharex=ax_vx)
+        plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],6,j], oldTraj.oldTraj[1:oldTraj.oldNIter[j],2,j], color = "black")
         k = j+1
-        colorObject_eY= colorModule.ColorManager()
+        colorObject_vy= colorModule.ColorManager()
         while k<=j+n_oldTrajPlots
-            color_eY = colorModule.getColor(colorObject_eY)
-            plot(oldTraj.oldTraj[1:oldTraj.oldNIter[k],1,k], oldTraj.oldTraj[1:oldTraj.oldNIter[k],2,k], color = color_eY)
+            color_vy = colorModule.getColor(colorObject_vy)
+            plot(oldTraj.oldTraj[1:oldTraj.oldNIter[k],6,k], oldTraj.oldTraj[1:oldTraj.oldNIter[k],2,k], color = color_vy)
             #plot(oldTraj.z_pred_sol[11,1,1:oldTraj.oldNIter[k]-1,k],state_approx[1:oldTraj.oldNIter[k]-1,k,1],color = color_eY,label="_nolegend_", linestyle = "--")
             k  = k+1
         end
         grid()
         xlabel("s in [m]")
-        ylabel("e_y in [m]")
-        legend(["e_y current round","e_y 2nd", "3rd last","4th last ", "5th last"],bbox_to_anchor=(1.001, 1), loc=2, borderaxespad=0.)
-        p2 = ax5[:plot](1,1)
-
-        ax6 = subplot(313, sharex=ax4)
+        ylabel("v_y in [m]")
+        legend(["v_y current round","v_y 2nd", "3rd last","4th last ", "5th last"],bbox_to_anchor=(1.001, 1), loc=2, borderaxespad=0.)
+        p2 = ax_vy[:plot](1,1)
+        #########################################
+        ax_psidot = subplot(513, sharex=ax_vx)
+        plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],6,j], oldTraj.oldTraj[1:oldTraj.oldNIter[j],3,j],color = "black")
+        k = j+1
+        colorObject_psidot= colorModule.ColorManager()
+        while k<=j+n_oldTrajPlots
+            color_psidot = colorModule.getColor(colorObject_psidot)
+            plot(oldTraj.oldTraj[1:oldTraj.oldNIter[k],6,k], oldTraj.oldTraj[1:oldTraj.oldNIter[k],3,k],color = color_psidot)
+            #plot(oldTraj.z_pred_sol[11,1,1:oldTraj.oldNIter[k]-1,k],state_approx[1:oldTraj.oldNIter[k]-1,k,2],color = color_ePsi,label="_nolegend_", linestyle = "--")
+            k  = k+1
+        end
+        grid()
+        xlabel("s in [m]")
+        ylabel("psi_dot in [rad]")
+        legend(["psi_dot current round","psi_dot 2nd", "3rd last","4th last ", "5th last"],bbox_to_anchor=(1.001, 1), loc=2, borderaxespad=0.)
+        p3 = ax_psidot[:plot](1,1)
+        ###########################################################
+        ax_psi = subplot(514, sharex=ax_vx)
         hold(true)
-        plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j], oldTraj.oldTraj[1:oldTraj.oldNIter[j],3,j],color = "black")
+        plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],6,j], oldTraj.oldTraj[1:oldTraj.oldNIter[j],4,j],color = "black")
         k = j+1
         colorObject_ePsi= colorModule.ColorManager()
         while k<=j+n_oldTrajPlots
             color_ePsi = colorModule.getColor(colorObject_ePsi)
-            plot(oldTraj.oldTraj[1:oldTraj.oldNIter[k],1,k], oldTraj.oldTraj[1:oldTraj.oldNIter[k],3,k],color = color_ePsi)
+            plot(oldTraj.oldTraj[1:oldTraj.oldNIter[k],6,k], oldTraj.oldTraj[1:oldTraj.oldNIter[k],4,k],color = color_ePsi)
             #plot(oldTraj.z_pred_sol[11,1,1:oldTraj.oldNIter[k]-1,k],state_approx[1:oldTraj.oldNIter[k]-1,k,2],color = color_ePsi,label="_nolegend_", linestyle = "--")
             k  = k+1
         end
@@ -361,20 +383,37 @@ include("classes.jl")
         xlabel("s in [m]")
         ylabel("e_psi in [rad]")
         legend(["e_psi current round","e_psi 2nd", "3rd last","4th last ", "5th last"],bbox_to_anchor=(1.001, 1), loc=2, borderaxespad=0.)
-        p3 = ax6[:plot](1,1)
+        p4 = ax_psi[:plot](1,1)
+        #########################################################################
+        ax_ey = subplot(515, sharex=ax_vx)
+        plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],6,j], oldTraj.oldTraj[1:oldTraj.oldNIter[j],5,j], color = "black")
+        k = j+1
+        colorObject_eY= colorModule.ColorManager()
+        while k<=j+n_oldTrajPlots
+            color_eY = colorModule.getColor(colorObject_eY)
+            plot(oldTraj.oldTraj[1:oldTraj.oldNIter[k],6,k], oldTraj.oldTraj[1:oldTraj.oldNIter[k],5,k], color = color_eY)
+            #plot(oldTraj.z_pred_sol[11,1,1:oldTraj.oldNIter[k]-1,k],state_approx[1:oldTraj.oldNIter[k]-1,k,1],color = color_eY,label="_nolegend_", linestyle = "--")
+            k  = k+1
+        end
+        grid()
+        xlabel("s in [m]")
+        ylabel("e_y in [m]")
+        legend(["e_y current round","e_y 2nd", "3rd last","4th last ", "5th last"],bbox_to_anchor=(1.001, 1), loc=2, borderaxespad=0.)
+        p5 = ax_ey[:plot](1,1)
+
     end
 
     if plot_inputs == 1
         f_input = figure(6)
         f_input[:canvas][:set_window_title]("Inputs over s")  
         ax_Inp1 = subplot(211) 
-        plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j], oldTraj.oldInput[1:oldTraj.oldNIter[j]-1,1,j], color= "green")
+        plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,6,j], oldTraj.oldInput[1:oldTraj.oldNIter[j]-1,1,j], color= "green")
         xlabel("s in [m]")
         ylabel("acceleration in [m/s^2]")
         legend(["applied acceleration","predicted acceleration"])
         grid()
          ax_Inp2= subplot(212, sharex = ax_Inp1)
-        plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j], oldTraj.oldInput[1:oldTraj.oldNIter[j]-1,2,j], color= "green")  
+        plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,6,j], oldTraj.oldInput[1:oldTraj.oldNIter[j]-1,2,j], color= "green")  
         xlabel("s in [m]")
         ylabel("steering angle in [rad]")
         legend(["applied steering angle","predicted steering angle"])
@@ -387,8 +426,8 @@ include("classes.jl")
     if plot_curvature_approx==1
         f_curv_app = figure(7)
         f_curv_app[:canvas][:set_window_title]("Curvature approximation over s")  
-        #plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j],curv_approx[1,1:oldTraj.oldNIter[j],j])
-        plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j],oldTraj.curvature[1:oldTraj.oldNIter[j],j])
+        #plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],6,j],curv_approx[1,1:oldTraj.oldNIter[j],j])
+        plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],6,j],oldTraj.curvature[1:oldTraj.oldNIter[j],j])
         grid()
     end
 
@@ -396,11 +435,12 @@ include("classes.jl")
         f_eps = figure(8)
         f_eps[:canvas][:set_window_title]("values of Eps over s") 
     
-        plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j],oldTraj.eps[1,1:oldTraj.oldNIter[j],j])
-        plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j],oldTraj.eps[2,1:oldTraj.oldNIter[j],j])
+        plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],6,j],oldTraj.eps[1,1:oldTraj.oldNIter[j],j])
+        plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],6,j],oldTraj.eps[2,1:oldTraj.oldNIter[j],j])
+        plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],6,j],oldTraj.eps[3,1:oldTraj.oldNIter[j],j])
         xlabel("s in [m]")
         ylabel("value of epsilons")
-        legend(["epsilon left boundary","epsilon right boundary", "epsilon obstacle"])
+        legend(["epsilon left boundary","epsilon right boundary", "epsilon velocity"])
         grid()
     end
     
@@ -410,13 +450,21 @@ include("classes.jl")
         #plot predicted states over s
         if plot_states_over_s ==1
             p1[1][:remove]()
-            p1 = ax4[:plot](oldTraj.z_pred_sol[:,1,i,j], oldTraj.z_pred_sol[:,4,i,j] ,marker="o", color = "yellow") #plot predicted velocity
+            p1 = ax_vx[:plot](oldTraj.z_pred_sol[:,6,i,j], oldTraj.z_pred_sol[:,1,i,j] ,marker="o", color = "yellow") #plot predicted velocity
 
             p2[1][:remove]()
-            p2 = ax5[:plot](oldTraj.z_pred_sol[:,1,i,j], oldTraj.z_pred_sol[:,2,i,j] ,marker="o", color = "yellow") #plot predicted e_y
-         
+            p2 = ax_vy[:plot](oldTraj.z_pred_sol[:,6,i,j], oldTraj.z_pred_sol[:,2,i,j] ,marker="o", color = "yellow") #plot predicted velocity_y
+
             p3[1][:remove]()
-            p3 = ax6[:plot](oldTraj.z_pred_sol[:,1,i,j], oldTraj.z_pred_sol[:,3,i,j] ,marker="o", color = "yellow")  #plot predicted e_psi
+            p3 = ax_psidot[:plot](oldTraj.z_pred_sol[:,6,i,j], oldTraj.z_pred_sol[:,3,i,j] ,marker="o", color = "yellow") #plot predicted psi dot
+
+            p4[1][:remove]()
+            p4 = ax_psi[:plot](oldTraj.z_pred_sol[:,6,i,j], oldTraj.z_pred_sol[:,4,i,j] ,marker="o", color = "yellow")  #plot predicted e_psi
+
+            p5[1][:remove]()
+            p5 = ax_ey[:plot](oldTraj.z_pred_sol[:,6,i,j], oldTraj.z_pred_sol[:,5,i,j] ,marker="o", color = "yellow") #plot predicted e_y
+         
+            
         end
        
        #x-y plot
@@ -439,7 +487,7 @@ include("classes.jl")
         ##plot a line in the cost function that always show the current s
         if plot_costs ==1
             act_s_plot[1][:remove]()
-            act_s_plot= ax9[:plot]([oldTraj.oldTraj[i,1,j],oldTraj.oldTraj[i,1,j]],[-3,oldTraj.oldNIter[j]], color ="black")  
+            act_s_plot= ax9[:plot]([oldTraj.oldTraj[i,6,j],oldTraj.oldTraj[i,6,j]],[-3,oldTraj.oldNIter[j]], color ="black")  
         end
         if plot_lambda ==1
             act_lambda_plot[1][:remove]()
@@ -450,8 +498,8 @@ include("classes.jl")
         if plot_inputs ==1 
             inta_plot_a[1][:remove]()
             inta_plot_df[1][:remove]()
-            inta_plot_a = ax_Inp1[:plot](oldTraj.z_pred_sol[1:end-1,1,i,j], oldTraj.u_pred_sol[:,1,i,j] ,marker="o", color = "yellow")
-            inta_plot_df = ax_Inp2[:plot](oldTraj.z_pred_sol[1:end-1,1,i,j], oldTraj.u_pred_sol[:,2,i,j] ,marker="o", color = "yellow")   
+            inta_plot_a = ax_Inp1[:plot](oldTraj.z_pred_sol[1:end-1,6,i,j], oldTraj.u_pred_sol[:,1,i,j] ,marker="o", color = "yellow")
+            inta_plot_df = ax_Inp2[:plot](oldTraj.z_pred_sol[1:end-1,6,i,j], oldTraj.u_pred_sol[:,2,i,j] ,marker="o", color = "yellow")   
         end
 
         println("Press Enter for next plot step")

@@ -31,7 +31,7 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
     # nPoints = N_nodes_poly_back + N_nodes_poly_front
     
     N_nodes_poly_back = convert(Int64,ceil(0.5*v_abs*N*dt/trackCoeff.ds))
-    N_nodes_poly_front = convert(Int64,ceil(1.5*v_abs*N*dt/trackCoeff.ds))
+    N_nodes_poly_front = convert(Int64,ceil(2.0*v_abs*N*dt/trackCoeff.ds))
     nPoints = N_nodes_poly_back + N_nodes_poly_front
 
 
@@ -132,6 +132,7 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
     if s_nearest >= ds
         S_Value = zeros(0:Discretization:2*ds) #create an vector for the elements 1 meter before and after the nearest point of the track 
         DistanceNew = zeros(0:Discretization:2*ds)
+
         for j=(s_nearest-ds):Discretization:(s_nearest+ds) 
             # j does not stand for the id of the node but for the length of s in meters so j = 29 means node number 30
             for i = 1:OrderXY+1
@@ -151,6 +152,10 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
     else # just active while the car is nearest to the starting point as we cannot evaluate functon for negative s
         S_Value = zeros(0:Discretization:1*ds) #create an vector for the elements 1 after the nearest point of the track 
         DistanceNew = zeros(0:Discretization:1*ds)
+
+        #T those were just to test
+        # XCurve_t = zeros(0:Discretization:2)
+        # YCurve_t = zeros(0:Discretization:2)
         for j=s_nearest:Discretization:(s_nearest+ds) 
             # j does not stand for the id of the node but for the length of s in meters so j = 29 means node number 30
             for i = 1:OrderXY+1
@@ -159,18 +164,22 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
             XCurve = dot(coeffX, j_vec)
             YCurve = dot(coeffY, j_vec)
 
+            #T just test
+            # XCurve_t[Counter] = dot(coeffX, j_vec)
+            # YCurve_t[Counter] = dot(coeffY, j_vec)
+
             S_Value[Counter] = j
             DistanceNew[Counter] = sqrt((x-XCurve).^2+(y-YCurve).^2) #distance of vehicle to every interpolated node
             Counter = Counter + 1
         end
     end
     # T
-    # plot(XCurve_t,YCurve_t , linewidth=2.0)
-    # scatter(XCurve_t[1],YCurve_t[1])
-    # scatter(XCurve_t[end],YCurve_t[end])
-    # scatter(x,y)
+    # scatter(XCurve_t[1:100:end],YCurve_t[1:100:end] , color= "yellow")
+    # scatter(XCurve_t[1],YCurve_t[1],color= "blue")
+    # scatter(XCurve_t[end],YCurve_t[end],color= "blue")
+    # scatter(x,y,color ="black")
     # plot(nodes_near_X, nodes_near_Y ) 
-    #scatter(x_track[idx_min],y_track[idx_min])
+    # scatter(x_track[idx_min],y_track[idx_min], color = "green")
   
 
     # from the evaluated points get the best as [s, y] ---> use the as Feedback
@@ -221,20 +230,42 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
 
         XCurve = coeffX'*s_vec
         YCurve = coeffY'*s_vec
-        dX = coeffX'*sdot_vec #[6*s^5 5*s^4 4*s^3 3*s^2 2*s^1 1 0]' comment can be deleted if sdot_vec is verified for all polynomials
-        dY = coeffY'*sdot_vec      
+        dX = dot(coeffX,sdot_vec) #[6*s^5 5*s^4 4*s^3 3*s^2 2*s^1 1 0]' comment can be deleted if sdot_vec is verified for all polynomials
+        dY = dot(coeffY,sdot_vec)    
 
         xyVectorAngle = atan2(y-YCurve0,x-XCurve0)
-        xyPathAngle = atan2(dY,dX)
+        xyPathAngle = atan2(dY,dX)# gives a value between -pi < x <= pi  
     end
-    #?? calculate epsi here?
-
     ey = eyabs*sign(sin(xyVectorAngle-xyPathAngle))
 
+  #compute epsi
+
+
+    epsi = mod((psi+pi),(2*pi))-pi-xyPathAngle
+    epsi = mod((epsi+pi),(2*pi))-pi
+
+
+  # # Finally compute epsi
+  #   j = s
+  #   dX = dot(coeffX,[6*j^5, 5*j^4, 4*j^3, 3*j^2, 2*j, 1, 0])
+  #   dY = dot(coeffY,[6*j^5, 5*j^4, 4*j^3, 3*j^2, 2*j, 1, 0])
+  #   angle=atan2(dY,dX) # gives a value between -pi < x <= pi
+
+  #   # epsi = psi - angle
+
+
+  #   epsi = mod((psi+pi),(2*pi))-pi-angle
+  #   epsi = mod((epsi+pi),(2*pi))-pi
+
+
+
     #T Calcuate the error due to the conversion in the curvilinear abscissa
-    # yBack = YCurve + ey*cos(xyPathAngle)
-    # xBack = XCurve - ey*sin(xyPathAngle)
-    # Error = sqrt((y-yBack)^2 + (x-xBack)^2)
+    yBack = YCurve + ey*cos(xyPathAngle)
+    xBack = XCurve - ey*sin(xyPathAngle)
+    Error = sqrt((y-yBack)^2 + (x-xBack)^2)
+    if Error[1] >= 0.001
+        warn("problem with approximation of x and y pos. Error: $Error, i: $itercount")
+    end
     #endT
 
     # now compute the angle and the curvature needed for the interpolation
@@ -288,8 +319,8 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
     end
   
     # compute coeff for theta and curvature
-    coeffTheta=Matrix4th\b_theta_vector
-    coeffCurv=Matrix4th\b_curvature_vector
+    coeffTheta = Matrix4th\b_theta_vector
+    coeffCurv  = Matrix4th\b_curvature_vector
    #####T
    #test the approximation of the curvature
    # if itercount%20 == 0 
@@ -334,51 +365,14 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
    #  end
     #####endT
 
-
-    # XConvertedBackS=coeffX'*[s^6 s^5 s^4 s^3 s^2 s 1]' 
-    # YConvertedBackS=coeffY'*[s^6 s^5 s^4 s^3 s^2 s 1]'   
+ 
         
     # angle=coeffTheta'*[s^4 s^3 s^2 s 1]'; #Make the sketch to understand why 
 
-    # XConvertedBack = XConvertedBackS - sin(angle)*ey 
-    # YConvertedBack = YConvertedBackS + cos(angle)*ey
-    # @show ErrorConvertedBack = sqrt((x-XConvertedBack[1])^2+((y-YConvertedBack[1])^2))
+    
         
 
-    # Finally compute epsi
-    j = s
-    dX = dot(coeffX,[6*j^5, 5*j^4, 4*j^3, 3*j^2, 2*j, 1, 0])
-    dY = dot(coeffY,[6*j^5, 5*j^4, 4*j^3, 3*j^2, 2*j, 1, 0])
-    angle=atan2(dY,dX) # gives a value between -pi < x <= pi
-
-    # if angle < 0
-    #     angle = 2*pi + angle
   
-    # end
-
-    # epsi = psi - angle
-
-    # if abs(epsi)>(pi/2)
-    #     if epsi<(pi/2)
-    #         @show epsi = psi - (angle - 2*pi)  
-    #     else
-    #         @show epsi = (psi - 2*pi) - angle          
-    #     end
-    # end
-    # @show psi
-    # @show angle
-    # @show s
-    # println("#####################")
-    # epsi = (psi+pi)%(2*pi)-pi-angle
-    # epsi = (epsi+pi)%(2*pi)-pi
-
-
-    # if psi- angle< -pi
-    #     epsi +=2*pi
-    # end
-
-    epsi = mod((psi+pi),(2*pi))-pi-angle
-    epsi = mod((epsi+pi),(2*pi))-pi
 
     #T
     #this was yjust to test correcntess of teh dfrisr derivative
@@ -389,9 +383,6 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
     # xs= [posTrackx; drawtangentx]
     # ys= [posTracky; drawtangenty]
     
-    #changeMetersforBARC
-   # @show s_start = ind_start/10-0.1 #--- HERE assuming all point are 1m distant, # if we are at the 4th point we are 3m away from the start
-   # s= s/10
     
 
     #return s_start, s, ey, coeffX,coeffY, coeffTheta, coeffCurv, epsi

@@ -31,21 +31,38 @@ function create_track(w = 0.3)
 
 
      # # racetarck
+    # add_curve(theta,20,0.0)
+    # # add_curve(theta,40,-pi*3/4)
+    # add_curve(theta,34,-pi/2)
+    # add_curve(theta,10,-pi/5)
+    # add_curve(theta,68,0.0)
+    # add_curve(theta,10,-pi/4)
+    # add_curve(theta,62,-pi)
+    # add_curve(theta,10,pi/5)
+    # add_curve(theta,11,0)
+    # add_curve(theta,32,pi*3/4)
+    # add_curve(theta,30,0.0)
+    # add_curve(theta,94,-pi)
+    # add_curve(theta,12,-pi*2/5*0.9366)
+    # add_curve(theta,12,pi*2/5*0.9366)
+    # add_curve(theta,17,0.0)
+
+     # # optimized racetrack
     add_curve(theta,20,0.0)
     # add_curve(theta,40,-pi*3/4)
     add_curve(theta,34,-pi/2)
     add_curve(theta,10,-pi/5)
-    add_curve(theta,68,0.0)
+    add_curve(theta,82,0.0)
     add_curve(theta,10,-pi/4)
     add_curve(theta,62,-pi)
     add_curve(theta,10,pi/5)
     add_curve(theta,11,0)
-    add_curve(theta,32,pi*3/4)
+    add_curve(theta,42,pi*3/4)
     add_curve(theta,30,0.0)
     add_curve(theta,94,-pi)
-    add_curve(theta,12,-pi*2/5*0.9366)
-    add_curve(theta,12,pi*2/5*0.9366)
-    add_curve(theta,17,0.0)
+    add_curve(theta,12,-pi*1/5*0.9695)
+    add_curve(theta,12,pi*1/5*0.9695)
+    add_curve(theta,24,0.0)
 
 
     # # SIMPLE oval

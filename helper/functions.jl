@@ -23,13 +23,13 @@ function saveOldTraj(oldTraj,zCurr::Array{Float64}, zCurr_x::Array{Float64},uCur
     #fill up the arrays for the additional costs with measured values, the additional cost are zeros for all i after the finish line
     #!! edit for new cost function
     #currCostObst[1:i] = flipdim(cumsum(flipdim(mpcParams.Q_obstacle*1./( ( (zCurr[1:i,1]-obstacle.s_obstacle[1:i,1])/obstacle.rs ).^2 + ( (zCurr[1:i,2]-obstacle.sy_obstacle[1:i,1])/obstacle.ry ).^2 - 1 ).^2,1),1),1)
-    for l = 1:6
-        derivStateCost[1:i-1] += flipdim(mpcParams.QderivZ[l]*cumsum(flipdim((zCurr_export[1:i-1,l]-zCurr_export[2:i,l]).^2,1),1),1)
-    end
-    derivInpCost[1:i-2] = flipdim(mpcParams.QderivU[1]*cumsum(flipdim((uCurr_export[1:i-2,1]-uCurr_export[2:i-1,1]).^2,1),1)+mpcParams.QderivU[2]*cumsum(flipdim((uCurr_export[1:i-2,2]-uCurr_export[2:i-1,2]).^2,1),1),1)
-    inpCost[1:i-1] = flipdim(mpcParams.R[1]*cumsum(flipdim(uCurr_export[1:i-1,1].^2,1),1)+mpcParams.R[2]*cumsum(flipdim(uCurr_export[1:i-1,2].^2,1),1),1)
+    # for l = 1:6
+    #     derivStateCost[1:i-1] += flipdim(mpcParams.QderivZ[l]*cumsum(flipdim((zCurr_export[1:i-1,l]-zCurr_export[2:i,l]).^2,1),1),1)
+    # end
+    # derivInpCost[1:i-2] = flipdim(mpcParams.QderivU[1]*cumsum(flipdim((uCurr_export[1:i-2,1]-uCurr_export[2:i-1,1]).^2,1),1)+mpcParams.QderivU[2]*cumsum(flipdim((uCurr_export[1:i-2,2]-uCurr_export[2:i-1,2]).^2,1),1),1)
+    # inpCost[1:i-1] = flipdim(mpcParams.R[1]*cumsum(flipdim(uCurr_export[1:i-1,1].^2,1),1)+mpcParams.R[2]*cumsum(flipdim(uCurr_export[1:i-1,2].^2,1),1),1)
     for j = 1:buffersize
-        cost2target[j] = mpcParams.Q_cost*(costLap-j+1)+derivStateCost[j]+derivInpCost[j]+inpCost[j]#+currCostObst[j]
+        cost2target[j] = mpcParams.Q_cost*(costLap-j+1)#+derivStateCost[j]+derivInpCost[j]+inpCost[j]#+currCostObst[j]
     end
 
     # Save all data in oldTrajectory:
@@ -94,26 +94,27 @@ function InitializeParameters(mpcParams::classes.MpcParams,trackCoeff::classes.T
                                 posInfo::classes.PosInfo,oldTraj::classes.OldTrajectory,mpcCoeff::classes.MpcCoeff,lapStatus::classes.LapStatus,obstacle::classes.Obstacle,buffersize::Int64)
     mpcParams.N                 = 10                        #lenght of prediction horizon
     mpcParams.nz                = 6                         #number of States
-    mpcParams.Q                 = [10.0,0.1,0.1,0.1,10.0,0]  #0 10 0 1    # put weights on ey, epsi and v, just for first round of PathFollowing
-    mpcParams.Q_term            = 100*[1.0,1.0,1.0,2.0,10.0]           # weights for terminal constraints (LMPC, for e_y, e_psi, and v)
+    mpcParams.Q                 = [10.0,10.0,0.0,1.0,20.0,0.0]  #0 10 0 1    # put weights on v_x, v_y, psi_dot, epsi, ey, s, just for first round of PathFollowing
+    mpcParams.Q_term            = 10*[20.0,10.0,10.0,2.0,10.0]           # weights for terminal constraints (LMPC, for e_y, e_psi, and v)
     mpcParams.Q_cost            = 0.7                           #factor for terminal cost
     mpcParams.Q_obstacle        = 0.3 #
     mpcParams.Q_obstacleNumer   = 0.002#0.04#0.0025#0.0019
-    mpcParams.Q_lane            = 2000.0
-    mpcParams.R                 = 0.0*[1.0,1.0]             # put weights on a and d_f
+    mpcParams.Q_lane            = 2000
+    mpcParams.Q_velocity        = 4000
+    mpcParams.R                 = 0.0*[0.0,1.0]             # put weights on a and d_f
     mpcParams.QderivZ           = 0.0*[0.1,0.1,0.1,0.1,0.0,0.0]             # cost matrix for derivative cost of states
-    mpcParams.QderivU           = 0.1*[1,10]               # cost matrix for derivative cost of inputs
-    mpcParams.vPathFollowing    = 0.6                 # reference speed for first lap of path following
+    mpcParams.QderivU           = 1.0*[2.0,0.5]               # cost matrix for derivative cost of inputs
+    mpcParams.vPathFollowing    = 0.6 #0.6                 # reference speed for first lap of path following
 
     trackCoeff.nPolyCurvature   = 4                       # 4th order polynomial for curvature approximation
     trackCoeff.coeffCurvature   = zeros(trackCoeff.nPolyCurvature+1)         # polynomial coefficients for curvature approximation (zeros for straight line)
     trackCoeff.width            = 0.6                   # width of the track (0.6m)
     trackCoeff.ds               = 1//10#4//100#1//10 # is defined as a rational number so we can use it to calculate indices in matrix. with float becomes error
 
-    modelParams.u_lb            = ones(mpcParams.N,1) * [-0.6  -pi/6]  #-0.6 for braking                  # lower bou9nds on steering
-    modelParams.u_ub            = ones(mpcParams.N,1) * [ 1.0   pi/6]       #1.2           # upper bounds
-    modelParams.z_lb            = ones(mpcParams.N+1,1) * [-0.1 -Inf -Inf -Inf -Inf -Inf]                    # lower bounds on states
-    modelParams.z_ub            = ones(mpcParams.N+1,1) * [1.5   Inf  Inf  Inf  Inf  Inf]                 # upper bounds
+    modelParams.u_lb            = ones(mpcParams.N,1) * [-8.0  -30/180*pi]  #-0.6 for braking                  # lower bou9nds on steering
+    modelParams.u_ub            = ones(mpcParams.N,1) * [ 1.0   30/180*pi]       #1.2           # upper bounds
+    modelParams.z_lb            = ones(mpcParams.N+1,1) * [0.1 -Inf -Inf -Inf -Inf -Inf]                    # lower bounds on states
+    modelParams.z_ub            = ones(mpcParams.N+1,1) * [Inf  Inf  Inf  Inf  Inf  Inf]                 # upper bounds
     modelParams.l_A             = 0.125
     modelParams.l_B             = 0.125 #0.125
 
@@ -122,19 +123,19 @@ function InitializeParameters(mpcParams::classes.MpcParams,trackCoeff::classes.T
     posInfo.s_start             = 0.0
     posInfo.s_target            = 5.0
 
-    oldTraj.n_oldTraj     = 20 #number of old Trajectories for safe set
+    oldTraj.n_oldTraj           = 20 #number of old Trajectories for safe set
     oldTraj.oldTraj             = zeros(buffersize,6,oldTraj.n_oldTraj)
     oldTraj.oldTrajXY           = zeros(buffersize,6,oldTraj.n_oldTraj)
     oldTraj.distance2obst       = zeros(buffersize,oldTraj.n_oldTraj)
     oldTraj.curvature           = zeros(buffersize,oldTraj.n_oldTraj)
     oldTraj.oldInput            = zeros(buffersize,2,oldTraj.n_oldTraj)
-    oldTraj.oldNIter             = 1000*ones(Int64,oldTraj.n_oldTraj)    # dummies for initialization
-    oldTraj.costs = zeros(7,buffersize,oldTraj.n_oldTraj)
+    oldTraj.oldNIter            = 1000*ones(Int64,oldTraj.n_oldTraj)    # dummies for initialization
+    oldTraj.costs = zeros(8,buffersize,oldTraj.n_oldTraj)
     oldTraj.lambda_sol = zeros(oldTraj.n_oldTraj,buffersize,oldTraj.n_oldTraj)
     oldTraj.z_pred_sol =zeros(mpcParams.N+1,6,buffersize,oldTraj.n_oldTraj)
     oldTraj.u_pred_sol = zeros(mpcParams.N,2,buffersize,oldTraj.n_oldTraj)
     oldTraj.ssInfOn_sol = zeros(oldTraj.n_oldTraj,buffersize,oldTraj.n_oldTraj)
-    oldTraj.eps = zeros(2,buffersize,oldTraj.n_oldTraj)
+    oldTraj.eps = zeros(3,buffersize,oldTraj.n_oldTraj)
     oldTraj.cost2Target = zeros(buffersize,oldTraj.n_oldTraj)
 
     mpcCoeff.order              = 5

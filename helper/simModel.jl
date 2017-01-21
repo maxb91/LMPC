@@ -54,22 +54,21 @@ function simModel_dyn_x(z::Array{Float64},u::Array{Float64},dt::Float64,modelPar
     # u[1] = acceleration
     # u[2] = steering angle
 
-    m = 1.98 # kg
+    m = 1.98#1.98 # kg
     mu  = 0.85
     g = 9.81 # m/s^2
     I_z = 0.03 # kg * m^2
-    B = 0.8#1.0
+    B = 2.0#1.0
     C = 1.25
 
 
 
-
     F_xr = m*u[1]    
-    FxMax = mu*m*g / 2.0    
-    if F_xr > FxMax      
-        F_xr = FxMax    
-    elseif F_xr < -FxMax  
-        F_xr = -FxMax 
+    FMax = mu*m*g / 2.0    
+    if F_xr > FMax      
+        F_xr = FMax    
+    elseif F_xr < -FMax  
+        F_xr = -FMax 
     end
 
     # determine slip angles      
@@ -80,18 +79,18 @@ function simModel_dyn_x(z::Array{Float64},u::Array{Float64},dt::Float64,modelPar
         alpha_f = atan( (v_y+l_A*psi_dot) / v_x ) - u[2]        
         alpha_r = atan( (v_y-l_B*psi_dot) / v_x)      
     end
-    if exact_sim_i==1 && max(abs(alpha_f),abs(alpha_r))>30/180*pi
+    if exact_sim_i==1 && max(abs(alpha_f),abs(alpha_r))>10/180*pi
         warn("Large slip angles: alpha_f = $(alpha_f*180/pi)°, alpha_r = $(alpha_r*180/pi)° , x =$x, y = $y")
     end
     
-    F_yf = -mu*m*g/2.0 * sin(C*atan(B*alpha_f))
-    F_yr = -mu*m*g/2.0 * sin(C*atan(B*alpha_r))
+    F_yf = -FMax * sin(C*atan(B*alpha_f))
+    F_yr = -FMax * sin(C*atan(B*alpha_r))
     # F_yf = -(mu*m*g / 2.0) * 1.02*alpha_f      
     # F_yr = -(mu*m*g / 2.0) * 1.02*alpha_r
-    if F_yr > sqrt(FxMax^2 - F_xr^2)        
-        F_yr = sqrt(FxMax^2 - F_xr^2)    
-    elseif  F_yr < -sqrt(FxMax^2 - F_xr^2)  
-        F_yr = -sqrt(FxMax^2 - F_xr^2) 
+    if F_yr > sqrt(FMax^2 - F_xr^2)        
+        F_yr = sqrt(FMax^2 - F_xr^2)    
+    elseif  F_yr < -sqrt(FMax^2 - F_xr^2)  
+        F_yr = -sqrt(FMax^2 - F_xr^2) 
     end
 
 
