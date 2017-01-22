@@ -102,8 +102,8 @@ function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelP
     mu  = 0.85
     g = 9.81 # m/s^2
     I_z = 0.03 # kg * m^2
-    B = 2.0#1.0
-    C = 1.25
+    B = 3.0#1.0
+    C = 1.25#1.25
     FMax = mu*mass*g / 2.0 
     l_A             = 0.125
     l_B             = 0.125   
@@ -128,12 +128,15 @@ function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelP
     #     warn("Large slip angles: alpha_f = $(alpha_f*180/pi)°, alpha_r = $(alpha_r*180/pi)° , x =$x, y = $y")
     # end
     
-    @NLexpression(m.mdl, F_yf[i = 1:N], -FMax * sin(C*atan(B*atan( (m.z_Ol[i,2]+l_A*m.z_Ol[i,3]) / m.z_Ol[i,1] ) - m.u_Ol[i,2])))
-    @NLexpression(m.mdl, F_yr[i = 1:N], -FMax * sin(C*atan(B*atan( (m.z_Ol[i,2]-l_B*m.z_Ol[i,3]) / m.z_Ol[i,1]))))
+    # @NLexpression(m.mdl, F_yf[i = 1:N], -FMax * sin(C*atan(B*atan( (m.z_Ol[i,2]+l_A*m.z_Ol[i,3]) / m.z_Ol[i,1] ) - m.u_Ol[i,2])))
+    # @NLexpression(m.mdl, F_yr[i = 1:N], -FMax * sin(C*atan(B*atan( (m.z_Ol[i,2]-l_B*m.z_Ol[i,3]) / m.z_Ol[i,1]))))
+
+    @NLexpression(m.mdl, F_yf[i = 1:N], -FMax * sin(C*atan(B*( (m.z_Ol[i,2]+l_A*m.z_Ol[i,3]) / m.z_Ol[i,1] ) - m.u_Ol[i,2])))
+    @NLexpression(m.mdl, F_yr[i = 1:N], -FMax * sin(C*atan(B*( (m.z_Ol[i,2]-l_B*m.z_Ol[i,3]) / m.z_Ol[i,1]))))
     # @NLexpression(m.mdl, F_yf[i = 1:N], -FMax * 1.02*atan( (m.z_Ol[i,2]+l_A*m.z_Ol[i,3]) / m.z_Ol[i,1] ) - m.u_Ol[i,2] )
     # @NLexpression(m.mdl, F_yr[i = 1:N], -FMax * 1.02*atan( (m.z_Ol[i,2]-l_B*m.z_Ol[i,3]) / m.z_Ol[i,1]) )
 
-    max_alpha = 20
+    max_alpha = 15
 
     @NLconstraint(m.mdl, [i=1:N], atan( (m.z_Ol[i,2]-l_B*m.z_Ol[i,3]) / m.z_Ol[i,1]) <=  max_alpha/180*pi)
     @NLconstraint(m.mdl, [i=1:N], atan( (m.z_Ol[i,2]-l_B*m.z_Ol[i,3]) / m.z_Ol[i,1]) >= -max_alpha/180*pi)
@@ -192,7 +195,7 @@ function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelP
     # Terminal cost
     # ---------------------------------
     # The value of this cost determines how fast the algorithm learns. The higher this cost, the faster the control tries to reach the finish line.
-    @NLexpression(m.mdl, costZTerm,  sum(m.ssInfOn[k]*m.lambda[k]*sum(m.coeffTermCost[i,k]*m.z_Ol[N+1,6]^(order+1-i) for i=1:order+1) for k=1:n_oldTraj))
+    @NLexpression(m.mdl, costZTerm,  Q_cost*sum(m.ssInfOn[k]*m.lambda[k]*sum(m.coeffTermCost[i,k]*m.z_Ol[N+1,6]^(order+1-i) for i=1:order+1) for k=1:n_oldTraj))
     m.costZTerm = costZTerm
     #basic idea    
     #@NLexpression(m.mdl, costZTerm, Q_cost*sum{coeffTermCost[i,1]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1})

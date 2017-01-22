@@ -58,7 +58,7 @@ function simModel_dyn_x(z::Array{Float64},u::Array{Float64},dt::Float64,modelPar
     mu  = 0.85
     g = 9.81 # m/s^2
     I_z = 0.03 # kg * m^2
-    B = 2.0#1.0
+    B = 3.0#1.0
     C = 1.25
 
 
@@ -76,10 +76,12 @@ function simModel_dyn_x(z::Array{Float64},u::Array{Float64},dt::Float64,modelPar
         alpha_f = 0.0        
         alpha_r = 0.0      
     else        
-        alpha_f = atan( (v_y+l_A*psi_dot) / v_x ) - u[2]        
-        alpha_r = atan( (v_y-l_B*psi_dot) / v_x)      
+    #     alpha_f = atan( (v_y+l_A*psi_dot) / v_x ) - u[2]        
+    #     alpha_r = atan( (v_y-l_B*psi_dot) / v_x)    
+        alpha_f = ( (v_y+l_A*psi_dot) / v_x ) - u[2]        
+        alpha_r = ( (v_y-l_B*psi_dot) / v_x)    
     end
-    if exact_sim_i==1 && max(abs(alpha_f),abs(alpha_r))>10/180*pi
+    if exact_sim_i==1 && max(abs(alpha_f),abs(alpha_r))>16/180*pi
         warn("Large slip angles: alpha_f = $(alpha_f*180/pi)°, alpha_r = $(alpha_r*180/pi)° , x =$x, y = $y")
     end
     

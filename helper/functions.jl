@@ -94,16 +94,16 @@ function InitializeParameters(mpcParams::classes.MpcParams,trackCoeff::classes.T
                                 posInfo::classes.PosInfo,oldTraj::classes.OldTrajectory,mpcCoeff::classes.MpcCoeff,lapStatus::classes.LapStatus,obstacle::classes.Obstacle,buffersize::Int64)
     mpcParams.N                 = 10                        #lenght of prediction horizon
     mpcParams.nz                = 6                         #number of States
-    mpcParams.Q                 = [10.0,10.0,0.0,1.0,20.0,0.0]  #0 10 0 1    # put weights on v_x, v_y, psi_dot, epsi, ey, s, just for first round of PathFollowing
+    mpcParams.Q                 = [10.0,10.0,0.1,1.0,20.0,0.0]  #0 10 0 1    # put weights on v_x, v_y, psi_dot, epsi, ey, s, just for first round of PathFollowing
     mpcParams.Q_term            = 10*[20.0,10.0,10.0,2.0,10.0]           # weights for terminal constraints (LMPC, for e_y, e_psi, and v)
-    mpcParams.Q_cost            = 0.7                           #factor for terminal cost
+    mpcParams.Q_cost            = 1                           #factor for terminal cost
     mpcParams.Q_obstacle        = 0.3 #
     mpcParams.Q_obstacleNumer   = 0.002#0.04#0.0025#0.0019
     mpcParams.Q_lane            = 2000
     mpcParams.Q_velocity        = 4000
     mpcParams.R                 = 0.0*[0.0,1.0]             # put weights on a and d_f
-    mpcParams.QderivZ           = 0.0*[0.1,0.1,0.1,0.1,0.0,0.0]             # cost matrix for derivative cost of states
-    mpcParams.QderivU           = 1.0*[2.0,0.5]               # cost matrix for derivative cost of inputs
+    mpcParams.QderivZ           = 1.0*[0.0,0.0,0.2,0.0,0.0,0.0]             # cost matrix for derivative cost of states
+    mpcParams.QderivU           = 1.0*[2.0,10.0]               # cost matrix for derivative cost of inputs
     mpcParams.vPathFollowing    = 0.6 #0.6                 # reference speed for first lap of path following
 
     trackCoeff.nPolyCurvature   = 4                       # 4th order polynomial for curvature approximation

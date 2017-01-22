@@ -13,10 +13,10 @@ include("classes.jl")
     plot_states_over_s = 1
     plot_curvature_approx=0
     plot_inputs = 1
-    plot_eps = 1
+    plot_eps = 0
     interactive_plot_steps = 4
     n_oldTrajPlots = 5
-    file = "data/2017-01-21-02-06-Data.jld"
+    file = "data/2017-01-21-16-20-Data.jld"
     close("all")
 
     ####load data from file
