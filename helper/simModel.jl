@@ -81,7 +81,7 @@ function simModel_dyn_x(z::Array{Float64},u::Array{Float64},dt::Float64,modelPar
         alpha_f = ( (v_y+l_A*psi_dot) / v_x ) - u[2]        
         alpha_r = ( (v_y-l_B*psi_dot) / v_x)    
     end
-    if exact_sim_i==1 && max(abs(alpha_f),abs(alpha_r))>16/180*pi
+    if exact_sim_i==1 && max(abs(alpha_f),abs(alpha_r))>12/180*pi
         warn("Large slip angles: alpha_f = $(alpha_f*180/pi)°, alpha_r = $(alpha_r*180/pi)° , x =$x, y = $y")
     end
     

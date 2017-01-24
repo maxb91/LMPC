@@ -50,7 +50,7 @@
     z_Init[6] = 0.0
    
     load_safeset = false#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
-    safeset = "data/2017-01-23-15-57-Data.jld"
+    safeset = "data/2017-01-24-11-02-Data.jld"
 
     #########
     InitializeParameters(mpcParams,trackCoeff,modelParams,posInfo,oldTraj,mpcCoeff,lapStatus,obstacle,buffersize)
@@ -98,7 +98,7 @@
     trackCoeff.coeffCurvature   = [0.0;0.0;0.0;0.0;0.0]        # polynomial coefficients for curvature approximation (zeros for straight line)
     trackCoeff.nPolyCurvature = 4 # has to be 4 cannot be changed freely at the moment orders are still hardcoded in some parts of localizeVehicleCurvAbslizeVehicleCurvAbs
     trackCoeff.nPolyXY = 6  # has to be 6 cannot be changed freely at the moment orders are still hardcoded in some parts of localizeVehicleCurvAbslizeVehicleCurvAbs
-    n_rounds = 1
+    n_rounds = 5
     z_pred_log = zeros(mpcParams.N+1,6,length(t),n_rounds)
     u_pred_log = zeros(mpcParams.N,2,length(t),n_rounds)
     lambda_log = zeros(oldTraj.n_oldTraj,length(t),n_rounds)

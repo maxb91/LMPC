@@ -48,8 +48,9 @@ close("all")
     C = 1.35    #1.35
  FMax = mu*m*g / 2.0 
 
-alpha_f = vec(-0.7:0.005:0.7)
+alpha_f = vec(-0.2:0.005:0.2)
 
-F_yf = -FMax * sin(C*atan(B*alpha_f))
+# F_yf = -FMax * sin(C*atan(B*alpha_f))
+F_yf = -10*FMax * alpha_f
 plot(alpha_f,F_yf)
 grid()

@@ -131,17 +131,25 @@ function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelP
     # @NLexpression(m.mdl, F_yf[i = 1:N], -FMax * sin(C*atan(B*atan( (m.z_Ol[i,2]+l_A*m.z_Ol[i,3]) / m.z_Ol[i,1] ) - m.u_Ol[i,2])))
     # @NLexpression(m.mdl, F_yr[i = 1:N], -FMax * sin(C*atan(B*atan( (m.z_Ol[i,2]-l_B*m.z_Ol[i,3]) / m.z_Ol[i,1]))))
 
-    @NLexpression(m.mdl, F_yf[i = 1:N], -FMax * sin(C*atan(B*( (m.z_Ol[i,2]+l_A*m.z_Ol[i,3]) / m.z_Ol[i,1] ) - m.u_Ol[i,2])))
-    @NLexpression(m.mdl, F_yr[i = 1:N], -FMax * sin(C*atan(B*( (m.z_Ol[i,2]-l_B*m.z_Ol[i,3]) / m.z_Ol[i,1]))))
+    # @NLexpression(m.mdl, F_yf[i = 1:N], -FMax * sin(C*atan(B*( (m.z_Ol[i,2]+l_A*m.z_Ol[i,3]) / m.z_Ol[i,1] ) - m.u_Ol[i,2])))
+    # @NLexpression(m.mdl, F_yr[i = 1:N], -FMax * sin(C*atan(B*( (m.z_Ol[i,2]-l_B*m.z_Ol[i,3]) / m.z_Ol[i,1]))))
+    @NLexpression(m.mdl, F_yf[i = 1:N], -1*FMax * (((m.z_Ol[i,2]+l_A*m.z_Ol[i,3]) / m.z_Ol[i,1] ) - m.u_Ol[i,2]))
+    @NLexpression(m.mdl, F_yr[i = 1:N], -1*FMax *  ((m.z_Ol[i,2]-l_B*m.z_Ol[i,3]) / m.z_Ol[i,1]) )
     # @NLexpression(m.mdl, F_yf[i = 1:N], -FMax * 1.02*atan( (m.z_Ol[i,2]+l_A*m.z_Ol[i,3]) / m.z_Ol[i,1] ) - m.u_Ol[i,2] )
     # @NLexpression(m.mdl, F_yr[i = 1:N], -FMax * 1.02*atan( (m.z_Ol[i,2]-l_B*m.z_Ol[i,3]) / m.z_Ol[i,1]) )
 
-    max_alpha = 15
+    max_alpha = 10
 
-    @NLconstraint(m.mdl, [i=1:N], atan( (m.z_Ol[i,2]-l_B*m.z_Ol[i,3]) / m.z_Ol[i,1]) <=  max_alpha/180*pi)
-    @NLconstraint(m.mdl, [i=1:N], atan( (m.z_Ol[i,2]-l_B*m.z_Ol[i,3]) / m.z_Ol[i,1]) >= -max_alpha/180*pi)
-    @NLconstraint(m.mdl, [i=1:N], atan( (m.z_Ol[i,2]+l_A*m.z_Ol[i,3]) / m.z_Ol[i,1] ) - m.u_Ol[i,2] <=  max_alpha/180*pi)
-    @NLconstraint(m.mdl, [i=1:N], atan( (m.z_Ol[i,2]+l_A*m.z_Ol[i,3]) / m.z_Ol[i,1] ) - m.u_Ol[i,2] >= -max_alpha/180*pi)
+    # @NLconstraint(m.mdl, [i=1:N], atan( (m.z_Ol[i,2]-l_B*m.z_Ol[i,3]) / m.z_Ol[i,1]) <=  max_alpha/180*pi)
+    # @NLconstraint(m.mdl, [i=1:N], atan( (m.z_Ol[i,2]-l_B*m.z_Ol[i,3]) / m.z_Ol[i,1]) >= -max_alpha/180*pi)
+    # @NLconstraint(m.mdl, [i=1:N], atan( (m.z_Ol[i,2]+l_A*m.z_Ol[i,3]) / m.z_Ol[i,1] ) - m.u_Ol[i,2] <=  max_alpha/180*pi)
+    # @NLconstraint(m.mdl, [i=1:N], atan( (m.z_Ol[i,2]+l_A*m.z_Ol[i,3]) / m.z_Ol[i,1] ) - m.u_Ol[i,2] >= -max_alpha/180*pi)
+
+      @NLconstraint(m.mdl, [i=1:N], ( (m.z_Ol[i,2]-l_B*m.z_Ol[i,3]) / m.z_Ol[i,1]) <=  max_alpha/180*pi)
+    @NLconstraint(m.mdl, [i=1:N], ( (m.z_Ol[i,2]-l_B*m.z_Ol[i,3]) / m.z_Ol[i,1]) >= -max_alpha/180*pi)
+    @NLconstraint(m.mdl, [i=1:N], ( (m.z_Ol[i,2]+l_A*m.z_Ol[i,3]) / m.z_Ol[i,1] ) - m.u_Ol[i,2] <=  max_alpha/180*pi)
+    @NLconstraint(m.mdl, [i=1:N], ( (m.z_Ol[i,2]+l_A*m.z_Ol[i,3]) / m.z_Ol[i,1] ) - m.u_Ol[i,2] >= -max_alpha/180*pi)
+
 
     # if F_yr > sqrt(FxMax^2 - F_xr^2)        
     #     F_yr = sqrt(FxMax^2 - F_xr^2)    
