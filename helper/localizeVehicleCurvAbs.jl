@@ -230,9 +230,9 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
 
         XCurve = coeffX'*s_vec
         YCurve = coeffY'*s_vec
+           
         dX = dot(coeffX,sdot_vec) #[6*s^5 5*s^4 4*s^3 3*s^2 2*s^1 1 0]' comment can be deleted if sdot_vec is verified for all polynomials
-        dY = dot(coeffY,sdot_vec)    
-
+        dY = dot(coeffY,sdot_vec) 
         xyVectorAngle = atan2(y-YCurve0,x-XCurve0)
         xyPathAngle = atan2(dY,dX)# gives a value between -pi < x <= pi  
     end
@@ -240,9 +240,23 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
 
   #compute epsi
 
+    # s_vec = zeros(OrderXY+1,1)
+    # sdot_vec = zeros(OrderXY+1,1)::Array{Float64,2}
 
+    # for i = 1:OrderXY+1
+    #         s_vec[i] =s^(OrderXY+1-i)
+    #         sdot_vec[i] = (OrderXY+1-i)*s^(OrderXY-i)
+    # end
+    # sdot_vec = [6*s^5 5*s^4 4*s^3 3*s^2 2*s 1 0]'
+
+
+    # dX = dot(coeffX,sdot_vec) #[6*s^5 5*s^4 4*s^3 3*s^2 2*s^1 1 0]' comment can be deleted if sdot_vec is verified for all polynomials
+    # # dY = dot(coeffY,sdot_vec) 
+    # xyPathAngle = atan2(dY,dX)
     epsi = mod((psi+pi),(2*pi))-pi-xyPathAngle
     epsi = mod((epsi+pi),(2*pi))-pi
+
+     # ey = eyabs*sign(epsi)
 
 
   # # Finally compute epsi
@@ -258,7 +272,8 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
   #   epsi = mod((epsi+pi),(2*pi))-pi
 
 
-
+    # XCurve= dot(coeffX,s_vec)
+    # YCurve= dot(coeffY,s_vec)
     #T Calcuate the error due to the conversion in the curvilinear abscissa
     yBack = YCurve + ey*cos(xyPathAngle)
     xBack = XCurve - ey*sin(xyPathAngle)

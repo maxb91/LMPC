@@ -36,7 +36,7 @@
     mpcParams                   = classes.MpcParams()
     m                           = classes.MpcModel()
 
-    buffersize                  = 1401 #1501
+    buffersize                  = 1201 #1501
     close("all")
 
 
@@ -49,8 +49,8 @@
     z_Init[4]  = 0.4*sin(z_Init[5]) #v_y
     z_Init[6] = 0.0
    
-    load_safeset = true#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
-    safeset = "data/2017-01-21-15-25-Data.jld"
+    load_safeset = false#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
+    safeset = "data/2017-01-23-15-57-Data.jld"
 
     #########
     InitializeParameters(mpcParams,trackCoeff,modelParams,posInfo,oldTraj,mpcCoeff,lapStatus,obstacle,buffersize)
@@ -71,7 +71,7 @@
     # the end semi axes are approximated over the secant of the points of the track. drawing might not be 100% accurate
     s_obst_init = 85#9.56 
     sy_obst_init = -0.2
-    v_obst_init = 0#1.8#1.5#1.5##1.8
+    v_obst_init = 0.0#1.8#1.5#1.5##1.8
     obstacle.rs = 0.5 # if we load old trajecory these values get overwritten
     obstacle.ry = 0.19 # if we load old trajecory these values get overwritten
     

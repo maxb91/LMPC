@@ -102,7 +102,7 @@ function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelP
     mu  = 0.85
     g = 9.81 # m/s^2
     I_z = 0.03 # kg * m^2
-    B = 3.0#1.0
+    B = 1.0#1.0
     C = 1.25#1.25
     FMax = mu*mass*g / 2.0 
     l_A             = 0.125
@@ -195,7 +195,7 @@ function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelP
     # Terminal cost
     # ---------------------------------
     # The value of this cost determines how fast the algorithm learns. The higher this cost, the faster the control tries to reach the finish line.
-    @NLexpression(m.mdl, costZTerm,  Q_cost*sum(m.ssInfOn[k]*m.lambda[k]*sum(m.coeffTermCost[i,k]*m.z_Ol[N+1,6]^(order+1-i) for i=1:order+1) for k=1:n_oldTraj))
+    @NLexpression(m.mdl, costZTerm,  sum(m.ssInfOn[k]*m.lambda[k]*sum(m.coeffTermCost[i,k]*m.z_Ol[N+1,6]^(order+1-i) for i=1:order+1) for k=1:n_oldTraj))
     m.costZTerm = costZTerm
     #basic idea    
     #@NLexpression(m.mdl, costZTerm, Q_cost*sum{coeffTermCost[i,1]*m.z_Ol[N+1,1]^(order+1-i),i=1:order+1})
