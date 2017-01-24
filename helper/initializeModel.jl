@@ -66,7 +66,7 @@ function InitializeModel(m::classes.MpcModel,mpcParams::classes.MpcParams,modelP
     @NLconstraint(m.mdl,[i = 1:(N+1)], m.z_Ol[i,2] >= -trackCoeff.width/2 - m.eps[2] )
 
     v_max = 2.0
-    @NLconstraint(m.mdl,[i = 1:(N+1)], m.z_Ol[i,1] <= v_max +m.eps[3] )
+    @NLconstraint(m.mdl,[i = 1:(N+1)], m.z_Ol[i,4] <= v_max +m.eps[3] )
     # object avoidance constraint now done with slack cost instead slack constraint
     # set s and y obst as nlparamter
     #@NLconstraint(m.mdl, [i=1:N+1], ((m.z_Ol[i,1]-m.sCoord_obst[1])/rs )^2 + ( (m.z_Ol[i,2]-m.sCoord_obst[2])/ry )^2 >= 1 - m.eps[3])

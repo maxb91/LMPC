@@ -64,11 +64,7 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
         # ind_end     = N_nodes_center
         # nodes_near = nodes_center[:,ind_start:ind_end]
         #if closed use this:stack the end and beginning of the lap together
-       
-        # ind_start   = idx_min-N_nodes_poly_back 
-        # ind_end     = idx_min+N_nodes_poly_front
-        # nodes_near = append!(nodes_center[:,ind_start:N_nodes_center],nodes_center[:,0:idx_min+N_nodes_poly_front+1-N_nodes_center])
-         nodes_near= hcat(nodes_center[:,ind_start:N_nodes_center],nodes_center[:,1:ind_end-N_nodes_center]) 
+        nodes_near= hcat(nodes_center[:,ind_start:N_nodes_center],nodes_center[:,1:ind_end-N_nodes_center]) 
         # error("stacking nodes from beginning of track not yet implemented")
     else 
         

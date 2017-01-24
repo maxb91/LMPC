@@ -100,10 +100,10 @@ function InitializeParameters(mpcParams::classes.MpcParams,trackCoeff::classes.T
     mpcParams.Q_obstacle        = 0.3 #
     mpcParams.Q_obstacleNumer   = 0.002#0.04#0.0025#0.0019
     mpcParams.Q_lane            = 2000.0
-    mpcParams.Q_velocity        = 4000.0
+    mpcParams.Q_velocity        = 1000.0
     mpcParams.R                 = 0.0*[1.0,1.0]             # put weights on a and d_f
     mpcParams.QderivZ           = 0.0*[0,0.0,0.1,0.1]             # cost matrix for derivative cost of states
-    mpcParams.QderivU           = 0.1*[1,10]               # cost matrix for derivative cost of inputs
+    mpcParams.QderivU           = 0.1*[10,20]               # cost matrix for derivative cost of inputs
     mpcParams.vPathFollowing    = 0.6                 # reference speed for first lap of path following
 
     trackCoeff.nPolyCurvature   = 4                       # 4th order polynomial for curvature approximation
@@ -111,17 +111,14 @@ function InitializeParameters(mpcParams::classes.MpcParams,trackCoeff::classes.T
     trackCoeff.width            = 0.6                   # width of the track (0.6m)
     trackCoeff.ds               = 1//10#4//100#1//10 # is defined as a rational number so we can use it to calculate indices in matrix. with float becomes error
 
-    modelParams.u_lb            = ones(mpcParams.N,1) * [-0.6  -pi/6]  #-0.6 for braking                  # lower bou9nds on steering
-    modelParams.u_ub            = ones(mpcParams.N,1) * [ 1.0   pi/6]       #1.2           # upper bounds
+    modelParams.u_lb            = ones(mpcParams.N,1) * [-1.0  -pi/6]  #-0.6 for braking                  # lower bou9nds on steering
+    modelParams.u_ub            = ones(mpcParams.N,1) * [ 2.5   pi/6]       #1.2           # upper bounds
     modelParams.z_lb            = ones(mpcParams.N+1,1) * [-Inf -Inf -Inf  0.1]                    # lower bounds on states
     modelParams.z_ub            = ones(mpcParams.N+1,1) * [ Inf  Inf  Inf  Inf]               # upper bounds
     modelParams.l_A             = 0.125
     modelParams.l_B             = 0.125 #0.125
 
     modelParams.dt              = 0.1
-
-    posInfo.s_start             = 0.0
-    posInfo.s_target            = 5.0
 
     oldTraj.n_oldTraj     = 20 #number of old Trajectories for safe set
     oldTraj.oldTraj             = zeros(buffersize,4,oldTraj.n_oldTraj)

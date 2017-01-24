@@ -44,9 +44,9 @@
     z_Init = zeros(6)
     z_Init[1] = 0 # x = 1.81 for s = 32     14 in curve
     z_Init[2] = 0 # y = 2.505 for s = 32  12.6
-    z_Init[5] = 0 #psi
     z_Init[3] = 0.4*cos(z_Init[5]) #v_x
     z_Init[4]  = 0.4*sin(z_Init[5]) #v_y
+    z_Init[5] = 0 #psi
     z_Init[6] = 0.0
    
     load_safeset = false#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
@@ -98,7 +98,7 @@
     trackCoeff.coeffCurvature   = [0.0;0.0;0.0;0.0;0.0]        # polynomial coefficients for curvature approximation (zeros for straight line)
     trackCoeff.nPolyCurvature = 4 # has to be 4 cannot be changed freely at the moment orders are still hardcoded in some parts of localizeVehicleCurvAbslizeVehicleCurvAbs
     trackCoeff.nPolyXY = 6  # has to be 6 cannot be changed freely at the moment orders are still hardcoded in some parts of localizeVehicleCurvAbslizeVehicleCurvAbs
-    n_rounds = 2
+    n_rounds = 4
     z_pred_log = zeros(mpcParams.N+1,4,length(t),n_rounds)
     u_pred_log = zeros(mpcParams.N,2,length(t),n_rounds)
     lambda_log = zeros(oldTraj.n_oldTraj,length(t),n_rounds)
