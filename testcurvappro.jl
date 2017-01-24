@@ -36,3 +36,20 @@ zCurr_x[1,3] = 0.1
 i=1
 zCurr_s[i,:], trackCoeff.coeffCurvature, s_start = localizeVehicleCurvAbs(zCurr_x[i,:],x_track,y_track,trackCoeff)
 end
+
+
+using PyPlot
+close("all")
+   m = 1.98#1.98 # kg
+    mu  = 0.85
+    g = 9.81 # m/s^2
+    I_z = 0.03 # kg * m^2
+    B = 8.0#1.0  8.0
+    C = 1.35    #1.35
+ FMax = mu*m*g / 2.0 
+
+alpha_f = vec(-0.7:0.005:0.7)
+
+F_yf = -FMax * sin(C*atan(B*alpha_f))
+plot(alpha_f,F_yf)
+grid()

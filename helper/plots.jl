@@ -9,10 +9,10 @@ include("classes.jl")
     plot_costs = 1
     plot_states_over_t = 0
     plot_xy = 1
-    plot_lambda = 1
+    plot_lambda = 0
     plot_states_over_s = 1
     plot_curvature_approx=0
-    plot_inputs = 0
+    plot_inputs = 1
     plot_eps = 0
     interactive_plot_steps = 4
     n_oldTrajPlots = 5
@@ -398,9 +398,10 @@ include("classes.jl")
     
         plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j],oldTraj.eps[1,1:oldTraj.oldNIter[j],j])
         plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j],oldTraj.eps[2,1:oldTraj.oldNIter[j],j])
+        plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j],oldTraj.eps[3,1:oldTraj.oldNIter[j],j])
         xlabel("s in [m]")
         ylabel("value of epsilons")
-        legend(["epsilon left boundary","epsilon right boundary", "epsilon obstacle"])
+        legend(["epsilon left boundary","epsilon right boundary", "epsilon velocity"])
         grid()
     end
     

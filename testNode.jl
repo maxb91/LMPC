@@ -58,13 +58,13 @@
     mpcSol.z  = zeros(mpcParams.N+1,4) 
     mpcSol.lambda = zeros(oldTraj.n_oldTraj)
     mpcSol.lambda[1] = 1
-    mpcSol.eps = zeros(2,buffersize)
+    mpcSol.eps = zeros(3,buffersize)
     #########
 
 
 
     posInfo.s_start             = 0.0 #does not get changed with the current version
-    @show posInfo.s_target            = (size(x_track)[2]-1)*trackCoeff.ds#59.5 #has to be fitted to track , current test track form ugo has 113.2 meters
+    posInfo.s_target            = (size(x_track)[2]-1)*trackCoeff.ds#59.5 #has to be fitted to track , current test track form ugo has 113.2 meters
      
     ##define obstacle x and xy vlaues not used at the moment 
     #for a clean definition of the x,y points the value of s_obstacle has to be the same as one of the points of the source map. 
@@ -76,12 +76,13 @@
     obstacle.ry = 0.19 # if we load old trajecory these values get overwritten
     
     
-
+    z_Init_s= zeros(4)
+    z_Init_s[4] = 0.6
 
     
     #####################################
     println("Initialize Model........")
-    InitializeModel(m,mpcParams,modelParams,trackCoeff,z_Init, obstacle,oldTraj)
+    InitializeModel(m,mpcParams,modelParams,trackCoeff,z_Init_s, obstacle,oldTraj)
     println("Initial solve........")
     solve(m.mdl)
     println("Initial solve done!")
@@ -97,11 +98,11 @@
     trackCoeff.coeffCurvature   = [0.0;0.0;0.0;0.0;0.0]        # polynomial coefficients for curvature approximation (zeros for straight line)
     trackCoeff.nPolyCurvature = 4 # has to be 4 cannot be changed freely at the moment orders are still hardcoded in some parts of localizeVehicleCurvAbslizeVehicleCurvAbs
     trackCoeff.nPolyXY = 6  # has to be 6 cannot be changed freely at the moment orders are still hardcoded in some parts of localizeVehicleCurvAbslizeVehicleCurvAbs
-    n_rounds = 4
+    n_rounds = 2
     z_pred_log = zeros(mpcParams.N+1,4,length(t),n_rounds)
     u_pred_log = zeros(mpcParams.N,2,length(t),n_rounds)
     lambda_log = zeros(oldTraj.n_oldTraj,length(t),n_rounds)
-    cost        = zeros(7,length(t),n_rounds)
+    cost        = zeros(8,length(t),n_rounds)
 
     ssInfOn_log = zeros(oldTraj.n_oldTraj, length(t), n_rounds)
     curv_approx = zeros(mpcParams.N,length(t), n_rounds)
@@ -176,10 +177,10 @@
             
         if j == 1 && load_safeset == false
             # path following cost in first round
-            @NLobjective(m.mdl, Min, m.costPath + m.derivCost + m.controlCost + m.costObstacle)
+            @NLobjective(m.mdl, Min, m.costPath + m.derivCost + m.controlCost + m.velocityCost + m.costObstacle)
         elseif j == 2 || (load_safeset == true && j == 1)
             #learning objective formulation, minimize the sum of all parts of the objective
-            @NLobjective(m.mdl, Min, m.costZ + m.costZTerm + m.constZTerm + m.derivCost + m.controlCost + m.laneCost + m.costObstacle)
+            @NLobjective(m.mdl, Min, m.costZ + m.costZTerm + m.constZTerm + m.derivCost + m.controlCost + m.laneCost+ m.velocityCost + m.costObstacle)
         end
         
         ###########iterations learning
@@ -277,7 +278,7 @@
 
             tt2= toq()
             if i%50 == 0 
-                println(" Time: $(tt[i]) s, Solving step $i of $(length(t)) - Status: $(mpcSol.solverStatus)")
+                println(" Time: $(tt[i]) s, Solving step $i of $(length(t)), s = $(zCurr_s[i,1]) - Status: $(mpcSol.solverStatus)")
                 #println(" Time for whole iteration: $(tt2) s")
                 # if j > 1 || load_safeset == true
                 #     println("ssInfOn time: $tt1 s")

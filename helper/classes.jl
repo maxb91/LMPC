@@ -69,11 +69,12 @@ type MpcParams          # parameters for MPC solver
     Q_obstacle::Float64
     Q_obstacleNumer::Float64
     Q_lane::Float64
+    Q_velocity::Float64
     R::Array{Float64,1}
     vPathFollowing::Float64
     QderivZ::Array{Float64,1}
     QderivU::Array{Float64,1}
-    MpcParams(N=0,nz=0,OrderCostCons=0,Q=Float64[],Q_term=Float64[],Q_cost=1.0,Q_obstacle = 1.0,Q_obstacleNumer = 1.0,Q_lane = 1.0, R=Float64[],vPathFollowing=1.0,QderivZ=Float64[],QderivU=Float64[]) = new(N,nz,OrderCostCons,Q,Q_term,Q_cost,Q_obstacle,Q_obstacleNumer,Q_lane,R,vPathFollowing)
+    MpcParams(N=0,nz=0,OrderCostCons=0,Q=Float64[],Q_term=Float64[],Q_cost=1.0,Q_obstacle = 1.0,Q_obstacleNumer = 1.0,Q_lane = 1.0,Q_velocity=1.0, R=Float64[],vPathFollowing=1.0,QderivZ=Float64[],QderivU=Float64[]) = new(N,nz,OrderCostCons,Q,Q_term,Q_cost,Q_obstacle,Q_obstacleNumer,Q_lane, Q_velocity, R,vPathFollowing)
 end
 
 type PosInfo            # current position information
@@ -177,6 +178,7 @@ type MpcModel
     derivCost::JuMP.NonlinearExpression
     controlCost::JuMP.NonlinearExpression
     laneCost::JuMP.NonlinearExpression
+    velocityCost::JuMP.NonlinearExpression
     costObstacle::JuMP.NonlinearExpression
 
     MpcModel(mdl=JuMP.Model(),
@@ -202,6 +204,7 @@ type MpcModel
                 derivCost=@NLexpression(mdl,derivCost,0),
                 controlCost=@NLexpression(mdl,controlCost,0),
                 laneCost=@NLexpression(mdl,laneCost,0),
+                velocityCost=@NLexpression(mdl,velocityCost,0),
                 costObstacle=@NLexpression(mdl,costObstacle,0))= new(mdl,
                                                         ssInfOn,
                                                         z0,
@@ -224,6 +227,7 @@ type MpcModel
                                                         constZTerm,
                                                         derivCost,
                                                         controlCost,
+                                                        velocityCost,
                                                         laneCost,
                                                         costObstacle)
 end

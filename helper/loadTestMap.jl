@@ -12,7 +12,8 @@ function loadTestMap()
 # file = "trackdata.jld"
 # file = "oval.jld"
 # file = "small_oval.jld"
-file = "adv_track.jld"
+# file = "adv_track.jld"
+file = "optm_adv.jld"
 Data = load(file)
 x = Data["x"]'
 y = Data["y"]'
