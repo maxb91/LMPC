@@ -97,7 +97,7 @@
     trackCoeff.coeffCurvature   = [0.0;0.0;0.0;0.0;0.0]        # polynomial coefficients for curvature approximation (zeros for straight line)
     trackCoeff.nPolyCurvature = 4 # has to be 4 cannot be changed freely at the moment orders are still hardcoded in some parts of localizeVehicleCurvAbslizeVehicleCurvAbs
     trackCoeff.nPolyXY = 6  # has to be 6 cannot be changed freely at the moment orders are still hardcoded in some parts of localizeVehicleCurvAbslizeVehicleCurvAbs
-    n_rounds = 1
+    n_rounds = 3
     z_pred_log = zeros(mpcParams.N+1,6,length(t),n_rounds)
     u_pred_log = zeros(mpcParams.N,2,length(t),n_rounds)
     lambda_log = zeros(oldTraj.n_oldTraj,length(t),n_rounds)
@@ -247,7 +247,7 @@
             #####################
             if j == 1 && load_safeset == false
                 solvePathFollowMpc!(mdl_Path,mpcSol,mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr_s[i,:]',[mpcSol.a_x;mpcSol.d_f], pred_obst,i)
-            elseif j == 2 || (load_safeset == true && j == 1)
+            elseif j >= 2 || load_safeset == true
                 solveLearningMpcProblem!(mdl_LMPC,mpcSol,mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr_s[i,:]',[mpcSol.a_x;mpcSol.d_f], pred_obst,i)
                 setvalue(mdl_LMPC.ssInfOn,ones(oldTraj.n_oldTraj))# reset the all trajectories to on position
             end
