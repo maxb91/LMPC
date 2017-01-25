@@ -11,10 +11,6 @@ function solveLearningMpcProblem!(m::initLearningModel,mpcSol::classes.MpcSol,mp
     lapStatus::classes.LapStatus,posInfo::classes.PosInfo,modelParams::classes.ModelParams,zCurr::Array{Float64},uCurr::Array{Float64}, pred_obst, iter::Int64)
     # Load Parameters
     coeffCurvature  = trackCoeff.coeffCurvature::Array{Float64,1}
-    
-
-    # @show()
-
 
     local sol_u::Array{Float64,2} 
     local sol_z::Array{Float64,2} 
