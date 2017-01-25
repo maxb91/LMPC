@@ -34,7 +34,6 @@
     trackCoeff                  = classes.TrackCoeff()      # info about track (at current position, approximated)
     modelParams                 = classes.ModelParams()
     mpcParams                   = classes.MpcParams()
-    m                           = classes.MpcModel()
 
     buffersize                  = 1201 #1501
     close("all")
@@ -50,7 +49,7 @@
     z_Init[6] = 0.0
    
     load_safeset = false#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
-    safeset = "data/2017-01-24-11-02-Data.jld"
+    safeset = "data/2017-01-24-18-18-Data.jld"
 
     #########
     InitializeParameters(mpcParams,trackCoeff,modelParams,posInfo,oldTraj,mpcCoeff,lapStatus,obstacle,buffersize)
@@ -58,6 +57,7 @@
     mpcSol.z  = zeros(mpcParams.N+1,4) 
     mpcSol.lambda = zeros(oldTraj.n_oldTraj)
     mpcSol.lambda[1] = 1
+    mpcSol.ssInfOn = ones(20)
     mpcSol.eps = zeros(3,buffersize)
     #########
 
@@ -75,16 +75,15 @@
     obstacle.rs = 0.5 # if we load old trajecory these values get overwritten
     obstacle.ry = 0.19 # if we load old trajecory these values get overwritten
     
-    
-    z_Init_s= zeros(6)
-    z_Init_s[1] = 0.6
 
     
     #####################################
     println("Initialize Model........")
-    InitializeModel(m,mpcParams,modelParams,trackCoeff,z_Init_s, obstacle,oldTraj)
+    mdl_Path = initPathFollowingModel(mpcParams,modelParams,trackCoeff,mpcCoeff, obstacle,oldTraj.n_oldTraj)
+    mdl_LMPC = initLearningModel(mpcParams,modelParams,trackCoeff,mpcCoeff, obstacle,oldTraj.n_oldTraj)
+    
     println("Initial solve........")
-    solve(m.mdl)
+    solve(mdl_LMPC.mdl)
     println("Initial solve done!")
     println("*******************************************************")
     println("*******************************************************")
@@ -98,14 +97,13 @@
     trackCoeff.coeffCurvature   = [0.0;0.0;0.0;0.0;0.0]        # polynomial coefficients for curvature approximation (zeros for straight line)
     trackCoeff.nPolyCurvature = 4 # has to be 4 cannot be changed freely at the moment orders are still hardcoded in some parts of localizeVehicleCurvAbslizeVehicleCurvAbs
     trackCoeff.nPolyXY = 6  # has to be 6 cannot be changed freely at the moment orders are still hardcoded in some parts of localizeVehicleCurvAbslizeVehicleCurvAbs
-    n_rounds = 5
+    n_rounds = 1
     z_pred_log = zeros(mpcParams.N+1,6,length(t),n_rounds)
     u_pred_log = zeros(mpcParams.N,2,length(t),n_rounds)
     lambda_log = zeros(oldTraj.n_oldTraj,length(t),n_rounds)
     cost        = zeros(8,length(t),n_rounds)
 
     ssInfOn_log = zeros(oldTraj.n_oldTraj, length(t), n_rounds)
-    curv_approx = zeros(mpcParams.N,length(t), n_rounds)
     pred_obst = zeros(mpcParams.N+1,3)
 
     if load_safeset == true
@@ -174,15 +172,7 @@
             uCurr[1,:] = u_final
         end
 
-            
-        if j == 1 && load_safeset == false
-            # path following cost in first round
-            @NLobjective(m.mdl, Min, m.costPath + m.derivCost + m.controlCost + m.velocityCost + m.costObstacle)
-        elseif j == 2 || (load_safeset == true && j == 1)
-            #learning objective formulation, minimize the sum of all parts of the objective
-            @NLobjective(m.mdl, Min, m.costZ + m.costZTerm + m.constZTerm + m.derivCost + m.controlCost + m.laneCost+ m.velocityCost + m.costObstacle)
-        end
-        
+
         ###########iterations learning
         finished    = false
         i = 1
@@ -255,10 +245,14 @@
             # setvalue(m.lambda, mpcSol.lambda)
             # setvalue(m.eps, mpcSol.eps)
             #####################
-
-            solveMpcProblem!(m,mpcSol,mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr_s[i,:]',[mpcSol.a_x;mpcSol.d_f], pred_obst,i)
+            if j == 1 && load_safeset == false
+                solvePathFollowMpc!(mdl_Path,mpcSol,mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr_s[i,:]',[mpcSol.a_x;mpcSol.d_f], pred_obst,i)
+            elseif j == 2 || (load_safeset == true && j == 1)
+                solveLearningMpcProblem!(mdl_LMPC,mpcSol,mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr_s[i,:]',[mpcSol.a_x;mpcSol.d_f], pred_obst,i)
+                setvalue(mdl_LMPC.ssInfOn,ones(oldTraj.n_oldTraj))# reset the all trajectories to on position
+            end
             tt[i]       = toq()
-            setvalue(m.ssInfOn,ones(oldTraj.n_oldTraj))# reset the all trajectories to on position
+            
 
             uCurr[i,:]  = [mpcSol.a_x mpcSol.d_f]
             #have Zcurr as states XY and simulate from there return XY values of states 
@@ -273,7 +267,7 @@
             z_pred_log[:,:,i,j] = mpcSol.z
             u_pred_log[:,:,i,j] = mpcSol.u
             ssInfOn_log[:,i,j]  = mpcSol.ssInfOn
-            curv_approx[:,i,j]  = getvalue(m.c)
+
             
 
             tt2= toq()
@@ -366,7 +360,6 @@
         JLD.write(file, "modelParams", modelParams)
         JLD.write(file, "mpcParams", mpcParams)
         JLD.write(file, "buffersize", buffersize)
-        JLD.write(file, "curv_approx", curv_approx) ###not same numberign as in oldTraj
         JLD.write(file, "oldTraj", oldTraj)
         JLD.write(file, "mpcCoeff",mpcCoeff)
 

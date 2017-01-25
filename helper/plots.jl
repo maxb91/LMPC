@@ -16,7 +16,7 @@ include("classes.jl")
     plot_eps = 0
     interactive_plot_steps = 4
     n_oldTrajPlots = 5
-    file = "data/2017-01-24-11-21-Data.jld"
+    file = "data/2017-01-24-18-07-Data.jld"
     close("all")
 
     ####load data from file
@@ -30,7 +30,6 @@ include("classes.jl")
     modelParams = Data["modelParams"]
     mpcParams = Data["mpcParams"]
     buffersize = Data["buffersize"]
-    curv_approx = Data["curv_approx"]
     oldTraj     = Data["oldTraj"]
     mpcCoeff = Data["mpcCoeff"]
     include("calculateObstacleXY.jl")
@@ -426,7 +425,6 @@ include("classes.jl")
     if plot_curvature_approx==1
         f_curv_app = figure(7)
         f_curv_app[:canvas][:set_window_title]("Curvature approximation over s")  
-        #plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],6,j],curv_approx[1,1:oldTraj.oldNIter[j],j])
         plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],6,j],oldTraj.curvature[1:oldTraj.oldNIter[j],j])
         grid()
     end
