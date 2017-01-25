@@ -36,6 +36,7 @@ function run_sim()
     mdl    = MpcModel(mpcParams,mpcCoeff,modelParams,trackCoeff)
     mdl_pF = MpcModel_dyn_pF(mpcParams_pF,modelParams,trackCoeff)
 
+    laps_max = 50
     # Simulation parameters
     dt                          = modelParams.dt::Float64
     t                           = collect(0:dt:100)          # time vector
@@ -45,13 +46,13 @@ function run_sim()
     curv                        = zeros(length(t),mpcParams.N+1)
     lasts                       = zeros(length(t),mpcParams.N+1)
 
-    log_z                       = zeros(length(t),6,40)     # log z for 30 laps
-    log_u                       = zeros(length(t),2,40)     # log u for 30 laps
-    log_xy                      = zeros(length(t),2,40)     # log x-y-data for 30 laps
-    log_ParInt                  = zeros(length(t),40)       # log ParInt data
+    log_z                       = zeros(length(t),6,laps_max)     # log z for 30 laps
+    log_u                       = zeros(length(t),2,laps_max)     # log u for 30 laps
+    log_xy                      = zeros(length(t),2,laps_max)     # log x-y-data for 30 laps
+    log_ParInt                  = zeros(length(t),laps_max)       # log ParInt data
 
     # Logging parameters
-    posInfo.s_target            = 52.48
+    posInfo.s_target            = 50.87#52.48
 
     z_final         = zeros(6)
 
@@ -60,40 +61,40 @@ function run_sim()
 
     n_pf            = 2             # number of path-following laps
 
-    ds = 0.01
-    s_track = 0.01:.01:52.48
-    c_track = zeros(5248)
-    c_track[1:200] = 0
-    c_track[201:600] = createCurve(400,ds,-pi/2)
-    c_track[801:1400] = createCurve(600,ds,-3*pi/4)
-    c_track[1701:2900] = createCurve(1200,ds,5*pi/4)
-    c_track[2901:3400] = createCurve(500,ds,-pi)
-    c_track[3701:4100] = createCurve(400,ds,-pi/2)
-    c_track[4261:4860] = createCurve(600,ds,-pi/2)
+    # ds = 0.01
+    # s_track = 0.01:.01:52.48
+    # c_track = zeros(5248)
+    # c_track[1:200] = 0
+    # c_track[201:600] = createCurve(400,ds,-pi/2)
+    # c_track[801:1400] = createCurve(600,ds,-3*pi/4)
+    # c_track[1701:2900] = createCurve(1200,ds,5*pi/4)
+    # c_track[2901:3400] = createCurve(500,ds,-pi)
+    # c_track[3701:4100] = createCurve(400,ds,-pi/2)
+    # c_track[4261:4860] = createCurve(600,ds,-pi/2)
 
-    # s_track = 0.01:.01:50.87
-    # c_track = zeros(5087)
-    # c_track[201:400] = linspace(0,-pi/4,200)
-    # c_track[401:600] = linspace(-pi/4,0,200)
-    # c_track[701:900] = linspace(0,-pi/4,200)
-    # c_track[901:1100] = linspace(-pi/4,0,200)
-    # c_track[1101:1200] = linspace(0,-pi/4,100)
-    # c_track[1201:1300] = linspace(-pi/4,0,100)
-    # c_track[1601:2100] = linspace(0,10*pi/4/10,500)
-    # c_track[2101:2600] = linspace(10*pi/4/10,0,500)
-    # c_track[2601:2900] = linspace(0,-pi/3,300)
-    # c_track[2901:3200] = linspace(-pi/3,0,300)
-    # c_track[3501:3700] = linspace(0,-2*pi/2/4,200)
-    # c_track[3701:3900] = linspace(-2*pi/2/4,0,200)
-    # c_track[4041:4340] = linspace(0,-2*pi/2/6,300)
-    # c_track[4341:4640] = linspace(-2*pi/2/6,0,300)
+    s_track = 0.01:.01:50.87
+    c_track = zeros(5087)
+    c_track[201:400] = linspace(0,-pi/4,200)
+    c_track[401:600] = linspace(-pi/4,0,200)
+    c_track[701:900] = linspace(0,-pi/4,200)
+    c_track[901:1100] = linspace(-pi/4,0,200)
+    c_track[1101:1200] = linspace(0,-pi/4,100)
+    c_track[1201:1300] = linspace(-pi/4,0,100)
+    c_track[1601:2100] = linspace(0,10*pi/4/10,500)
+    c_track[2101:2600] = linspace(10*pi/4/10,0,500)
+    c_track[2601:2900] = linspace(0,-pi/3,300)
+    c_track[2901:3200] = linspace(-pi/3,0,300)
+    c_track[3501:3700] = linspace(0,-2*pi/2/4,200)
+    c_track[3701:3900] = linspace(-2*pi/2/4,0,200)
+    c_track[4041:4340] = linspace(0,-2*pi/2/6,300)
+    c_track[4341:4640] = linspace(-2*pi/2/6,0,300)
 
     s_track_p, c_track_p = prepareTrack(s_track, c_track)
 
     no_solution_found = 0
 
     # Run 10 laps
-    for j=1:20
+    for j=1:40
         # Initialize Lap
         lapStatus.currentLap = j
 

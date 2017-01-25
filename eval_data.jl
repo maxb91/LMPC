@@ -17,7 +17,7 @@ function initPlot()
     rc("legend", fontsize="small")
     rc("font",family="serif")
     rc("font",size=10)
-    rc("figure",figsize=[2.8,2])
+    rc("figure",figsize=[5.0,3])
     #rc("text.latex", preamble = """\\usepackage[utf8x]{inputenc}\\usepackage[T1]{fontenc}\\usepackage{lmodern}""")               # <- tricky! -- gotta actually tell tex to use!
     #rc("pgf", texsystem="pdflatex",preamble=L"""\usepackage[utf8x]{inputenc}\usepackage[T1]{fontenc}\usepackage{lmodern}""")
 end
@@ -50,44 +50,39 @@ z[z.==0] = NaN
 x[x.==0] = NaN
 
 # Create Track
-s_track = 0.01:.01:50.49
-c_track = zeros(5049)
-c_track[1:300] = 0
-c_track[301:400] = linspace(0,-pi/2,100)
-c_track[401:500] = linspace(-pi/2,0,100)
-c_track[501:900] = 0
-c_track[901:1000] = linspace(0,-pi/2,100)
-c_track[1001:1100] = linspace(-pi/2,0,100)
+s_track = 0.01:.01:50.87
+c_track = zeros(5087)
+c_track[201:400] = linspace(0,-pi/4,200)
+c_track[401:600] = linspace(-pi/4,0,200)
+c_track[701:900] = linspace(0,-pi/4,200)
+c_track[901:1100] = linspace(-pi/4,0,200)
 c_track[1101:1200] = linspace(0,-pi/4,100)
 c_track[1201:1300] = linspace(-pi/4,0,100)
-c_track[1301:1600] = 0
 c_track[1601:2100] = linspace(0,10*pi/4/10,500)
 c_track[2101:2600] = linspace(10*pi/4/10,0,500)
 c_track[2601:2900] = linspace(0,-pi/3,300)
 c_track[2901:3200] = linspace(-pi/3,0,300)
-c_track[3201:3500] = 0
 c_track[3501:3700] = linspace(0,-2*pi/2/4,200)
 c_track[3701:3900] = linspace(-2*pi/2/4,0,200)
-c_track[3901:4102] = 0
-c_track[4103:4402] = linspace(0,-2*pi/2/6,300)
-c_track[4403:4702] = linspace(-2*pi/2/6,0,300)
+c_track[4041:4340] = linspace(0,-2*pi/2/6,300)
+c_track[4341:4640] = linspace(-2*pi/2/6,0,300)
 
 path_x,xl,xr = s_to_x(s_track,c_track)
 
 # Plot and save e_Y
-lapn = [2,5,18,19]      # specify which laps should be plotted
+lapn = [1,10,20,30,40]      # specify which laps should be plotted
 figure(1)
 for i=1:size(lapn,1)
     plot(z[:,6,lapn[i]],z[:,5,lapn[i]],label="Lap $(lapn[i])")
 end
-legend()
+lgd0=legend(loc="center left", bbox_to_anchor=(1, 0.5))
 grid("on")
 title("Comparison of lateral deviation")
 xlabel("\$s\$ [m]")
 ylabel("\$e_Y\$ [m]")
 tight_layout()
 path_to_file = "/Users/Maximilian/Documents/ETH/Master/Master thesis/6. Final report/Figures/Simulation/Dyn_eY.pgf"
-savefig(path_to_file)
+savefig(path_to_file, bbox_extra_artists=(lgd0,), bbox_inches="tight")
 
 
 # Plot and save x,y
@@ -97,14 +92,14 @@ axis("equal")
 for i=1:size(lapn,1)
     plot(x[:,1,lapn[i]],x[:,2,lapn[i]],label="Lap $(lapn[i])")
 end
-legend()
+lgd4=legend(loc="center left", bbox_to_anchor=(1, 0.5))
 grid("on")
 title("x-y-view")
 xlabel("\$x\$ [m]")
 ylabel("\$y\$ [m]")
 tight_layout()
 path_to_file = "/Users/Maximilian/Documents/ETH/Master/Master thesis/6. Final report/Figures/Simulation/Dyn_xy.pgf"
-savefig(path_to_file)
+savefig(path_to_file, bbox_extra_artists=(lgd4,), bbox_inches="tight")
 
 # Plot and save v
 figure(3)
@@ -115,22 +110,22 @@ for i=1:size(lapn,1)
     plot(z[:,6,lapn[i]],z[:,2,lapn[i]],label="Lap $(lapn[i])")
 end
 subplot(2,1,1)
-legend()
+lgd1=legend(loc="center left", bbox_to_anchor=(1, 0.5))
 grid("on")
 xlabel("\$s\$ [m]")
 ylabel("\$v_x\$ \$\\left[\\frac{m}{s}\\right]\$")
 subplot(2,1,2)
-legend()
+lgd2=legend(loc="center left", bbox_to_anchor=(1, 0.5))
 grid("on")
 xlabel("\$s\$ [m]")
 ylabel("\$v_y\$ \$\\left[\\frac{m}{s}\\right]\$")
 tight_layout()
 path_to_file = "/Users/Maximilian/Documents/ETH/Master/Master thesis/6. Final report/Figures/Simulation/Dyn_v.pgf"
-savefig(path_to_file)
+savefig(path_to_file, bbox_extra_artists=(lgd1,lgd2), bbox_inches="tight")
 
 # Plot and save cost
 figure(4)
-plot(cost[1:20]/50,"-o")
+plot(cost[1:40]/50,"-o")
 grid("on")
 title("Total cost")
 xlabel("Iteration")
@@ -140,7 +135,7 @@ tight_layout()
 path_to_file = "/Users/Maximilian/Documents/ETH/Master/Master thesis/6. Final report/Figures/Simulation/Dyn_cost.pgf"
 savefig(path_to_file)
 
-lapn = [2,20]
+lapn = [2,40]
 # Plot friction circle/accelerations
 figure()
 pstyle = ("--","-")
@@ -160,13 +155,16 @@ path_to_file = "/Users/Maximilian/Documents/ETH/Master/Master thesis/6. Final re
 savefig(path_to_file)
 
 # Plot velocity over 2D-track
-i = 20
+i = 40
 v = sqrt(z[:,1,i].^2+z[:,2,i].^2)
 figure()
 plot(path_x[:,1],path_x[:,2],"b--",xl[:,1],xl[:,2],"b-",xr[:,1],xr[:,2],"b-")
 scatter(x[:,1,i],x[:,2,i],c=v,cmap=ColorMap("jet"),edgecolors="face",vmin=minimum(v),vmax=maximum(v))
 grid("on")
 axis("equal")
+xlabel("x [m]")
+ylabel("y [m]")
+title("x-y-view in iteration $i")
 cb = colorbar()
 cb[:set_label]("Velocity \$\\left[\\frac{m}{s}\\right]\$")
 tight_layout()
