@@ -88,12 +88,12 @@ function solveLearningMpcProblem!(m::initLearningModel,mpcSol::classes.MpcSol,mp
     #println(m.m)
     # Solve Problem and return solution
     sol_status  = solve(m.mdl)
-    counter = 0
-    while sol_status != :Optimal && counter <= 10
+    counter = 1
+    while sol_status != :Optimal && counter <= 2
         sol_status  = solve(m.mdl)
         counter += 1
         println("Not solved optimally, trying again...")
-        println("state = ",zCurr)
+        # println("state = ",zCurr)
     end
 
 
@@ -118,5 +118,9 @@ function solveLearningMpcProblem!(m::initLearningModel,mpcSol::classes.MpcSol,mp
     mpcSol.cost = zeros(7)
     mpcSol.cost = [getvalue(m.costZ);getvalue(m.costZTerm);getvalue(m.constZTerm);getvalue(m.derivCost);getvalue(m.controlCost);getvalue(m.laneCost);getvalue(m.velocityCost); getvalue(m.costObstacle)]
     #objvl = getobjectivevalue(m.m)
-    nothing #nothing to return
+    if counter < 3
+        return true
+    else
+        return false
+    end
 end
