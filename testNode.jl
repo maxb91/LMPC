@@ -48,34 +48,25 @@
     z_Init[4]  = 0.4*sin(z_Init[5]) #v_y
     z_Init[6] = 0.0
    
-    load_safeset = false#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
-    safeset = "data/2017-01-24-18-18-Data.jld"
-
     #########
-    InitializeParameters(mpcParams,trackCoeff,modelParams,oldTraj,mpcCoeff,lapStatus,obstacle,buffersize)
-    mpcSol.u  = zeros(mpcParams.N,2)
-    mpcSol.z  = zeros(mpcParams.N+1,4) 
-    mpcSol.lambda = zeros(oldTraj.n_oldTraj)
-    mpcSol.lambda[1] = 1
-    mpcSol.ssInfOn = ones(20)
-    mpcSol.eps = zeros(3,buffersize)
+    InitializeParameters(mpcParams,trackCoeff,modelParams,oldTraj,mpcCoeff,mpcSol,lapStatus,obstacle,buffersize)
     #########
-
-
 
     posInfo.s_start             = 0.0 #does not get changed with the current version
     posInfo.s_target            = (size(x_track)[2]-1)*trackCoeff.ds#59.5 #has to be fitted to track , current test track form ugo has 113.2 meters
+
+
+    load_safeset = false#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
+    safeset = "data/2017-01-24-18-18-Data.jld"
+    n_rounds = 3
      
-    ##define obstacle x and xy vlaues not used at the moment 
-    #for a clean definition of the x,y points the value of s_obstacle has to be the same as one of the points of the source map. 
-    # the end semi axes are approximated over the secant of the points of the track. drawing might not be 100% accurate
     s_obst_init = 85#9.56 
     sy_obst_init = -0.2
     v_obst_init = 0.0#1.8#1.5#1.5##1.8
     obstacle.rs = 0.5 # if we load old trajecory these values get overwritten
     obstacle.ry = 0.19 # if we load old trajecory these values get overwritten
     
-
+    
     
     #####################################
     println("Initialize Model........")
@@ -85,7 +76,6 @@
     println("Initial solve........")
     solve(mdl_LMPC.mdl)
     println("Initial solve done!")
-    println("*******************************************************")
     println("*******************************************************")
     # Simulation parameters
     dt                          = modelParams.dt
@@ -97,7 +87,7 @@
     trackCoeff.coeffCurvature   = [0.0;0.0;0.0;0.0;0.0]        # polynomial coefficients for curvature approximation (zeros for straight line)
     trackCoeff.nPolyCurvature = 4 # has to be 4 cannot be changed freely at the moment orders are still hardcoded in some parts of localizeVehicleCurvAbslizeVehicleCurvAbs
     trackCoeff.nPolyXY = 6  # has to be 6 cannot be changed freely at the moment orders are still hardcoded in some parts of localizeVehicleCurvAbslizeVehicleCurvAbs
-    n_rounds = 3
+
     z_pred_log = zeros(mpcParams.N+1,6,length(t),n_rounds)
     u_pred_log = zeros(mpcParams.N,2,length(t),n_rounds)
     lambda_log = zeros(oldTraj.n_oldTraj,length(t),n_rounds)
@@ -117,6 +107,7 @@
     u_final = zeros(1,2)
     for j=1:n_rounds #10
         
+        no_solution_found = 0
 
         lapStatus.currentLap = j
         tt          = zeros(length(t),1)
@@ -154,21 +145,6 @@
         end
         if j>1             #setup point for vehicle after first round                   # if we are in the second or higher lap
             zCurr_x[1,:] = z_final_x
-    
-            # because the track is not closed we always set up the car at the same place each round
-            #zCurr_x[1,1] = z_Init[1]#+convert(Float64,trackCoeff.ds)*0.5 # x = 1.81 for s = 32     14 in curve
-            # zCurr_x[1,1] = z_Init[1]
-            # zCurr_x[1,2] = z_Init[2] # y = 2.505 for s = 32  12.6
-            # zCurr_x[1,5] = z_Init[5]
-            # zCurr_x[1,6] = z_Init[6]
-            # zCurr_x[1,3] = z_final_x[3]
-            # zCurr_x[1,4] = z_final_x[4]
-            # @show z_final_x[3]
-            # @show z_final_x[4]
-            # v_abs = sqrt(z_final_x[3]^.2+z_final_x[4]^.2)
-            # zCurr_x[1,3] = v_abs * cos(z_Init[5])
-            # zCurr_x[1,4] = v_abs * sin(z_Init[5])
-
             uCurr[1,:] = u_final
         end
 
@@ -177,8 +153,7 @@
         finished    = false
         i = 1
         while i<=length(t)-1 && !finished # as long as we have not reached the maximal iteration time for one round or ended the round
-        
-            # to make it work s start has to grow over time actual it is just always at 0
+ 
        
             # the argument i in localizeVehicleCurvAbs  is solely used for debugging purposes plots not needed for control
             # localize takes some time see ProfileView.view()
@@ -209,9 +184,7 @@
                 i = i + 1
                 lapStatus.currentIt = i
                 break
-            end
-            #!! println("s = $(zCurr_s[i,1])")
-            
+            end            
 
             ##################
             pred_obst = predictObstaclePos(obstacle, modelParams, mpcParams, i)
@@ -227,7 +200,6 @@
                 coeffConstraintCost!(oldTraj,mpcCoeff,posInfo,mpcParams,i)
             end
             tic()
-            #solve with zCurr_s containing s ey values 
 
             #####warm start
             # if i ==1 && j == 1 && load_safeset == false
@@ -248,14 +220,22 @@
             if j == 1 && load_safeset == false
                 solvePathFollowMpc!(mdl_Path,mpcSol,mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr_s[i,:]',[mpcSol.a_x;mpcSol.d_f], pred_obst,i)
             elseif j >= 2 || load_safeset == true
-                solveLearningMpcProblem!(mdl_LMPC,mpcSol,mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr_s[i,:]',[mpcSol.a_x;mpcSol.d_f], pred_obst,i)
+                solstat = solveLearningMpcProblem!(mdl_LMPC,mpcSol,mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr_s[i,:]',[mpcSol.a_x;mpcSol.d_f], pred_obst,i)
+                if solstat == false
+                    no_solution_found += 1
+                else
+                    no_solution_found = 0
+                end
+                if no_solution_found >= 3
+                    warn("Over 3 unsuccesful iterations. Abort solving!")
+                    break
+                end    
                 setvalue(mdl_LMPC.ssInfOn,ones(oldTraj.n_oldTraj))# reset the all trajectories to on position
             end
             tt[i]       = toq()
             
 
-            uCurr[i,:]  = [mpcSol.a_x mpcSol.d_f]
-            #have Zcurr as states XY and simulate from there return XY values of states 
+            uCurr[i,:]  = [mpcSol.a_x mpcSol.d_f] 
             zCurr_x[i+1,:]  = simModel_exact_dyn_x(zCurr_x[i,:],uCurr[i,:],modelParams.dt,modelParams) #!! @show
 
             #update Position of the Obstacle car        
@@ -268,8 +248,6 @@
             u_pred_log[:,:,i,j] = mpcSol.u
             ssInfOn_log[:,i,j]  = mpcSol.ssInfOn
 
-            
-
             tt2= toq()
             if i%50 == 0 
                 println(" Time: $(tt[i]) s, Solving step $i of $(length(t)), s = $(zCurr_s[i,6]) - Status: $(mpcSol.solverStatus)")
@@ -277,8 +255,6 @@
                 # if j > 1 || load_safeset == true
                 #     println("ssInfOn time: $tt1 s")
                 # end
-                # println("calculate abs: $t_absci s")
-                # println("get curve-approx = $t_curv")
             end
             # if tt[i] >0.08 #if solving takes long
             #     println(" Time: $(tt[i]) s, Solving step $i of $(length(t)) - Status: $(mpcSol.solverStatus)")
@@ -329,21 +305,14 @@
         println("*************************************************************************")
 
 
-        # println("Press c to cancel MPC")
-        # println("Press Enter for next round solving")
-        # a = ' '
-        # a = readline()
-        # if a == "c\r\n" 
-        #         break
-        # end
         # figure()
         # plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],6,j],oldTraj.curvature[1:oldTraj.oldNIter[j],j], color = "red")
         # plot(Pcurvature[1:oldTraj.oldNIter[j]-1,1], Pcurvature[1:oldTraj.oldNIter[j]-1,2], color = "green")
     end
     n_rounds = j #update n_rounds to represent actual number of simualated rounds
 
-    #filename = string("../LMPCdata/"string(Dates.today()),"-Data.jld")
-    #### alternative numbering to generate results to keep 
+
+    #### numbering to generate results to keep 
     filename = string("data/"string(Dates.today()),"-",Dates.format(now(), "HH-MM"),"-Data.jld")
     if isfile(filename)
         filename = string("data/"string(Dates.today()),"-",Dates.format(now(), "HH-MM"),"-Data-2.jld")

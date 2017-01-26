@@ -21,8 +21,6 @@ function saveOldTraj(oldTraj,zCurr::Array{Float64}, zCurr_x::Array{Float64},uCur
     derivInpCost = zeros(buffersize)
     cost2target = zeros(buffersize)
     #fill up the arrays for the additional costs with measured values, the additional cost are zeros for all i after the finish line
-    #!! edit for new cost function
-    #currCostObst[1:i] = flipdim(cumsum(flipdim(mpcParams.Q_obstacle*1./( ( (zCurr[1:i,1]-obstacle.s_obstacle[1:i,1])/obstacle.rs ).^2 + ( (zCurr[1:i,2]-obstacle.sy_obstacle[1:i,1])/obstacle.ry ).^2 - 1 ).^2,1),1),1)
     # for l = 1:6
     #     derivStateCost[1:i-1] += flipdim(mpcParams.QderivZ[l]*cumsum(flipdim((zCurr_export[1:i-1,l]-zCurr_export[2:i,l]).^2,1),1),1)
     # end
@@ -91,7 +89,7 @@ end
 
 
 function InitializeParameters(mpcParams::classes.MpcParams,trackCoeff::classes.TrackCoeff,modelParams::classes.ModelParams,
-                                oldTraj::classes.OldTrajectory,mpcCoeff::classes.MpcCoeff,lapStatus::classes.LapStatus,obstacle::classes.Obstacle,buffersize::Int64)
+                                oldTraj::classes.OldTrajectory,mpcCoeff::classes.MpcCoeff,mpcSol::classes.MpcSol,lapStatus::classes.LapStatus,obstacle::classes.Obstacle,buffersize::Int64)
     mpcParams.N                 = 10                        #lenght of prediction horizon
     mpcParams.nz                = 6                         #number of States
     mpcParams.Q                 = [10.0,10.0,0.1,0.0,40.0,0.0]  #0 10 0 1    # put weights on v_x, v_y, psi_dot, epsi, ey, s, just for first round of PathFollowing
@@ -117,7 +115,14 @@ function InitializeParameters(mpcParams::classes.MpcParams,trackCoeff::classes.T
     modelParams.z_ub            = ones(mpcParams.N+1,1) * [Inf  Inf  Inf  Inf  Inf  Inf]                 # upper bounds
     modelParams.l_A             = 0.125
     modelParams.l_B             = 0.125 #0.125
-
+    modelParams.v_max           = 2.0
+    modelParams.max_alpha       = 10
+    modelParams.mass            = 1.98 # kg
+    modelParams.mu              = 0.85
+    modelParams.g               = 9.81 # m/s^2
+    modelParams.I_z             = 0.03 # kg * m^2
+    modelParams.B               = 1.0#1.0
+    modelParams.C               = 1.25#1.25
     modelParams.dt              = 0.1#0.1
 
     oldTraj.n_oldTraj           = 20 #number of old Trajectories for safe set
@@ -134,6 +139,13 @@ function InitializeParameters(mpcParams::classes.MpcParams,trackCoeff::classes.T
     oldTraj.ssInfOn_sol = zeros(oldTraj.n_oldTraj,buffersize,oldTraj.n_oldTraj)
     oldTraj.eps = zeros(3,buffersize,oldTraj.n_oldTraj)
     oldTraj.cost2Target = zeros(buffersize,oldTraj.n_oldTraj)
+
+    mpcSol.u  = zeros(mpcParams.N,2)
+    mpcSol.z  = zeros(mpcParams.N+1,4) 
+    mpcSol.lambda = zeros(oldTraj.n_oldTraj)
+    mpcSol.lambda[1] = 1
+    mpcSol.ssInfOn = ones(20)
+    mpcSol.eps = zeros(3,buffersize)
 
     mpcCoeff.order              = 5
     mpcCoeff.coeffCost          = zeros(buffersize,mpcCoeff.order+1,oldTraj.n_oldTraj)

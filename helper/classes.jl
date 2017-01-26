@@ -146,8 +146,16 @@ type ModelParams
     u_ub::Array{Float64}        # upper bounds
     z_lb::Array{Float64}
     z_ub::Array{Float64}
-    c0::Array{Float64}
-    ModelParams(l_A=0.25,l_B=0.25,dt=0.1,u_lb=Float64[],u_ub=Float64[],z_lb=Float64[],z_ub=Float64[],c0=Float64[]) = new(l_A,l_B,dt,u_lb,u_ub,z_lb,z_ub,c0)
+    v_max::Float64
+    max_alpha::Float64
+    mass::Float64
+    mu::Float64
+    g::Float64
+    I_z::Float64
+    B::Float64
+    C::Float64
+    ModelParams(l_A=0.25,l_B=0.25,dt=0.1,u_lb=Float64[],u_ub=Float64[],z_lb=Float64[],z_ub=Float64[],v_max = 2.0, max_alpha = 10.0, mass = 1.98, mu = 0.85, g = 9.81, I_z = 0.03, B =3.0, C = 1.25) = 
+    new(l_A,l_B,dt,u_lb,u_ub,z_lb,z_ub,v_max, max_alpha, mass, mu, g, I_z, B, C)
 end
 
 
