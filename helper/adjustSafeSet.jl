@@ -1,4 +1,4 @@
-function deleteInfeasibleTrajectories!(oldTraj,posInfo::classes.PosInfo,obstacle, pred_obst::Array{Float64,2}, i::Int64, zCurr_s::Array{Float64,2},dt::Float64)
+function deleteInfeasibleTrajectories!(m::initLearningModel,oldTraj,posInfo::classes.PosInfo,obstacle, pred_obst::Array{Float64,2}, i::Int64, zCurr_s::Array{Float64,2},dt::Float64)
 
     v_ego = zCurr_s[i,4]
 

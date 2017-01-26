@@ -97,7 +97,7 @@ function solveLearningMpcProblem!(m::initLearningModel,mpcSol::classes.MpcSol,mp
     mpcSol.z   = sol_z
     mpcSol.solverStatus = sol_status
     mpcSol.cost = zeros(7)
-    mpcSol.cost = [getvalue(m.costZ);getvalue(m.costZTerm);getvalue(m.constZTerm);getvalue(m.derivCost);getvalue(m.controlCost);getvalue(m.laneCost);getvalue(m.velocityCost); getvalue(m.costObstacle)]
+    mpcSol.cost = [getvalue(m.costZ);getvalue(m.costZTerm);getvalue(m.constZTerm);getvalue(m.derivCost);getvalue(m.controlCost);getvalue(m.laneCost);getvalue(m.velocityCost);0]# getvalue(m.costObstacle)]
     if counter < 3
         return true
     else

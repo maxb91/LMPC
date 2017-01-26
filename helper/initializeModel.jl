@@ -257,10 +257,8 @@ type initLearningModel
         @NLconstraint(mdl, [i=1:N], z_Ol[i+1,2]  == z_Ol[i,2] + dt*z_Ol[i,4]*sin(z_Ol[i,3]+bta[i])  )                     # ey
         @NLconstraint(mdl, [i=1:N], z_Ol[i+1,3]  == z_Ol[i,3] + dt*(z_Ol[i,4]/L_b*sin(bta[i])-dsdt[i]*c[i])  )            # epsi
         @NLconstraint(mdl, [i=1:N], z_Ol[i+1,4]  == z_Ol[i,4] + dt*(u_Ol[i,1]))#- 0.23*abs(z_Ol[i,4]) * z_Ol[i,4]))#0.63  # v
-        # @NLconstraint(mdl, [i=1:N+1], z_Ol[i,5]  == sCoord_obst[i,1] - z_Ol[i,1]  )
-        # @NLconstraint(mdl, [i=1:N+1], z_Ol[i,6]  == sy_obst - z_Ol[i,2] )
      
-
+        # @NLconstraint(mdl,[i =1:(N+1)],( (z_Ol[i,1]-sCoord_obst[i,1])/rs )^2 + ( (z_Ol[i,2]-sCoord_obst[i,2])/ry) ^2 - 1>=0)
 
         #define expressions for cost
         # Derivative cost
@@ -302,8 +300,8 @@ type initLearningModel
         @NLexpression(mdl, costZ, Q_cost*sum(1 for i=1:N+1))
 
         ## Cost to avoid obstacle. increases when car is near obstacle currently implemented as : a *1/(0.1+cost)
-        @NLexpression(mdl, costObstacle, sum(Q_obstacleNumer*1/(0.01+(Q_obstacle* (( (z_Ol[i,1]-sCoord_obst[i,1])/rs )^2 + ( (z_Ol[i,2]-sCoord_obst[i,2])/ry) ^2 - 1))^4)+
-                                             Q_obstacleNumer*3/(0.01+0.6*(((z_Ol[i,1]-sCoord_obst[i,1])/rs)^2+((z_Ol[i,2]-sCoord_obst[i,2])/ry)^2)) for i=1:N+1))
+        @NLexpression(mdl, costObstacle, sum(((N+1.4-0.4*i)/(N+1))*(Q_obstacleNumer*1/(0.01+(Q_obstacle* (( (z_Ol[i,1]-sCoord_obst[i,1])/rs )^2 + ( (z_Ol[i,2]-sCoord_obst[i,2])/ry) ^2 - 1))^4)+
+                                             Q_obstacleNumer*3/(0.01+0.6*(((z_Ol[i,1]-sCoord_obst[i,1])/rs)^2+((z_Ol[i,2]-sCoord_obst[i,2])/ry)^2))) for i=1:N+1))
 
 
         @NLobjective(mdl, Min, costZ + costZTerm + constZTerm + derivCost + controlCost + laneCost+ velocityCost + costObstacle)

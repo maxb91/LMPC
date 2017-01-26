@@ -56,13 +56,14 @@
     posInfo.s_target            = (size(x_track)[2]-1)*trackCoeff.ds#59.5 #has to be fitted to track , current test track form ugo has 113.2 meters
 
 
-    load_safeset = false#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
-    safeset = "data/2017-01-24-18-18-Data.jld"
-    n_rounds = 1
+    load_safeset = true#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
+    safeset = "data/2017-01-26-00-17-Data.jld"
+    n_rounds = 4
+    active_obstacle = true
      
-    s_obst_init = 85#9.56 
+    s_obst_init = 5#9.56 
     sy_obst_init = -0.2
-    v_obst_init = 0#1.8#1.5#1.5##1.8
+    v_obst_init = 1.5#1.8#1.5#1.5##1.8
     obstacle.rs = 0.5 # if we load old trajecory these values get overwritten
     obstacle.ry = 0.19 # if we load old trajecory these values get overwritten
     
@@ -105,6 +106,10 @@
     j = 1
     z_final_x = zeros(1,4)::Array{Float64,2}
     u_final = zeros(1,2)
+
+    obstacle.s_obstacle[1,1] = s_obst_init
+    obstacle.sy_obstacle[1,1] = sy_obst_init
+    obstacle.v[1,1] = v_obst_init
     for j=1:n_rounds #10
         
         no_solution_found = 0 #counts number of unsuccesful attempts
@@ -124,9 +129,7 @@
             obstacle.sy_obstacle[:,k+1] = obstacle.sy_obstacle[:,k]
             obstacle.v[:,k+1] = obstacle.v[:,k]
         end
-        obstacle.s_obstacle[1,1] = s_obst_init
-        obstacle.sy_obstacle[1,1] = sy_obst_init
-        obstacle.v[1,1] = v_obst_init
+        
         #setup point for vehicle on track in first round. gets overwritten in other rounds
         zCurr_x[1,1] = z_Init[1] # x = 1.81 for s = 32     14 in curve
         zCurr_x[1,2] = z_Init[2] # y = 2.505 for s = 32  12.6
@@ -146,6 +149,9 @@
         if j>1             #setup point for vehicle after first round                   # if we are in the second or higher lap
             zCurr_x[1,:] = z_final_x
             uCurr[1,:] = u_final
+            obstacle.s_obstacle[1,1]  = obstacle.s_obstacle[oldTraj.oldNIter[1],2]
+            obstacle.sy_obstacle[1,1] = obstacle.sy_obstacle[oldTraj.oldNIter[1],2]
+            obstacle.v[1,1]           = obstacle.v[oldTraj.oldNIter[1],2]
         end
 
 
@@ -193,7 +199,7 @@
             if j > 1 || load_safeset == true
                 tic()
                 addOldtoNewPos(oldTraj, distance2obst[i],obstacle,i,pred_obst, mpcParams,zCurr_s,modelParams.dt,mpcCoeff)
-                deleteInfeasibleTrajectories!(oldTraj,posInfo,obstacle, pred_obst, i, zCurr_s,modelParams.dt)
+                deleteInfeasibleTrajectories!(mdl_LMPC, oldTraj,posInfo,obstacle, pred_obst, i, zCurr_s,modelParams.dt)
 		        
                 tt1[i] = toq()
                 #println(" time to add/remove traj $(tt1[i])")
@@ -239,7 +245,7 @@
             zCurr_x[i+1,:]  = simModel_exact_dyn_x(zCurr_x[i,:],uCurr[i,:],modelParams.dt,modelParams) #!! @show
 
             #update Position of the Obstacle car        
-            computeObstaclePos!(obstacle, dt, i, x_track, trackCoeff, zCurr_s[i,1]) #this funciton computes values for row i+1
+            computeObstaclePos!(obstacle, dt, i, x_track, trackCoeff, zCurr_s[i,1], active_obstacle) #this funciton computes values for row i+1
             
 
             cost[:,i,j]         = mpcSol.cost

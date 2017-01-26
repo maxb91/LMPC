@@ -52,7 +52,7 @@ function saveOldTraj(oldTraj,zCurr::Array{Float64}, zCurr_x::Array{Float64},uCur
             obstacle.v[:,k] = obstacle.v[:,1]
         end
     else
-        for k = oldTraj.n_oldTraj-1:-1:1
+        for k = oldTraj.n_oldTraj-3:-1:1
             oldTraj.oldTraj[:,:,k+1]  = oldTraj.oldTraj[:,:,k]    # ... copy the first in the second
             oldTraj.oldInput[:,:,k+1] = oldTraj.oldInput[:,:,k]   # ... same for the input
             oldTraj.oldTrajXY[:,:,k+1]  = oldTraj.oldTrajXY[:,:,k]   
@@ -96,7 +96,7 @@ function InitializeParameters(mpcParams::classes.MpcParams,trackCoeff::classes.T
     mpcParams.Q_term            = 100*[10.0,2.0,1.0]           # weights for terminal constraints (LMPC, for e_y, e_psi, and v)
     mpcParams.Q_cost            = 0.7                           #factor for terminal cost
     mpcParams.Q_obstacle        = 0.3 #
-    mpcParams.Q_obstacleNumer   = 0.001#0.04#0.0025#0.0019
+    mpcParams.Q_obstacleNumer   = 0.0025#0.04#0.0025#0.0019
     mpcParams.Q_lane            = 2000.0
     mpcParams.Q_velocity        = 1000.0
     mpcParams.R                 = 0.0*[1.0,1.0]             # put weights on a and d_f
@@ -116,7 +116,7 @@ function InitializeParameters(mpcParams::classes.MpcParams,trackCoeff::classes.T
     modelParams.l_A             = 0.125
     modelParams.l_B             = 0.125 #0.125
     modelParams.v_max           = 2.0
-    modelParams.max_alpha       = 10
+    modelParams.max_alpha       = 12
     modelParams.mass            = 1.98 # kg
     modelParams.mu              = 0.85
     modelParams.g               = 9.81 # m/s^2
