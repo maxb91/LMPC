@@ -263,8 +263,6 @@ type initLearningModel
         coeffTermCost   = mpcCoeff.coeffCost[1,:,:]::Array{Float64,2}
         coeffTermConst  = mpcCoeff.coeffConst[1,:,:,:]::Array{Float64,3}
         order           = mpcCoeff.order       # polynomial order of terminal constraints and cost approximation
-        # s_start         = posInfo.s_start
-        # s_target        = posInfo.s_target
         QderivZ         = mpcParams.QderivZ::Array{Float64,1}
         QderivU         = mpcParams.QderivU::Array{Float64,1}
         v_ref           = mpcParams.vPathFollowing

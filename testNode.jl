@@ -52,7 +52,7 @@
     safeset = "data/2017-01-24-18-18-Data.jld"
 
     #########
-    InitializeParameters(mpcParams,trackCoeff,modelParams,posInfo,oldTraj,mpcCoeff,lapStatus,obstacle,buffersize)
+    InitializeParameters(mpcParams,trackCoeff,modelParams,oldTraj,mpcCoeff,lapStatus,obstacle,buffersize)
     mpcSol.u  = zeros(mpcParams.N,2)
     mpcSol.z  = zeros(mpcParams.N+1,4) 
     mpcSol.lambda = zeros(oldTraj.n_oldTraj)

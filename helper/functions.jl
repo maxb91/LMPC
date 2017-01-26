@@ -91,7 +91,7 @@ end
 
 
 function InitializeParameters(mpcParams::classes.MpcParams,trackCoeff::classes.TrackCoeff,modelParams::classes.ModelParams,
-                                posInfo::classes.PosInfo,oldTraj::classes.OldTrajectory,mpcCoeff::classes.MpcCoeff,lapStatus::classes.LapStatus,obstacle::classes.Obstacle,buffersize::Int64)
+                                oldTraj::classes.OldTrajectory,mpcCoeff::classes.MpcCoeff,lapStatus::classes.LapStatus,obstacle::classes.Obstacle,buffersize::Int64)
     mpcParams.N                 = 10                        #lenght of prediction horizon
     mpcParams.nz                = 6                         #number of States
     mpcParams.Q                 = [10.0,10.0,0.1,0.0,40.0,0.0]  #0 10 0 1    # put weights on v_x, v_y, psi_dot, epsi, ey, s, just for first round of PathFollowing
@@ -119,9 +119,6 @@ function InitializeParameters(mpcParams::classes.MpcParams,trackCoeff::classes.T
     modelParams.l_B             = 0.125 #0.125
 
     modelParams.dt              = 0.1#0.1
-
-    posInfo.s_start             = 0.0
-    posInfo.s_target            = 5.0
 
     oldTraj.n_oldTraj           = 20 #number of old Trajectories for safe set
     oldTraj.oldTraj             = zeros(buffersize,6,oldTraj.n_oldTraj)
