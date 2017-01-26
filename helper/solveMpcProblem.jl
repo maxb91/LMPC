@@ -24,8 +24,6 @@ function solvePathFollowMpc!(m::initPathFollowingModel,mpcSol::classes.MpcSol,mp
     setvalue(m.sCoord_obst[:,1],pred_obst[:,1])
     setvalue(m.sCoord_obst[:,2],pred_obst[:,2])
 
-    #println("Model formulation:")
-    #println(m.m)
     # Solve Problem and return solution
     sol_status  = solve(m.mdl)
     sol_u       = getvalue(m.u_Ol)
@@ -46,22 +44,8 @@ function solvePathFollowMpc!(m::initPathFollowingModel,mpcSol::classes.MpcSol,mp
     mpcSol.solverStatus = sol_status
     mpcSol.cost = zeros(7)
     mpcSol.cost = [getvalue(m.costPath);0;0;getvalue(m.derivCost);getvalue(m.controlCost);0;getvalue(m.velocityCost); getvalue(m.costObstacle)]
-    #objvl = getobjectivevalue(m.m)
     nothing #nothing to return
 end
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -69,7 +53,6 @@ function solveLearningMpcProblem!(m::initLearningModel,mpcSol::classes.MpcSol,mp
     lapStatus::classes.LapStatus,posInfo::classes.PosInfo,modelParams::classes.ModelParams,zCurr::Array{Float64},uCurr::Array{Float64}, pred_obst, iter::Int64)
     # Load Parameters
     coeffCurvature  = trackCoeff.coeffCurvature::Array{Float64,1}
-    
 
     local sol_u::Array{Float64,2} 
     local sol_z::Array{Float64,2} 
@@ -84,8 +67,6 @@ function solveLearningMpcProblem!(m::initLearningModel,mpcSol::classes.MpcSol,mp
     setvalue(m.sCoord_obst[:,1],pred_obst[:,1])
     setvalue(m.sCoord_obst[:,2],pred_obst[:,2])
 
-    #println("Model formulation:")
-    #println(m.m)
     # Solve Problem and return solution
     sol_status  = solve(m.mdl)
     counter = 1
@@ -117,7 +98,6 @@ function solveLearningMpcProblem!(m::initLearningModel,mpcSol::classes.MpcSol,mp
     mpcSol.solverStatus = sol_status
     mpcSol.cost = zeros(7)
     mpcSol.cost = [getvalue(m.costZ);getvalue(m.costZTerm);getvalue(m.constZTerm);getvalue(m.derivCost);getvalue(m.controlCost);getvalue(m.laneCost);getvalue(m.velocityCost); getvalue(m.costObstacle)]
-    #objvl = getobjectivevalue(m.m)
     if counter < 3
         return true
     else

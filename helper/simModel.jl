@@ -34,7 +34,7 @@ function simModel_x(z::Array{Float64},u::Array{Float64},dt::Float64,modelParams:
     zNext[1] = z[1] + dt*(z[4]*cos(z[3]+bta))       # x
     zNext[2] = z[2] + dt*(z[4]*sin(z[3] + bta))      # y
     zNext[3] = z[3] + dt*(z[4]/l_B*sin(bta))        # psi
-    zNext[4] = z[4] + dt*(u[1])#- 0.23 * z[4]^2 * sign(z[4]))                #0.63     # v
+    zNext[4] = z[4] + dt*(u[1])#- 0.23 * z[4]^2 * sign(z[4]))   # v
 
     return zNext
 end
@@ -54,15 +54,13 @@ function simModel_dyn_x(z::Array{Float64},u::Array{Float64},dt::Float64,modelPar
     # u[1] = acceleration
     # u[2] = steering angle
 
-    m = 1.98 # kg
-    mu  = 0.85
-    g = 9.81 # m/s^2
-    I_z = 0.03 # kg * m^2
-    B = 6.0#1.0
-    C = 1.6
-
-
-
+    max_alpha =modelParams.max_alpha
+    m = modelParams.mass
+    mu  = modelParams.mu
+    g = modelParams.g
+    I_z = modelParams.I_z
+    B = modelParams.B
+    C = modelParams.C
 
     F_xr = m*u[1]    
     FMax = mu*m*g / 2.0    
@@ -78,11 +76,9 @@ function simModel_dyn_x(z::Array{Float64},u::Array{Float64},dt::Float64,modelPar
         alpha_r = 0.0      
     else        
         alpha_f = atan( (v_y+l_A*psi_dot) / v_x ) - u[2]        
-        alpha_r = atan( (v_y-l_B*psi_dot) / v_x)    
-        # alpha_f = ( (v_y+l_A*psi_dot) / v_x ) - u[2]        
-        # alpha_r = ( (v_y-l_B*psi_dot) / v_x)    
+        alpha_r = atan( (v_y-l_B*psi_dot) / v_x)       
     end
-    if exact_sim_i==1 && max(abs(alpha_f),abs(alpha_r))>10/180*pi
+    if exact_sim_i==1 && max(abs(alpha_f),abs(alpha_r))>max_alpha/180*pi
         warn("Large slip angles: alpha_f = $(alpha_f*180/pi)°, alpha_r = $(alpha_r*180/pi)° , x =$x, y = $y")
     end
     

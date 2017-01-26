@@ -141,19 +141,9 @@ if exist_feas_traj == 1  #&& 0 == 1 #!! change
         costs[k]= oldTraj.cost2Target[index_s[k]-N_points*(k-1),k]
     end
     curr_min_cost, traj_min = findmin(costs,1)
-    #implement dnamic model
-    # check curvature for copying probelems in curve
-    # see if assigned costz make sense to use trajectories
-    # plot oldTRaj aprox
-    # @show curr_min_cost
-    # @show oldTraj.cost2Target[ind_start,traj_min][1]
-     #oldTraj.cost2Target[ind_start:ind_start+pLength,traj_min]
-    #@show oldTraj.cost2Target[index_s[1]:index_s[1]+pLength,1]
-    # @show ind_start
-    # @show oldTraj.cost2Target[ind_start:ind_start+pLength,index_of_traj_2_copy]
+    
     oldTraj.cost2Target[ind_start:ind_start+pLength,end] = oldTraj.cost2Target[ind_start:ind_start+pLength,index_of_traj_2_copy]-(oldTraj.cost2Target[ind_start,index_of_traj_2_copy][1]-oldTraj.cost2Target[index_s[index_of_traj_2_copy]-N_points*(index_of_traj_2_copy-1),index_of_traj_2_copy][1])
    
-
     println("copied s :$(oldTraj.oldTraj[ind_start,1,index_of_traj_2_copy]) from old round : $index_of_traj_2_copy, curr s: $(zCurr_s[iter,1]), iterartion : $iter")
    
 

@@ -50,6 +50,7 @@ close("all")
 
 alpha_f = vec(-0.7:0.005:0.7)
 
-F_yf = -FMax * sin(C*atan(B*alpha_f))
+# F_yf = -FMax * sin(C*atan(B*alpha_f))
+F_yf = -10*FMax * alpha_f
 plot(alpha_f,F_yf)
 grid()
