@@ -30,15 +30,15 @@ type initPathFollowingModel
 
         m = new()
 
-        dt        = modelParams.dt
-        L_a       = modelParams.l_A
-        L_b       = modelParams.l_B
-        u_lb      = modelParams.u_lb
-        u_ub      = modelParams.u_ub
-        z_lb      = modelParams.z_lb
-        z_ub      = modelParams.z_ub
-        s_obst    = obstacle.s_obstacle
-        sy_obst   = obstacle.sy_obstacle
+        dt         = modelParams.dt
+        L_a        = modelParams.l_A
+        L_b        = modelParams.l_B
+        u_lb       = modelParams.u_lb
+        u_ub       = modelParams.u_ub
+        z_lb       = modelParams.z_lb
+        z_ub       = modelParams.z_ub
+        s_obst     = obstacle.s_obstacle
+        sy_obst    = obstacle.sy_obstacle
         rs = obstacle.rs
         ry = obstacle.ry
         Q               = mpcParams.Q #Cost of states just for path following
@@ -71,7 +71,7 @@ type initPathFollowingModel
 
         z_Ol = @variable( mdl, [i =1:(N+1),j = 1:4], lowerbound = modelParams.z_lb[i,j], upperbound = modelParams.z_ub[i,j], start = z_Init[i,j])      # z = s, ey, epsi, v
         u_Ol = @variable( mdl, [i=1:N,j=1:2], lowerbound = modelParams.u_lb[i,j], upperbound = modelParams.u_ub[i,j], start = 0)          # overwrtie dim of in classes.jl?
-        eps = @variable( mdl, lowerbound = 0, start = 0)
+        eps  = @variable( mdl, lowerbound = 0, start = 0)
 
         @NLparameter(mdl, z0[i=1:4] == z_Init[1,i])
         @NLconstraint(mdl, [i=1:4], z_Ol[1,i] == z0[i])
@@ -300,9 +300,10 @@ type initLearningModel
         @NLexpression(mdl, costZ, Q_cost*sum(1 for i=1:N+1))
 
         ## Cost to avoid obstacle. increases when car is near obstacle currently implemented as : a *1/(0.1+cost)
-        @NLexpression(mdl, costObstacle, sum(((N+1.4-0.4*i)/(N+1))*(Q_obstacleNumer*1/(0.01+(Q_obstacle* (( (z_Ol[i,1]-sCoord_obst[i,1])/rs )^2 + ( (z_Ol[i,2]-sCoord_obst[i,2])/ry) ^2 - 1))^4)+
-                                             Q_obstacleNumer*3/(0.01+0.6*(((z_Ol[i,1]-sCoord_obst[i,1])/rs)^2+((z_Ol[i,2]-sCoord_obst[i,2])/ry)^2))) for i=1:N+1))
-
+        # @NLexpression(mdl, costObstacle, sum(((N+1.2-0.2*i)/(N+1))*(Q_obstacleNumer*1/(0.01+(Q_obstacle* (( (z_Ol[i,1]-sCoord_obst[i,1])/rs )^2 + ( (z_Ol[i,2]-sCoord_obst[i,2])/ry) ^2 - 1))^4)+
+        #                                      Q_obstacleNumer*3/(0.01+0.6*(((z_Ol[i,1]-sCoord_obst[i,1])/rs)^2+((z_Ol[i,2]-sCoord_obst[i,2])/ry)^2))) for i=1:N+1))
+        @NLexpression(mdl, costObstacle, sum(Q_obstacleNumer*1/(0.01+(Q_obstacle* (( (z_Ol[i,1]-sCoord_obst[i,1])/rs )^2 + ( (z_Ol[i,2]-sCoord_obst[i,2])/ry) ^2 - 1))^4)+
+                                             Q_obstacleNumer*3/(0.01+0.6*(((z_Ol[i,1]-sCoord_obst[i,1])/rs)^2+((z_Ol[i,2]-sCoord_obst[i,2])/ry)^2)) for i=1:N+1))
 
         @NLobjective(mdl, Min, costZ + costZTerm + constZTerm + derivCost + controlCost + laneCost+ velocityCost + costObstacle)
 

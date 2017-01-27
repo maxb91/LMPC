@@ -8,7 +8,7 @@
 # i = 4 -> v
 
 function solvePathFollowMpc!(m::initPathFollowingModel,mpcSol::classes.MpcSol,mpcCoeff::classes.MpcCoeff,mpcParams::classes.MpcParams,trackCoeff::classes.TrackCoeff,
-    lapStatus::classes.LapStatus,posInfo::classes.PosInfo,modelParams::classes.ModelParams,zCurr::Array{Float64},uCurr::Array{Float64}, pred_obst, iter::Int64)
+    lapStatus::classes.LapStatus,posInfo::classes.PosInfo,modelParams::classes.ModelParams,zCurr::Array{Float64},uCurr::Array{Float64}, close_pred_obst::Array{Float64,2}, iter::Int64)
     # Load Parameters
     coeffCurvature  = trackCoeff.coeffCurvature::Array{Float64,1}
     
@@ -21,8 +21,8 @@ function solvePathFollowMpc!(m::initPathFollowingModel,mpcSol::classes.MpcSol,mp
     # Update model values
     setvalue(m.coeff,coeffCurvature)
     setvalue(m.uCurr,uCurr)
-    setvalue(m.sCoord_obst[:,1],pred_obst[:,1])
-    setvalue(m.sCoord_obst[:,2],pred_obst[:,2])
+    setvalue(m.sCoord_obst[:,1],close_pred_obst[:,1])
+    setvalue(m.sCoord_obst[:,2],close_pred_obst[:,2])
 
     # Solve Problem and return solution
     sol_status  = solve(m.mdl)
@@ -50,7 +50,7 @@ end
 
 
 function solveLearningMpcProblem!(m::initLearningModel,mpcSol::classes.MpcSol,mpcCoeff::classes.MpcCoeff,mpcParams::classes.MpcParams,trackCoeff::classes.TrackCoeff,
-    lapStatus::classes.LapStatus,posInfo::classes.PosInfo,modelParams::classes.ModelParams,zCurr::Array{Float64},uCurr::Array{Float64}, pred_obst, iter::Int64)
+    lapStatus::classes.LapStatus,posInfo::classes.PosInfo,modelParams::classes.ModelParams,zCurr::Array{Float64},uCurr::Array{Float64}, close_pred_obst::Array{Float64,2}, iter::Int64)
     # Load Parameters
     coeffCurvature  = trackCoeff.coeffCurvature::Array{Float64,1}
 
@@ -64,8 +64,8 @@ function solveLearningMpcProblem!(m::initLearningModel,mpcSol::classes.MpcSol,mp
     setvalue(m.coeffTermCost,mpcCoeff.coeffCost[iter,:,:])
     setvalue(m.coeffTermConst,mpcCoeff.coeffConst[iter,:,:,:])
     setvalue(m.uCurr,uCurr)
-    setvalue(m.sCoord_obst[:,1],pred_obst[:,1])
-    setvalue(m.sCoord_obst[:,2],pred_obst[:,2])
+    setvalue(m.sCoord_obst[:,1],close_pred_obst[:,1])
+    setvalue(m.sCoord_obst[:,2],close_pred_obst[:,2])
 
     # Solve Problem and return solution
     sol_status  = solve(m.mdl)

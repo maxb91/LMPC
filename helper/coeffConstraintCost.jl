@@ -101,10 +101,17 @@ function coeffConstraintCost!(oldTraj, mpcCoeff::classes.MpcCoeff, posInfo::clas
     
         # compute the final cost coefficients
         bQfunction_Vector = zeros(pLength+1)
-        for k = 1:pLength+1
-             bQfunction_Vector[k]  = oldTraj.cost2Target[idx_s[i]-N_points*(i-1)+k-1,i]
+        if idx_s[i]-N_points*(i-1)+pLength <= size(oldTraj.cost2Target)[1]
+            for k = 1:pLength+1
+                 bQfunction_Vector[k]  = oldTraj.cost2Target[idx_s[i]-N_points*(i-1)+k-1,i]
+            end
+            coeffCost[:,i]    = MatrixInterp[:,:,i]\bQfunction_Vector           # interpolate this vector with the given s
+        else
+            warn("********************************************************************")
+            warn("closest found s is to near to end of interpolation array. Probably error in solver")
+            warn("********************************************************************")
+            break
         end
-        coeffCost[:,i]    = MatrixInterp[:,:,i]\bQfunction_Vector           # interpolate this vector with the given s
     end
     # The Q-function contains for every point in the sampled safe set the minimum cost-to-go-value
     # These values are calculated for both old trajectories

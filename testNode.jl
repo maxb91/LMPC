@@ -48,26 +48,32 @@
     z_Init[5] = 0 #psi
     z_Init[6] = 0.0
    
-    #########
+  
+    
+    
+
+
+    load_safeset = true#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
+    safeset = "data/2017-01-26-18-11-Data.jld"
+    n_rounds = 4
+    active_obstacle = true
+     
+
+    obstacle.n_obstacle = 5
+    s_obst_init= [8, 16, 24, 32, 40]
+    sy_obst_init = -0.2*ones(obstacle.n_obstacle)
+    v_obst_init = 1.5*ones(obstacle.n_obstacle) #1.8#1.5#1.5##1.8
+
+    obstacle.rs = 0.5 # if we load old trajecory these values get overwritten
+    obstacle.ry = 0.19 # if we load old trajecory these values get overwritten
+    
+
+    ######### 
     InitializeParameters(mpcParams,trackCoeff,modelParams,oldTraj,mpcCoeff,mpcSol,lapStatus,obstacle,buffersize)
     #########
 
     posInfo.s_start             = 0.0 #does not get changed with the current version
     posInfo.s_target            = (size(x_track)[2]-1)*trackCoeff.ds#59.5 #has to be fitted to track , current test track form ugo has 113.2 meters
-
-
-    load_safeset = true#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
-    safeset = "data/2017-01-26-00-17-Data.jld"
-    n_rounds = 4
-    active_obstacle = true
-     
-    s_obst_init = 5#9.56 
-    sy_obst_init = -0.2
-    v_obst_init = 1.5#1.8#1.5#1.5##1.8
-    obstacle.rs = 0.5 # if we load old trajecory these values get overwritten
-    obstacle.ry = 0.19 # if we load old trajecory these values get overwritten
-    
-    
     
     #####################################
     println("Initialize Model........")
@@ -95,7 +101,7 @@
     cost        = zeros(8,length(t),n_rounds)
 
     ssInfOn_log = zeros(oldTraj.n_oldTraj, length(t), n_rounds)
-    pred_obst = zeros(mpcParams.N+1,3)
+    pred_obst = zeros(mpcParams.N+1,3,obstacle.n_obstacle)
 
     if load_safeset == true
         SafeSetData = load(safeset)
@@ -107,9 +113,11 @@
     z_final_x = zeros(1,4)::Array{Float64,2}
     u_final = zeros(1,2)
 
-    obstacle.s_obstacle[1,1] = s_obst_init
-    obstacle.sy_obstacle[1,1] = sy_obst_init
-    obstacle.v[1,1] = v_obst_init
+
+    obstacle.s_obstacle[1,1,:] = s_obst_init
+    obstacle.sy_obstacle[1,1,:] = sy_obst_init
+    obstacle.v[1,1,:] = v_obst_init
+
     for j=1:n_rounds #10
         
         no_solution_found = 0 #counts number of unsuccesful attempts
@@ -120,14 +128,14 @@
         zCurr_s     = zeros(length(t),4)          # s, ey, epsi, v
         zCurr_x     = zeros(length(t),6)          # x, y, v_x,v_y, psi, psi_dot
         uCurr       = zeros(length(t),2)
-        distance2obst = 1000*ones(length(t))
+        distance2obst = 1000*ones(length(t), obstacle.n_obstacle)
         curvature_curr = zeros(length(t))
         
         #T
         for k = oldTraj.n_oldTraj-1:-1:1
-            obstacle.s_obstacle[:,k+1]  = obstacle.s_obstacle[:,k]
-            obstacle.sy_obstacle[:,k+1] = obstacle.sy_obstacle[:,k]
-            obstacle.v[:,k+1] = obstacle.v[:,k]
+            obstacle.s_obstacle[:,k+1,:]  = obstacle.s_obstacle[:,k,:]
+            obstacle.sy_obstacle[:,k+1,:] = obstacle.sy_obstacle[:,k,:]
+            obstacle.v[:,k+1,:] = obstacle.v[:,k,:]
         end
         
         #setup point for vehicle on track in first round. gets overwritten in other rounds
@@ -149,9 +157,9 @@
         if j>1             #setup point for vehicle after first round                   # if we are in the second or higher lap
             zCurr_x[1,:] = z_final_x
             uCurr[1,:] = u_final
-            obstacle.s_obstacle[1,1]  = obstacle.s_obstacle[oldTraj.oldNIter[1],2]
-            obstacle.sy_obstacle[1,1] = obstacle.sy_obstacle[oldTraj.oldNIter[1],2]
-            obstacle.v[1,1]           = obstacle.v[oldTraj.oldNIter[1],2]
+            obstacle.s_obstacle[1,1,:]  = obstacle.s_obstacle[oldTraj.oldNIter[1],2,:]
+            obstacle.sy_obstacle[1,1,:] = obstacle.sy_obstacle[oldTraj.oldNIter[1],2,:]
+            obstacle.v[1,1,:]           = obstacle.v[oldTraj.oldNIter[1],2,:]
         end
 
 
@@ -172,7 +180,8 @@
             end
             posInfo.s   = zCurr_s[i,1]
             curvature_curr[i] = trackCoeff.coeffCurvature[1]*posInfo.s^4+trackCoeff.coeffCurvature[2]*posInfo.s^3+trackCoeff.coeffCurvature[3]*posInfo.s^2+trackCoeff.coeffCurvature[4]*posInfo.s +trackCoeff.coeffCurvature[5]
-            distance2obst[i] = (obstacle.s_obstacle[i,1]-obstacle.rs) - posInfo.s
+            distance2obst[i,:] = (obstacle.s_obstacle[i,1,:]-obstacle.rs) - posInfo.s
+            ind_closest_obst = findmin(distance2obst[i,:])[2]
             #t_absci =toq()
             #if the car has crossed the finish line
             if zCurr_s[i,1] >= posInfo.s_target
@@ -198,8 +207,8 @@
             
             if j > 1 || load_safeset == true
                 tic()
-                addOldtoNewPos(oldTraj, distance2obst[i],obstacle,i,pred_obst, mpcParams,zCurr_s,modelParams.dt,mpcCoeff)
-                deleteInfeasibleTrajectories!(mdl_LMPC, oldTraj,posInfo,obstacle, pred_obst, i, zCurr_s,modelParams.dt)
+                addOldtoNewPos(oldTraj, distance2obst[i,ind_closest_obst],obstacle,i,pred_obst[:,:,ind_closest_obst], mpcParams,zCurr_s,modelParams.dt,mpcCoeff)
+                deleteInfeasibleTrajectories!(mdl_LMPC, oldTraj,distance2obst[i,ind_closest_obst],obstacle, pred_obst[:,:,ind_closest_obst], i, zCurr_s,modelParams.dt)
 		        
                 tt1[i] = toq()
                 #println(" time to add/remove traj $(tt1[i])")
@@ -224,9 +233,9 @@
             # setvalue(m.eps, mpcSol.eps)
             #####################
             if j == 1 && load_safeset == false
-                solvePathFollowMpc!(mdl_Path,mpcSol,mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr_s[i,:]',[mpcSol.a_x;mpcSol.d_f], pred_obst,i)
+                solvePathFollowMpc!(mdl_Path,mpcSol,mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr_s[i,:]',[mpcSol.a_x;mpcSol.d_f], pred_obst[:,:,ind_closest_obst],i)
             elseif j >= 2 || load_safeset == true
-                solstat = solveLearningMpcProblem!(mdl_LMPC,mpcSol,mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr_s[i,:]',[mpcSol.a_x;mpcSol.d_f], pred_obst,i)
+                solstat = solveLearningMpcProblem!(mdl_LMPC,mpcSol,mpcCoeff,mpcParams,trackCoeff,lapStatus,posInfo,modelParams,zCurr_s[i,:]',[mpcSol.a_x;mpcSol.d_f], pred_obst[:,:,ind_closest_obst],i)
                 if solstat == false
                     no_solution_found += 1
                 else

@@ -4,7 +4,7 @@ include("classes.jl")
 
 #function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
     newest2plot = 1
-    n_oldTrajPlots = 3
+    n_plot_rounds = 3 
 
     interactive_plot = 1
 
@@ -17,7 +17,8 @@ include("classes.jl")
     plot_inputs = 1
     plot_eps = 0
     interactive_plot_steps = 4
-    file = "data/2017-01-26-12-53-Data.jld"
+    n_oldTrajPlots = 0
+    file = "data/2017-01-26-18-13-Data.jld"
     close("all")
 
     ####load data from file
@@ -53,6 +54,7 @@ include("classes.jl")
     trackL = size(xy_track,2)
     boundary_up = zeros(2,trackL)
     boundary_down = zeros(2,trackL)
+    trackCoeff.width = trackCoeff.width+0.1
     for kkk = 1:1:trackL
         if 1< kkk < trackL 
             xt_secant = x_track[kkk+1] - x_track[kkk-1]
@@ -82,21 +84,46 @@ include("classes.jl")
         ax10 = subplot(1,1,1)
         if interactive_plot == 1
             cartraj_plot = ax10[:plot](1,1)  #just for initialization
-            obsttraj_plot = ax10[:plot](1,1)  #just for initialization
+            #obsttraj_plot1 = ax10[:plot](1,1)  #just for initialization
             car_plot = ax10[:plot](oldTraj.oldTrajXY[1,1,1], oldTraj.oldTrajXY[1,2,1], color = "black") # just dummy to use remove func later
             pred_plot = ax10[:plot](oldTraj.oldTrajXY[:,1,1,1],oldTraj.oldTrajXY[:,2,1,1],color = "yellow", marker="o")
-            obstacle_plot = ax10[:plot](obstacle.xy_vector[1,1,1], obstacle.xy_vector[1,2,1], color = "red",marker="o", label = "obstacle Traj")
-            y_obst_plot = ax10[:plot]([obstacle.axis_y_up[1,1,1],obstacle.axis_y_down[1,1,1]],[obstacle.axis_y_up[1,2,1],obstacle.axis_y_down[1,2,1]],color = "red")#plot the y semi axis
-            s_obst_plot = ax10[:plot]([obstacle.axis_s_up[1,1,1],obstacle.axis_s_down[1,1,1]],[obstacle.axis_s_up[1,2,1],obstacle.axis_s_down[1,2,1]],color = "red")# plot the s semi axis
+
+       
+            if obstacle.n_obstacle >=1
+                #obsttraj_plot1 = ax10[:plot](1,1)  #just for initialization
+                obstacle_plot1 = ax10[:plot](obstacle.xy_vector[1,1,1,1], obstacle.xy_vector[1,2,1,1], color = "red",marker="o", label = "obstacle Traj")
+                y_obst_plot1   = ax10[:plot]([obstacle.axis_y_up[1,1,1,1],obstacle.axis_y_down[1,1,1,1]],[obstacle.axis_y_up[1,2,1,1],obstacle.axis_y_down[1,2,1,1]],color = "red")#plot the y semi axis
+                s_obst_plot1   = ax10[:plot]([obstacle.axis_s_up[1,1,1,1],obstacle.axis_s_down[1,1,1,1]],[obstacle.axis_s_up[1,2,1,1],obstacle.axis_s_down[1,2,1,1]],color = "red")# plot the s semi axis
+            end
+            if obstacle.n_obstacle >=2
+                #obsttraj_plot2 = ax10[:plot](1,1)  #just for initialization
+                obstacle_plot2 = ax10[:plot](obstacle.xy_vector[1,1,1,2], obstacle.xy_vector[1,2,1,2], color = "red",marker="o", label = "obstacle Traj")
+                y_obst_plot2   = ax10[:plot]([obstacle.axis_y_up[1,1,1,2],obstacle.axis_y_down[1,1,1,2]],[obstacle.axis_y_up[1,2,1,2],obstacle.axis_y_down[1,2,1,2]],color = "red")#plot the y semi axis
+                s_obst_plot2   = ax10[:plot]([obstacle.axis_s_up[1,1,1,2],obstacle.axis_s_down[1,1,1,2]],[obstacle.axis_s_up[1,2,1,2],obstacle.axis_s_down[1,2,1,2]],color = "red")# plot the s semi axis
+            end
+            if obstacle.n_obstacle >=3
+                #obsttraj_plot3 = ax10[:plot](1,1)  #just for initialization
+                obstacle_plot3 = ax10[:plot](obstacle.xy_vector[1,1,1,3], obstacle.xy_vector[1,2,1,3], color = "red",marker="o", label = "obstacle Traj")
+                y_obst_plot3   = ax10[:plot]([obstacle.axis_y_up[1,1,1,3],obstacle.axis_y_down[1,1,1,3]],[obstacle.axis_y_up[1,2,1,3],obstacle.axis_y_down[1,2,1,3]],color = "red")#plot the y semi axis
+                s_obst_plot3   = ax10[:plot]([obstacle.axis_s_up[1,1,1,3],obstacle.axis_s_down[1,1,1,3]],[obstacle.axis_s_up[1,2,1,3],obstacle.axis_s_down[1,2,1,3]],color = "red")# plot the s semi axis
+            end
+            if obstacle.n_obstacle >=4
+                #obsttraj_plot4 = ax10[:plot](1,1)  #just for initialization
+                obstacle_plot4 = ax10[:plot](obstacle.xy_vector[1,1,1,4], obstacle.xy_vector[1,2,1,4], color = "red",marker="o", label = "obstacle Traj")
+                y_obst_plot4   = ax10[:plot]([obstacle.axis_y_up[1,1,1,4],obstacle.axis_y_down[1,1,1,4]],[obstacle.axis_y_up[1,2,1,4],obstacle.axis_y_down[1,2,1,4]],color = "red")#plot the y semi axis
+                s_obst_plot4   = ax10[:plot]([obstacle.axis_s_up[1,1,1,4],obstacle.axis_s_down[1,1,1,4]],[obstacle.axis_s_up[1,2,1,4],obstacle.axis_s_down[1,2,1,4]],color = "red")# plot the s semi axis
+            end
+            if obstacle.n_obstacle >=5
+                #obsttraj_plot5 = ax10[:plot](1,1)  #just for initialization
+                obstacle_plot5 = ax10[:plot](obstacle.xy_vector[1,1,1,5], obstacle.xy_vector[1,2,1,5], color = "red",marker="o", label = "obstacle Traj")
+                y_obst_plot5   = ax10[:plot]([obstacle.axis_y_up[1,1,1,5],obstacle.axis_y_down[1,1,1,5]],[obstacle.axis_y_up[1,2,1,5],obstacle.axis_y_down[1,2,1,5]],color = "red")#plot the y semi axis
+                s_obst_plot5   = ax10[:plot]([obstacle.axis_s_up[1,1,1,5],obstacle.axis_s_down[1,1,1,5]],[obstacle.axis_s_up[1,2,1,5],obstacle.axis_s_down[1,2,1,5]],color = "red")# plot the s semi axis
+            end
             ax10[:grid]() 
         end
     end
     stop_interactive = false
-    for j=newest2plot+n_oldTrajPlots:-1:newest2plot
-        # if j < newest2plot+n_oldTrajPlots
-        #     cartraj_plot[1][:remove]()
-        #     obsttraj_plot[1][:remove]()
-        # end
+    for j=newest2plot+n_plot_rounds:-1:newest2plot
 
         ################################
         ##calculate predcted position of the car in XY plane
@@ -213,10 +240,10 @@ include("classes.jl")
 
             else
                 car_plot = ax10[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[j],1,j], oldTraj.oldTrajXY[1:oldTraj.oldNIter[j],2,j], color = "black", label="current Traj")
-                ax10[:plot](obstacle.xy_vector[1:oldTraj.oldNIter[j],1,j], obstacle.xy_vector[1:oldTraj.oldNIter[j],2,j], color = "red")
-                ax10[:plot](obstacle.xy_vector[oldTraj.oldNIter[j],1,j], obstacle.xy_vector[oldTraj.oldNIter[j],2,j], color = "red", marker = "o")
-                y_obst_plot = ax10[:plot]([obstacle.axis_y_up[oldTraj.oldNIter[j],1,j],obstacle.axis_y_down[oldTraj.oldNIter[j],1,j]],[obstacle.axis_y_up[oldTraj.oldNIter[j],2,j],obstacle.axis_y_down[oldTraj.oldNIter[j],2,j]],color = "red")#plot the y semi axis
-                s_obst_plot = ax10[:plot]([obstacle.axis_s_up[oldTraj.oldNIter[j],1,j],obstacle.axis_s_down[oldTraj.oldNIter[j],1,j]],[obstacle.axis_s_up[oldTraj.oldNIter[j],2,j],obstacle.axis_s_down[oldTraj.oldNIter[j],2,j]],color = "red")# plot the s semi axis
+                ax10[:plot](obstacle.xy_vector[1:oldTraj.oldNIter[j],1,j,1], obstacle.xy_vector[1:oldTraj.oldNIter[j],2,j,1], color = "red")
+                ax10[:plot](obstacle.xy_vector[oldTraj.oldNIter[j],1,j,1], obstacle.xy_vector[oldTraj.oldNIter[j],2,j,1], color = "red", marker = "o")
+                y_obst_plot = ax10[:plot]([obstacle.axis_y_up[oldTraj.oldNIter[j],1,j,1],obstacle.axis_y_down[oldTraj.oldNIter[j],1,j,1]],[obstacle.axis_y_up[oldTraj.oldNIter[j],2,j,1],obstacle.axis_y_down[oldTraj.oldNIter[j],2,j,1]],color = "red")#plot the y semi axis
+                s_obst_plot = ax10[:plot]([obstacle.axis_s_up[oldTraj.oldNIter[j],1,j,1],obstacle.axis_s_down[oldTraj.oldNIter[j],1,j,1]],[obstacle.axis_s_up[oldTraj.oldNIter[j],2,j,1],obstacle.axis_s_down[oldTraj.oldNIter[j],2,j,1]],color = "red")# plot the s semi axis
             end
             #plot the boundary lines
             ax10[:plot](boundary_up[1,:], boundary_up[2,:],color="green",linestyle=":")
@@ -446,21 +473,64 @@ include("classes.jl")
            #x-y plot
            if plot_xy == 1 
                 car_plot[1][:remove]()
-                obstacle_plot[1][:remove]()
-                y_obst_plot[1][:remove]()
-                s_obst_plot[1][:remove]()
                 pred_plot[1][:remove]()
                 cartraj_plot[1][:remove]()
-                obsttraj_plot[1][:remove]()
+                
 
                 pred_plot = ax10[:plot](xy_pred[:,1,i,j],xy_pred[:,2,i,j], color = "yellow", marker="o") # plot predicted states
                 cartraj_plot = ax10[:plot](oldTraj.oldTrajXY[1:i,1,j], oldTraj.oldTrajXY[1:i,2,j], color = "black") # plot trajectory of this round for curent car
                 car_plot = ax10[:plot](oldTraj.oldTrajXY[i,1,j], oldTraj.oldTrajXY[i,2,j], color = "black", marker="o") #plot current position of car with a marker
 
-                obsttraj_plot = ax10[:plot](obstacle.xy_vector[1:i,1,j], obstacle.xy_vector[1:i,2,j], color = "red", linestyle= ":")
-                obstacle_plot = ax10[:plot](obstacle.xy_vector[i,1,j], obstacle.xy_vector[i,2,j], color = "red", marker="o")  
-                y_obst_plot = ax10[:plot]([obstacle.axis_y_up[i,1,j],obstacle.axis_y_down[i,1,j]],[obstacle.axis_y_up[i,2,j],obstacle.axis_y_down[i,2,j]],color = "red")#plot the y semi axis
-                s_obst_plot = ax10[:plot]([obstacle.axis_s_up[i,1,j],obstacle.axis_s_down[i,1,j]],[obstacle.axis_s_up[i,2,j],obstacle.axis_s_down[i,2,j]],color = "red")# plot the s semi axis
+                if obstacle.n_obstacle >=1
+                    # obsttraj_plot1[1][:remove]()
+                    obstacle_plot1[1][:remove]()
+                    y_obst_plot1[1][:remove]()
+                    s_obst_plot1[1][:remove]()
+                    # obsttraj_plot1 = ax10[:plot](obstacle.xy_vector[1:i,1,j,1], obstacle.xy_vector[1:i,2,j,1], color = "red", linestyle= ":")
+                    obstacle_plot1 = ax10[:plot](obstacle.xy_vector[i,1,j,1], obstacle.xy_vector[i,2,j,1], color = "red", marker="o")  
+                    y_obst_plot1 = ax10[:plot]([obstacle.axis_y_up[i,1,j,1],obstacle.axis_y_down[i,1,j,1]],[obstacle.axis_y_up[i,2,j,1],obstacle.axis_y_down[i,2,j,1]],color = "red")#plot the y semi axis
+                    s_obst_plot1 = ax10[:plot]([obstacle.axis_s_up[i,1,j,1],obstacle.axis_s_down[i,1,j,1]],[obstacle.axis_s_up[i,2,j,1],obstacle.axis_s_down[i,2,j,1]],color = "red")# plot the s semi axis
+                end
+                if obstacle.n_obstacle >=2
+                    # obsttraj_plot2[1][:remove]()
+                    obstacle_plot2[1][:remove]()
+                    y_obst_plot2[1][:remove]()
+                    s_obst_plot2[1][:remove]()
+                    # obsttraj_plot2 = ax10[:plot](obstacle.xy_vector[1:i,1,j,2], obstacle.xy_vector[1:i,2,j,2], color = "red", linestyle= ":")
+                    obstacle_plot2 = ax10[:plot](obstacle.xy_vector[i,1,j,2], obstacle.xy_vector[i,2,j,2], color = "red", marker="o")  
+                    y_obst_plot2 = ax10[:plot]([obstacle.axis_y_up[i,1,j,2],obstacle.axis_y_down[i,1,j,2]],[obstacle.axis_y_up[i,2,j,2],obstacle.axis_y_down[i,2,j,2]],color = "red")#plot the y semi axis
+                    s_obst_plot2 = ax10[:plot]([obstacle.axis_s_up[i,1,j,2],obstacle.axis_s_down[i,1,j,2]],[obstacle.axis_s_up[i,2,j,2],obstacle.axis_s_down[i,2,j,2]],color = "red")# plot the s semi axis
+                end
+                if obstacle.n_obstacle >=3
+                    # obsttraj_plot3[1][:remove]()
+                    obstacle_plot3[1][:remove]()
+                    y_obst_plot3[1][:remove]()
+                    s_obst_plot3[1][:remove]()
+                    # obsttraj_plot2 = ax10[:plot](obstacle.xy_vector[1:i,1,j,3], obstacle.xy_vector[1:i,2,j,3], color = "red", linestyle= ":")
+                    obstacle_plot3 = ax10[:plot](obstacle.xy_vector[i,1,j,3], obstacle.xy_vector[i,2,j,3], color = "red", marker="o")  
+                    y_obst_plot3 = ax10[:plot]([obstacle.axis_y_up[i,1,j,3],obstacle.axis_y_down[i,1,j,3]],[obstacle.axis_y_up[i,2,j,3],obstacle.axis_y_down[i,2,j,3]],color = "red")#plot the y semi axis
+                    s_obst_plot3 = ax10[:plot]([obstacle.axis_s_up[i,1,j,3],obstacle.axis_s_down[i,1,j,3]],[obstacle.axis_s_up[i,2,j,3],obstacle.axis_s_down[i,2,j,3]],color = "red")# plot the s semi axis
+                end
+                if obstacle.n_obstacle >=4
+                    # obsttraj_plot4[1][:remove]()
+                    obstacle_plot4[1][:remove]()
+                    y_obst_plot4[1][:remove]()
+                    s_obst_plot4[1][:remove]()
+                    # obsttraj_plot4 = ax10[:plot](obstacle.xy_vector[1:i,1,j,4], obstacle.xy_vector[1:i,2,j,4], color = "red", linestyle= ":")
+                    obstacle_plot4 = ax10[:plot](obstacle.xy_vector[i,1,j,4], obstacle.xy_vector[i,2,j,4], color = "red", marker="o")  
+                    y_obst_plot4 = ax10[:plot]([obstacle.axis_y_up[i,1,j,4],obstacle.axis_y_down[i,1,j,4]],[obstacle.axis_y_up[i,2,j,4],obstacle.axis_y_down[i,2,j,4]],color = "red")#plot the y semi axis
+                    s_obst_plot4 = ax10[:plot]([obstacle.axis_s_up[i,1,j,4],obstacle.axis_s_down[i,1,j,4]],[obstacle.axis_s_up[i,2,j,4],obstacle.axis_s_down[i,2,j,4]],color = "red")# plot the s semi axis
+                end
+                if obstacle.n_obstacle >=5
+                    # obsttraj_plot5[1][:remove]()
+                    obstacle_plot5[1][:remove]()
+                    y_obst_plot5[1][:remove]()
+                    s_obst_plot5[1][:remove]()
+                    # obsttraj_plot5 = ax10[:plot](obstacle.xy_vector[1:i,1,j,5], obstacle.xy_vector[1:i,2,j,5], color = "red", linestyle= ":")
+                    obstacle_plot5 = ax10[:plot](obstacle.xy_vector[i,1,j,5], obstacle.xy_vector[i,2,j,5], color = "red", marker="o")  
+                    y_obst_plot5 = ax10[:plot]([obstacle.axis_y_up[i,1,j,5],obstacle.axis_y_down[i,1,j,5]],[obstacle.axis_y_up[i,2,j,5],obstacle.axis_y_down[i,2,j,5]],color = "red")#plot the y semi axis
+                    s_obst_plot5 = ax10[:plot]([obstacle.axis_s_up[i,1,j,5],obstacle.axis_s_down[i,1,j,5]],[obstacle.axis_s_up[i,2,j,5],obstacle.axis_s_down[i,2,j,5]],color = "red")# plot the s semi axis
+                end
             end
             ##plot a line in the cost function that always show the current s
             if plot_costs ==1
@@ -492,9 +562,9 @@ include("classes.jl")
         end #end if statement interactive plots
         if stop_interactive == true
             println("Do you want to cancel the whole plotting process? (c)")
-            a = ' '
-            a = readline()
-            if a == "c\r\n"
+            b = ' '
+            b = readline()
+            if b == "c\r\n"
                 break
             end
         end

@@ -1,40 +1,35 @@
-function deleteInfeasibleTrajectories!(m::initLearningModel,oldTraj,posInfo::classes.PosInfo,obstacle, pred_obst::Array{Float64,2}, i::Int64, zCurr_s::Array{Float64,2},dt::Float64)
+function deleteInfeasibleTrajectories!(m::initLearningModel,oldTraj,distance2obst::Float64,obstacle, close_pred_obst::Array{Float64,2}, i::Int64, zCurr_s::Array{Float64,2},dt::Float64)
 
     v_ego = zCurr_s[i,4]
-
+    v_obst = close_pred_obst[1,3] # close_pred_obst[1,3] current velocity ofclosest car
     courage_factor = 1.0 # courage factor between 0 and 1 smaller factor excludes infeas traj late
     a_breakmax = 0.0
 
     index_first = Array{Int64}(oldTraj.n_oldTraj)
     index_last = Array{Int64}(oldTraj.n_oldTraj)
-    if (obstacle.s_obstacle[i,1]-obstacle.rs) - posInfo.s <=2.2 && (obstacle.s_obstacle[i,1]+obstacle.rs)>= posInfo.s #if our car is closer than one meter to obstacle and not fully after it
+    if (distance2obst < 2.2 && distance2obst > - 2*obstacle.rs)#if our car is closer than one meter to obstacle and not fully after it
         for k =1:oldTraj.n_oldTraj
             index_first[k]  = findfirst(x -> x > posInfo.s, oldTraj.oldTraj[:,1,k])
-            index_last[k] = findfirst(y -> y > pred_obst[end,1]+obstacle.rs, oldTraj.oldTraj[:,1,k])
+            index_last[k] = findfirst(y -> y > close_pred_obst[end,1]+obstacle.rs, oldTraj.oldTraj[:,1,k])
             for ii = index_first[k]:index_last[k], kk = 1:mpcParams.N+1
-                obstacle_v = obstacle.v[i,k]-a_breakmax*dt*kk #robust control assume maximum break acceleration
-                if obstacle_v < 0
-                    obstacle_v = 0
+                min_obstacle_v = v_obst-a_breakmax*dt*kk #robust control assume maximum break acceleration
+                if min_obstacle_v < 0
+                    min_obstacle_v = 0
                 end
-                v_diff = v_ego - obstacle_v
+                v_diff = v_ego - min_obstacle_v
                 premeter2collision = (oldTraj.oldTraj[ii,1,k] - oldTraj.oldTraj[index_first[k],1,k])
                 
                 # meter2collision = (premeter2collision - (kk-1)*v_ego*dt)
                 # t2collision = (meter2collision/v_diff +(kk-1)*dt)/safety_factor
                 meter2collision = (premeter2collision - (kk-1)*obstacle.v[i,k]*dt)
                 t2collision = (meter2collision/v_diff)/courage_factor
-                if ((oldTraj.oldTraj[ii,1,k]-pred_obst[kk,1])/obstacle.rs )^2 + ( (oldTraj.oldTraj[ii,2,k]-pred_obst[kk,2])/obstacle.ry )^2 <= 1 && t2collision<=1.0
+                if ((oldTraj.oldTraj[ii,1,k]-close_pred_obst[kk,1])/obstacle.rs )^2 + ( (oldTraj.oldTraj[ii,2,k]-close_pred_obst[kk,2])/obstacle.ry )^2 <= 1 && t2collision<=1.0
                   
                     # @show kk
                     # @show k
                     # @show t2collision
                     # println("++++++++++++++++++++++")
                     # println("                         ")
-
-                    # problem with obstacle and safe set
-                    # first approach for distance calculation dicuss
-                    # do i need stochastic mpc ? 
-                    # kinematic model ok or dynamic?
 
                     setvalue(m.ssInfOn[k],1500)#1500
                     break
@@ -45,7 +40,7 @@ function deleteInfeasibleTrajectories!(m::initLearningModel,oldTraj,posInfo::cla
 end
 
 
-function addOldtoNewPos(oldTraj, distance2obst::Float64, obstacle, iter::Int64, pred_obst::Array{Float64}, mpcParams::classes.MpcParams, zCurr_s::Array{Float64},dt::Float64, mpcCoeff::classes.MpcCoeff)
+function addOldtoNewPos(oldTraj, distance2obst::Float64, obstacle, iter::Int64, close_pred_obst::Array{Float64}, mpcParams::classes.MpcParams, zCurr_s::Array{Float64},dt::Float64, mpcCoeff::classes.MpcCoeff)
 #take old trajectory with obstacle near car and add traj for better learning
 pLength = mpcCoeff.pLength
 
@@ -86,18 +81,18 @@ s_diff = s_horizon[end]-s_horizon[1]
                 # plot(plot_old_s,plot_old, color = "red")
                  #######end test
 
-if distance2obst < 2.0 && distance2obst > - 2*obstacle.rs
+if distance2obst < 2.2 && distance2obst > - 2*obstacle.rs
     for k =1:oldTraj.n_oldTraj-1 #do not search last trajectory as it to be replaced.
-        for i = 1:oldTraj.oldNIter[k]
-            if distance2obst <= oldTraj.distance2obst[i,k] + eps0 && distance2obst >= oldTraj.distance2obst[i,k] - eps0
-                compare_v_ey = 0
-                for i_pred =0:mpcParams.N  
-                    #if obstacle.sy_obstacle[iter,1]  <= obstacle.sy_obstacle[l,k] +eps2   && obstacle.sy_obstacle[iter,1]  >= obstacle.sy_obstacle[l,k] -eps2 #the current 
-                    if pred_obst[i_pred+1,3] <= obstacle.v[i+i_pred,k] + eps1 && pred_obst[i_pred+1,3] >= obstacle.v[i+i_pred,k] - eps1 &&
-                        pred_obst[i_pred+1,2] <= obstacle.sy_obstacle[i+i_pred,k] +eps2 && pred_obst[i_pred+1,2] >= obstacle.sy_obstacle[i+i_pred,k] -eps2
-                        compare_v_ey+=1
+        for i = 1:oldTraj.oldNIter[k], l = 1:obstacle.n_obstacle
+            if distance2obst <= oldTraj.distance2obst[i,k,l] + eps0 && distance2obst >= oldTraj.distance2obst[i,k,l] - eps0
+                    compare_v_ey = 0
+                    for i_pred =0:mpcParams.N  
+                        #if obstacle.sy_obstacle[iter,1]  <= obstacle.sy_obstacle[l,k] +eps2   && obstacle.sy_obstacle[iter,1]  >= obstacle.sy_obstacle[l,k] -eps2 #the current 
+                        if close_pred_obst[i_pred+1,3] <= obstacle.v[i+i_pred,k,l] + eps1 && close_pred_obst[i_pred+1,3] >= obstacle.v[i+i_pred,k,l] - eps1 &&
+                            close_pred_obst[i_pred+1,2] <= obstacle.sy_obstacle[i+i_pred,k,l] +eps2 && close_pred_obst[i_pred+1,2] >= obstacle.sy_obstacle[i+i_pred,k,l] -eps2
+                            compare_v_ey+=1
+                        end
                     end
-                end
                 last_considered  = findfirst(x -> x > oldTraj.oldTraj[i,1,k]+s_diff, oldTraj.oldTraj[:,1,k]) #find the index forthe old trajectory whose s values is 2 meters greater than the current s value,where the distance the obstacle is the same
                 curv_points = last_considered-i+1
                 curvature_curr = zeros(curv_points)

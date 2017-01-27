@@ -44,7 +44,7 @@ function saveOldTraj(oldTraj,zCurr::Array{Float64}, zCurr_x::Array{Float64},uCur
             oldTraj.ssInfOn_sol[:,:,k]= ssInfOn_log
             oldTraj.eps[:,:,k] = mpcSol.eps
             oldTraj.cost2Target[:,k] = cost2target
-            oldTraj.distance2obst[:,k] = distance2obst
+            oldTraj.distance2obst[:,k,:] = distance2obst
             oldTraj.curvature[:,k] = curvature_curr
 
             obstacle.s_obstacle[:,k] = obstacle.s_obstacle[:,1]# in the else part we dont shift s_obscle because we do that in the beginning of a new round
@@ -64,7 +64,7 @@ function saveOldTraj(oldTraj,zCurr::Array{Float64}, zCurr_x::Array{Float64},uCur
             oldTraj.ssInfOn_sol[:,:,k+1]= oldTraj.ssInfOn_sol[:,:,k]
             oldTraj.eps[:,:,k+1] = oldTraj.eps[:,:,k]
             oldTraj.cost2Target[:,k+1] = oldTraj.cost2Target[:,k]
-            oldTraj.distance2obst[:,k+1] = oldTraj.distance2obst[:,k]
+            oldTraj.distance2obst[:,k+1,:] = oldTraj.distance2obst[:,k,:]
             oldTraj.curvature[:,k+1] = oldTraj.curvature[:,k]
         end
         oldTraj.oldTraj[:,:,1]  = zCurr_export                 # ... and write the new traj in the first
@@ -79,7 +79,7 @@ function saveOldTraj(oldTraj,zCurr::Array{Float64}, zCurr_x::Array{Float64},uCur
         oldTraj.ssInfOn_sol[:,:,1]= ssInfOn_log
         oldTraj.eps[:,:,1] = mpcSol.eps
         oldTraj.cost2Target[:,1] = cost2target
-        oldTraj.distance2obst[:,1] = distance2obst
+        oldTraj.distance2obst[:,1,:] = distance2obst
         oldTraj.curvature[:,1] = curvature_curr
 
     end
@@ -96,7 +96,7 @@ function InitializeParameters(mpcParams::classes.MpcParams,trackCoeff::classes.T
     mpcParams.Q_term            = 100*[10.0,2.0,1.0]           # weights for terminal constraints (LMPC, for e_y, e_psi, and v)
     mpcParams.Q_cost            = 0.7                           #factor for terminal cost
     mpcParams.Q_obstacle        = 0.3 #
-    mpcParams.Q_obstacleNumer   = 0.0025#0.04#0.0025#0.0019
+    mpcParams.Q_obstacleNumer   = 0.004#0.04#0.0025#0.0019
     mpcParams.Q_lane            = 2000.0
     mpcParams.Q_velocity        = 1000.0
     mpcParams.R                 = 0.0*[1.0,1.0]             # put weights on a and d_f
@@ -128,7 +128,7 @@ function InitializeParameters(mpcParams::classes.MpcParams,trackCoeff::classes.T
     oldTraj.n_oldTraj     = 20 #number of old Trajectories for safe set
     oldTraj.oldTraj             = zeros(buffersize,4,oldTraj.n_oldTraj)
     oldTraj.oldTrajXY           = zeros(buffersize,6,oldTraj.n_oldTraj)
-    oldTraj.distance2obst       = zeros(buffersize,oldTraj.n_oldTraj)
+    oldTraj.distance2obst       = zeros(buffersize,oldTraj.n_oldTraj, obstacle.n_obstacle)
     oldTraj.curvature           = zeros(buffersize,oldTraj.n_oldTraj)
     oldTraj.oldInput            = zeros(buffersize,2,oldTraj.n_oldTraj)
     oldTraj.oldNIter             = 1000*ones(Int64,oldTraj.n_oldTraj)    # dummies for initialization
@@ -155,15 +155,14 @@ function InitializeParameters(mpcParams::classes.MpcParams,trackCoeff::classes.T
     lapStatus.currentLap        = 1         # initialize lap number
     lapStatus.currentIt         = 0         # current iteration in lap #?? why not 1?
 
-    obstacle.s_obstacle = zeros(buffersize,oldTraj.n_oldTraj)
-    obstacle.sy_obstacle = zeros(buffersize,oldTraj.n_oldTraj)
-    obstacle.v = zeros(buffersize, oldTraj.n_oldTraj)
+    obstacle.s_obstacle = zeros(buffersize,oldTraj.n_oldTraj,obstacle.n_obstacle)
+    obstacle.sy_obstacle = zeros(buffersize,oldTraj.n_oldTraj,obstacle.n_obstacle)
+    obstacle.v = zeros(buffersize, oldTraj.n_oldTraj,obstacle.n_obstacle)
     obstacle.rs = 0
     obstacle.ry = 0
-    obstacle.index = zeros(buffersize)##is not used at the moment can be deleted in final version
-    obstacle.xy_vector = zeros(buffersize,2,oldTraj.n_oldTraj)
-    obstacle.axis_y_up = zeros(buffersize,2,oldTraj.n_oldTraj)
-    obstacle.axis_y_down = zeros(buffersize,2,oldTraj.n_oldTraj)
-    obstacle.axis_s_up = zeros(buffersize,2,oldTraj.n_oldTraj)
-    obstacle.axis_s_down = zeros(buffersize,2,oldTraj.n_oldTraj)
+    obstacle.xy_vector   = zeros(buffersize,2,oldTraj.n_oldTraj,obstacle.n_obstacle)
+    obstacle.axis_y_up   = zeros(buffersize,2,oldTraj.n_oldTraj,obstacle.n_obstacle)
+    obstacle.axis_y_down = zeros(buffersize,2,oldTraj.n_oldTraj,obstacle.n_obstacle)
+    obstacle.axis_s_up   = zeros(buffersize,2,oldTraj.n_oldTraj,obstacle.n_obstacle)
+    obstacle.axis_s_down = zeros(buffersize,2,oldTraj.n_oldTraj,obstacle.n_obstacle)
 end
