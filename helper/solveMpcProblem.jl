@@ -42,7 +42,7 @@ function solvePathFollowMpc!(m::initPathFollowingModel,mpcSol::classes.MpcSol,mp
     mpcSol.u   = sol_u
     mpcSol.z   = sol_z
     mpcSol.solverStatus = sol_status
-    mpcSol.cost = zeros(7)
+    mpcSol.cost = zeros(8)
     mpcSol.cost = [getvalue(m.costPath);0;0;getvalue(m.derivCost);getvalue(m.controlCost);0;getvalue(m.velocityCost); getvalue(m.costObstacle)]
     nothing #nothing to return
 end
@@ -96,8 +96,8 @@ function solveLearningMpcProblem!(m::initLearningModel,mpcSol::classes.MpcSol,mp
     mpcSol.u   = sol_u
     mpcSol.z   = sol_z
     mpcSol.solverStatus = sol_status
-    mpcSol.cost = zeros(7)
-    mpcSol.cost = [getvalue(m.costZ);getvalue(m.costZTerm);getvalue(m.constZTerm);getvalue(m.derivCost);getvalue(m.controlCost);getvalue(m.laneCost);getvalue(m.velocityCost);0]# getvalue(m.costObstacle)]
+    mpcSol.cost = zeros(8)
+    mpcSol.cost = [getvalue(m.costZ);getvalue(m.costZTerm);getvalue(m.constZTerm);getvalue(m.derivCost);getvalue(m.controlCost);getvalue(m.laneCost);getvalue(m.velocityCost); getvalue(m.costObstacle)]
     if counter < 3
         return true
     else

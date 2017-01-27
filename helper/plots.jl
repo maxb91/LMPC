@@ -4,7 +4,7 @@ include("classes.jl")
 
 #function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
     newest2plot = 1
-    n_plot_rounds = 3 
+    n_plot_rounds =0 
 
     interactive_plot = 1
 
@@ -14,11 +14,11 @@ include("classes.jl")
     plot_lambda = 0
     plot_states_over_s = 1
     plot_curvature_approx=0
-    plot_inputs = 1
+    plot_inputs = 0
     plot_eps = 0
     interactive_plot_steps = 4
     n_oldTrajPlots = 0
-    file = "data/2017-01-26-18-13-Data.jld"
+    file = "data/2017-01-27-01-12-Data.jld"
     close("all")
 
     ####load data from file
@@ -86,7 +86,7 @@ include("classes.jl")
             cartraj_plot = ax10[:plot](1,1)  #just for initialization
             #obsttraj_plot1 = ax10[:plot](1,1)  #just for initialization
             car_plot = ax10[:plot](oldTraj.oldTrajXY[1,1,1], oldTraj.oldTrajXY[1,2,1], color = "black") # just dummy to use remove func later
-            pred_plot = ax10[:plot](oldTraj.oldTrajXY[:,1,1,1],oldTraj.oldTrajXY[:,2,1,1],color = "yellow", marker="o")
+            pred_plot = ax10[:plot](oldTraj.oldTrajXY[1,1,1,1],oldTraj.oldTrajXY[1,2,1,1],color = "yellow", marker="o")
 
        
             if obstacle.n_obstacle >=1
@@ -137,7 +137,7 @@ include("classes.jl")
                 calculateObstacleXY!(obstacle, trackCoeff, xy_track,i,k) #this funciton computes values for row i
             end
         end
-        
+
         ################################
         ##calculate interpolated values to check for differences with trajectories
         # ################################
@@ -198,7 +198,7 @@ include("classes.jl")
             xlabel("s in [m]")
             ylabel("cost constraint")    
             ax8= subplot(3,2,3,sharex=ax9)
-            ax8[:plot](oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.costs[7,1:oldTraj.oldNIter[j]-1,j])  
+            ax8[:plot](oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.costs[8,1:oldTraj.oldNIter[j]-1,j])  
             grid()
             xlabel("s in [m]")
             ylabel("cost Obstacle")     

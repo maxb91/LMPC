@@ -39,7 +39,7 @@ type initPathFollowingModel
         z_ub       = modelParams.z_ub
         s_obst     = obstacle.s_obstacle
         sy_obst    = obstacle.sy_obstacle
-        rs = obstacle.rs
+        @show rs = obstacle.rs
         ry = obstacle.ry
         Q               = mpcParams.Q #Cost of states just for path following
         Q_obstacle      = mpcParams.Q_obstacle

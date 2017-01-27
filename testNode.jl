@@ -35,7 +35,7 @@
     modelParams                 = classes.ModelParams()
     mpcParams                   = classes.MpcParams()
 
-    buffersize                  = 1001 #1501
+    buffersize                  = 1101 #1501
     close("all")
 
 
@@ -54,8 +54,8 @@
 
 
     load_safeset = true#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
-    safeset = "data/2017-01-26-18-11-Data.jld"
-    n_rounds = 4
+    safeset = "data/2017-01-27-01-10-Data.jld"
+    n_rounds = 3
     active_obstacle = true
      
 
@@ -64,8 +64,6 @@
     sy_obst_init = -0.2*ones(obstacle.n_obstacle)
     v_obst_init = 1.5*ones(obstacle.n_obstacle) #1.8#1.5#1.5##1.8
 
-    obstacle.rs = 0.5 # if we load old trajecory these values get overwritten
-    obstacle.ry = 0.19 # if we load old trajecory these values get overwritten
     
 
     ######### 
