@@ -4,7 +4,7 @@ include("classes.jl")
 
 #function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
     newest2plot = 1
-    n_plot_rounds =0
+    n_plot_rounds =6
 
     interactive_plot = 1
 
@@ -19,7 +19,7 @@ include("classes.jl")
     plot_copied = 1
     interactive_plot_steps = 4
     n_oldTrajPlots = 4
-    file = "data/2017-01-27-16-25-Data.jld"
+    file = "data/2017-01-27-18-56-Data.jld"
     close("all")
 
     ####load data from file
@@ -490,6 +490,12 @@ include("classes.jl")
             f_copied_plot= figure(9)
             f_copied_plot[:canvas][:set_window_title]("Copied s over current s")
             axCopied = subplot(1,1,1)
+
+            for i=1:oldTraj.oldNIter[j]-1
+                if oldTraj.copyInfo[i,1,j]>0.0 # if lambda of copied traj is greater 0.1 -> if traj s used for solving.
+                    scatter(oldTraj.copyInfo[i,3,j],oldTraj.copyInfo[i,2,j], color = "#DCDCDC")
+                end
+            end
             for i=1:oldTraj.oldNIter[j]-1
                 if oldTraj.copyInfo[i,4,j]>0.6 # if lambda of copied traj is greater 0.1 -> if traj s used for solving.
                     scatter(oldTraj.copyInfo[i,3,j],oldTraj.copyInfo[i,2,j], color = colordefs[convert(Int64,oldTraj.copyInfo[i,1,j])])

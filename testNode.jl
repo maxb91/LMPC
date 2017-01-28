@@ -55,13 +55,13 @@
 
 
     load_safeset = true#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
-    safeset = "data/2017-01-27-15-11-Data.jld"
-    n_rounds = 2
+    safeset = "data/2017-01-27-18-44-Data.jld"
+    n_rounds = 10
     active_obstacle = true
      
 
     obstacle.n_obstacle = 7
-    s_obst_init= [4, 13, 22, 31, 40, 49, 58]
+    s_obst_init= [4, 13, 22, 31, 40, 49, 58] #[4, 10, 16, 22, 28, 34, 42] 
     sy_obst_init = -0.2*ones(obstacle.n_obstacle)
     v_obst_init = 1.8*ones(obstacle.n_obstacle) #1.8#1.5#1.5##1.8
 
@@ -175,8 +175,8 @@
             tic()
             zCurr_s[i,:], trackCoeff.coeffCurvature = localizeVehicleCurvAbs(zCurr_x[i,:],x_track,y_track,trackCoeff, i, mpcParams.N, modelParams.dt, Pcurvature)
             if i == 1 && zCurr_s[1,1] > 2
-                warn("closest point was before finish line, forced s =0")
-                println("x:$(zCurr_x[i,1]), y:$(zCurr_x[i,2])")
+                # warn("closest point was before finish line, forced s =0")
+                # println("x:$(zCurr_x[i,1]), y:$(zCurr_x[i,2])")
                 zCurr_s[1,1]= 0
             end
             posInfo.s   = zCurr_s[i,1]
@@ -332,6 +332,9 @@
         print_max_time = formatFloat!(maximum(tt_total),3)
         print_with_color(:red," $(print_max_time)\n")
         
+        print_with_color(:grey,"Number of copied Trajectories: ") 
+        print_with_color(:yellow,"$(length(find(f->f!=0,copyInfo[:,1])))\n")
+
         print_with_color(:grey,"Number of used copied Trajectories: ") 
         print_with_color(:yellow,"$(length(find(f->f!=0,copyInfo[:,4])))\n")
 
