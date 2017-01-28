@@ -12,6 +12,7 @@
     include("helper/localizeVehicleCurvAbs.jl")
     include("helper/computeObstaclePos.jl")
     include("helper/adjustSafeSet.jl")
+    include("helper/colorModule.jl")
 
     #just loads one specified track with distances betwwen points =1 m and returnx x and y coordinatates
     println("loadMap.......")
@@ -54,15 +55,15 @@
 
 
     load_safeset = true#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
-    safeset = "data/2017-01-27-01-10-Data.jld"
-    n_rounds = 3
+    safeset = "data/2017-01-27-15-11-Data.jld"
+    n_rounds = 2
     active_obstacle = true
      
 
-    obstacle.n_obstacle = 5
-    s_obst_init= [8, 16, 24, 32, 40]
+    obstacle.n_obstacle = 7
+    s_obst_init= [4, 13, 22, 31, 40, 49, 58]
     sy_obst_init = -0.2*ones(obstacle.n_obstacle)
-    v_obst_init = 1.5*ones(obstacle.n_obstacle) #1.8#1.5#1.5##1.8
+    v_obst_init = 1.8*ones(obstacle.n_obstacle) #1.8#1.5#1.5##1.8
 
     
 
@@ -123,11 +124,13 @@
         lapStatus.currentLap = j
         tt          = zeros(length(t),1)
         tt1         = zeros(length(t),1)
+        tt_total    = zeros(length(t),1)
         zCurr_s     = zeros(length(t),4)          # s, ey, epsi, v
         zCurr_x     = zeros(length(t),6)          # x, y, v_x,v_y, psi, psi_dot
         uCurr       = zeros(length(t),2)
         distance2obst = 1000*ones(length(t), obstacle.n_obstacle)
         curvature_curr = zeros(length(t))
+        copyInfo    = zeros(length(t),4)
         
         #T
         for k = oldTraj.n_oldTraj-1:-1:1
@@ -178,8 +181,19 @@
             end
             posInfo.s   = zCurr_s[i,1]
             curvature_curr[i] = trackCoeff.coeffCurvature[1]*posInfo.s^4+trackCoeff.coeffCurvature[2]*posInfo.s^3+trackCoeff.coeffCurvature[3]*posInfo.s^2+trackCoeff.coeffCurvature[4]*posInfo.s +trackCoeff.coeffCurvature[5]
+            
+            if posInfo.s > posInfo.s_target-(modelParams.v_max*(mpcParams.N+1)*dt)
+
+                for l=1:obstacle.n_obstacle
+                    if obstacle.s_obstacle[i,1,l]< (modelParams.v_max*(mpcParams.N+1)*dt)
+                        obstacle.s_obstacle[i,1,l]+=posInfo.s_target
+                    end
+                end
+            end
             distance2obst[i,:] = (obstacle.s_obstacle[i,1,:]-obstacle.rs) - posInfo.s
-            ind_closest_obst = findmin(distance2obst[i,:])[2]
+            ind_closest_obst = findmin(abs(distance2obst[i,:]))[2]
+            
+
             #t_absci =toq()
             #if the car has crossed the finish line
             if zCurr_s[i,1] >= posInfo.s_target
@@ -205,7 +219,7 @@
             
             if j > 1 || load_safeset == true
                 tic()
-                addOldtoNewPos(oldTraj, distance2obst[i,ind_closest_obst],obstacle,i,pred_obst[:,:,ind_closest_obst], mpcParams,zCurr_s,modelParams.dt,mpcCoeff)
+                copyInfo[i,:] = addOldtoNewPos(oldTraj, distance2obst[i,ind_closest_obst],obstacle,i,pred_obst[:,:,ind_closest_obst], mpcParams,zCurr_s,modelParams.dt,mpcCoeff)
                 deleteInfeasibleTrajectories!(mdl_LMPC, oldTraj,distance2obst[i,ind_closest_obst],obstacle, pred_obst[:,:,ind_closest_obst], i, zCurr_s,modelParams.dt)
 		        
                 tt1[i] = toq()
@@ -261,7 +275,14 @@
             u_pred_log[:,:,i,j] = mpcSol.u
             ssInfOn_log[:,i,j]  = mpcSol.ssInfOn
 
-            tt2= toq()
+            tt_total[i]= toq()
+
+            if mpcSol.lambda[end] > 0.6
+                # println("copied s :$(copyInfo[i,2]) from old round : $(copyInfo[i,1]), curr s: $(copyInfo[i,3]), lambda : $(mpcSol.lambda[end])")
+                copyInfo[i,4] = mpcSol.lambda[end]
+            end
+
+            
             if i%50 == 0 
                 println(" Time: $(tt[i]) s, Solving step $i of $(length(t)), s = $(zCurr_s[i,1]) - Status: $(mpcSol.solverStatus)")
                 #println(" Time for whole iteration: $(tt2) s")
@@ -300,12 +321,23 @@
         # --------------------------------
         tic()
         saveOldTraj(oldTraj,zCurr_s, zCurr_x,uCurr,lapStatus,buffersize,modelParams.dt, load_safeset, cost[:,:,j],
-          lambda_log[:,:,j],z_pred_log[:,:,:,j],u_pred_log[:,:,:,j],ssInfOn_log[:,:,j], mpcSol, obstacle,distance2obst, curvature_curr)
+          lambda_log[:,:,j],z_pred_log[:,:,:,j],u_pred_log[:,:,:,j],ssInfOn_log[:,:,j], mpcSol, obstacle,distance2obst, curvature_curr, copyInfo)
         tt3= toq()
-        println("Max time to calculate infeasible traj: $(maximum(tt1))")
+        println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+        print_with_color(:grey,"Max time to delete/add traj:")
+        print_del_time = formatFloat!(maximum(tt1),3)
+        print_with_color(:red," $print_del_time\n")
+
+        print_with_color(:grey,"Max time for calc of one loop")
+        print_max_time = formatFloat!(maximum(tt_total),3)
+        print_with_color(:red," $(print_max_time)\n")
+        
+        print_with_color(:grey,"Number of used copied Trajectories: ") 
+        print_with_color(:yellow,"$(length(find(f->f!=0,copyInfo[:,4])))\n")
+
         println(" Time to save and overwrite trajectories: $(tt3) s")
         ###############
-
+        println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
         oldTraj.oldNIter[1] = i
         if j>1 && oldTraj.cost2Target[1,2] <= oldTraj.cost2Target[1,1]
             warn("round was not faster. cost : $(oldTraj.cost2Target[1,1])")

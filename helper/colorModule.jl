@@ -55,3 +55,29 @@ module colorModule
     end
 
 end #END MODULE
+
+
+function formatFloat!(x::Float64,numDecimals::Int64)
+    n = 0
+    if x < 0.0
+        n = 1
+    end
+    if abs(x) < 10.0
+        p = 1
+    elseif abs(x) < 100.0 && abs(x) >= 10.0
+        p = 2
+    elseif abs(x) <  1000.0 && abs(x) >= 100.0
+        p = 3
+    else
+        error("Please enter an absolute value of less than 1000.0!")
+    end
+    formatX = string(x)
+        sum = p+1+numDecimals+n
+        len = length(formatX)
+        if len < sum
+            for i=1:(sum-len)
+                formatX = formatX*"0"
+            end
+        end
+    return formatX[1:p+1+numDecimals+n]
+end

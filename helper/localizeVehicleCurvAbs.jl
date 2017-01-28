@@ -197,6 +197,7 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
         xyVectorAngle = atan2(y-YCurve0,x-XCurve0)
         xyPathAngle = atan2(dY,dX)
     else
+        #still needs fixing
         s0 = s+0.01*ds
         s0_vec = zeros(OrderXY+1,1)
         s_vec = zeros(OrderXY+1,1)
@@ -216,9 +217,11 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
         YCurve = coeffY'*s_vec
            
         dX = dot(coeffX,sdot_vec) #[6*s^5 5*s^4 4*s^3 3*s^2 2*s^1 1 0]' comment can be deleted if sdot_vec is verified for all polynomials
-        dY = dot(coeffY,sdot_vec) 
+        dY = dot(coeffY,sdot_vec)
+
         xyVectorAngle = atan2(y-YCurve0,x-XCurve0)
-        xyPathAngle = atan2(dY,dX)# gives a value between -pi < x <= pi  
+        xyPathAngle = atan2(dY,dX)# gives a value between -pi < x <= pi 
+
     end
     ey = eyabs*sign(sin(xyVectorAngle-xyPathAngle))
 
@@ -239,8 +242,6 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
     # xyPathAngle = atan2(dY,dX)
     epsi = mod((psi+pi),(2*pi))-pi-xyPathAngle
     epsi = mod((epsi+pi),(2*pi))-pi
-
-     # ey = eyabs*sign(epsi)
 
 
   # # Finally compute epsi
@@ -269,16 +270,11 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
 
     # now compute the angle and the curvature needed for the interpolation
 
-    b_theta_vector = zeros(nPoints+1,1)
     b_curvature_vector = zeros(nPoints+1)
-    angle = 0.0
-
 
     Counter = 1
-    jd_vec = zeros(OrderXY+1,1)::Array{Float64,2}
-    jdd_vec = zeros(OrderXY+1,1)::Array{Float64,2}
-    #we go from s = 0 because s is 0 at s_start and then we interpolate over the interval we defined above 
-    #for j=s_interp_start:ds:s_interp_end #j must be 0.0 to be initialized as a float to be able to do j^-1 in for loop
+    # jd_vec = zeros(OrderXY+1,1)::Array{Float64,2}
+    # jdd_vec = zeros(OrderXY+1,1)::Array{Float64,2}
     for j = s_interp_start:ds:s_interp_start+nPoints*ds
        
         #this generic approach did not work because last elements become NaN
@@ -290,27 +286,7 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
         dY = dot(coeffY,[6*j^5, 5*j^4, 4*j^3, 3*j^2, 2*j, 1, 0])
         ddX = dot(coeffX,[30*j^4, 20*j^3, 12*j^2, 6*j, 2, 0, 0])
         ddY = dot(coeffY,[30*j^4, 20*j^3, 12*j^2, 6*j, 2, 0, 0])
-            
-        angle = atan2(dY,dX);
-
-       
-        if Counter > 1 #what do we do here? do we normalize angle when we drive against "Lane direction"
-            DummyVar = angle-(b_theta_vector[Counter-1,1]) 
-            if (DummyVar > pi)
-                angle = angle - 2*pi
-            elseif DummyVar < -pi
-                angle = angle + 2*pi
-            end
-        else
-            if (angle-psi) > pi
-                angle = angle - 2*pi
-            elseif (angle-psi) < -pi 
-                angle = angle + 2*pi 
-            end
-        end
-            
-        b_theta_vector[Counter,1] = angle 
-            
+                       
         curvature = (dX*ddY-dY*ddX)/(dX^2+dY^2)^(3/2) #standard curvature formula
         b_curvature_vector[Counter] = curvature #there might still be problesm with the accuracy of the curvature calculation
            
@@ -318,7 +294,6 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
     end
   
     # compute coeff for theta and curvature
-    coeffTheta = Matrix4th\b_theta_vector
     coeffCurv  = Matrix4th\b_curvature_vector
    #####T
    #test the approximation of the curvature
@@ -372,19 +347,6 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
         
 
   
-
-    #T
-    #this was yjust to test correcntess of teh dfrisr derivative
-    # posTrackx = x_track[idx_min]
-    # posTracky = y_track[idx_min]
-    # drawtangentx =posTrackx + cos(angle)*3
-    # drawtangenty =posTracky+ sin(angle)*3
-    # xs= [posTrackx; drawtangentx]
-    # ys= [posTracky; drawtangenty]
-    
-    
-
-    #return s_start, s, ey, coeffX,coeffY, coeffTheta, coeffCurv, epsi
     zCurr_s = zeros(4)
     zCurr_s = [s ey epsi v_abs]
     return zCurr_s, coeffCurv

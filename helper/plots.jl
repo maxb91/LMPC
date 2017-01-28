@@ -4,7 +4,7 @@ include("classes.jl")
 
 #function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
     newest2plot = 1
-    n_plot_rounds =0 
+    n_plot_rounds =0
 
     interactive_plot = 1
 
@@ -16,9 +16,10 @@ include("classes.jl")
     plot_curvature_approx=0
     plot_inputs = 0
     plot_eps = 0
+    plot_copied = 1
     interactive_plot_steps = 4
-    n_oldTrajPlots = 0
-    file = "data/2017-01-27-01-12-Data.jld"
+    n_oldTrajPlots = 4
+    file = "data/2017-01-27-16-25-Data.jld"
     close("all")
 
     ####load data from file
@@ -47,6 +48,30 @@ include("classes.jl")
     dt = modelParams.dt
     xy_track  = [x_track; y_track]
     t   = collect(0:dt:(buffersize-1)*dt)
+
+
+
+
+    colordefs=["#3b44ba",
+            "#c8ce24",
+            "#a756de",
+            "#0ac753",
+            "#ff53c4",
+            "#01c3ba",
+            "#f5218a",
+            "#4cd5ff",
+            "#f74b3a",
+            "#016ed6",
+            "#de8500",
+            "#8a1e95",
+            "#6c4d08",
+            "#aca0ff",
+            "#a2172f",
+            "#abaae1",
+            "#ffb38d",
+            "#83317e",
+            "#9c6f4b",
+            "#ff91d1"]
 
     ################################
     ##this part is to calculate the tracks boundaries and plot them later
@@ -118,6 +143,12 @@ include("classes.jl")
                 obstacle_plot5 = ax10[:plot](obstacle.xy_vector[1,1,1,5], obstacle.xy_vector[1,2,1,5], color = "red",marker="o", label = "obstacle Traj")
                 y_obst_plot5   = ax10[:plot]([obstacle.axis_y_up[1,1,1,5],obstacle.axis_y_down[1,1,1,5]],[obstacle.axis_y_up[1,2,1,5],obstacle.axis_y_down[1,2,1,5]],color = "red")#plot the y semi axis
                 s_obst_plot5   = ax10[:plot]([obstacle.axis_s_up[1,1,1,5],obstacle.axis_s_down[1,1,1,5]],[obstacle.axis_s_up[1,2,1,5],obstacle.axis_s_down[1,2,1,5]],color = "red")# plot the s semi axis
+            end
+            if obstacle.n_obstacle >=6
+                #obsttraj_plot6 = ax10[:plot](1,1)  #just for initialization
+                obstacle_plot6 = ax10[:plot](obstacle.xy_vector[1,1,1,6], obstacle.xy_vector[1,2,1,6], color = "red",marker="o", label = "obstacle Traj")
+                y_obst_plot6   = ax10[:plot]([obstacle.axis_y_up[1,1,1,6],obstacle.axis_y_down[1,1,1,6]],[obstacle.axis_y_up[1,2,1,6],obstacle.axis_y_down[1,2,1,6]],color = "red")#plot the y semi axis
+                s_obst_plot6   = ax10[:plot]([obstacle.axis_s_up[1,1,1,6],obstacle.axis_s_down[1,1,1,6]],[obstacle.axis_s_up[1,2,1,6],obstacle.axis_s_down[1,2,1,6]],color = "red")# plot the s semi axis
             end
             ax10[:grid]() 
         end
@@ -251,7 +282,7 @@ include("classes.jl")
             
             for l=1:convert(Int64,trunc(trackL/51))
                 ax10[:plot]([boundary_down[1,l*50+1],boundary_up[1,l*50+1]],[boundary_down[2,l*50+1],boundary_up[2,l*50+1]], color = "black", linestyle = ":", linewidth = 0.5)
-                text(boundary_down[1,l*50+1]+1,boundary_down[2,l*50+1],"s = $(convert(Int64,l*50*ds))",fontsize=8)
+                ax10[:text](boundary_down[1,l*50+1]+1,boundary_down[2,l*50+1],"s = $(convert(Int64,l*50*ds))",fontsize=8)
             end
             ax10[:set_aspect]("equal", adjustable="box")
             # ax10[:set_ylim]([-5.1,5.1])
@@ -454,9 +485,25 @@ include("classes.jl")
             legend(["epsilon left boundary","epsilon right boundary", "epsilon velocity"])
             grid()
         end
+
+        if plot_copied == 1
+            f_copied_plot= figure(9)
+            f_copied_plot[:canvas][:set_window_title]("Copied s over current s")
+            axCopied = subplot(1,1,1)
+            for i=1:oldTraj.oldNIter[j]-1
+                if oldTraj.copyInfo[i,4,j]>0.6 # if lambda of copied traj is greater 0.1 -> if traj s used for solving.
+                    scatter(oldTraj.copyInfo[i,3,j],oldTraj.copyInfo[i,2,j], color = colordefs[convert(Int64,oldTraj.copyInfo[i,1,j])])
+                end
+            end
+            axCopied[:set_aspect]("equal", adjustable="box")
+            axCopied[:set_xlabel]("s in [m]")
+            axCopied[:grid]()
+            ylabel("s in [m]")
+        end
+
         
         if interactive_plot == 1
-        for i = 1:interactive_plot_steps :oldTraj.oldNIter[j]# plot values at different times steps
+        for i = 1:interactive_plot_steps :oldTraj.oldNIter[j]-1# plot values at different times steps
 
             #plot predicted states over s
             if plot_states_over_s ==1
@@ -530,6 +577,16 @@ include("classes.jl")
                     obstacle_plot5 = ax10[:plot](obstacle.xy_vector[i,1,j,5], obstacle.xy_vector[i,2,j,5], color = "red", marker="o")  
                     y_obst_plot5 = ax10[:plot]([obstacle.axis_y_up[i,1,j,5],obstacle.axis_y_down[i,1,j,5]],[obstacle.axis_y_up[i,2,j,5],obstacle.axis_y_down[i,2,j,5]],color = "red")#plot the y semi axis
                     s_obst_plot5 = ax10[:plot]([obstacle.axis_s_up[i,1,j,5],obstacle.axis_s_down[i,1,j,5]],[obstacle.axis_s_up[i,2,j,5],obstacle.axis_s_down[i,2,j,5]],color = "red")# plot the s semi axis
+                end
+                if obstacle.n_obstacle >=6
+                    # obsttraj_plot6[1][:remove]()
+                    obstacle_plot6[1][:remove]()
+                    y_obst_plot6[1][:remove]()
+                    s_obst_plot6[1][:remove]()
+                    # obsttraj_plot6 = ax10[:plot](obstacle.xy_vector[1:i,1,j,6], obstacle.xy_vector[1:i,2,j,6], color = "red", linestyle= ":")
+                    obstacle_plot6 = ax10[:plot](obstacle.xy_vector[i,1,j,6], obstacle.xy_vector[i,2,j,6], color = "red", marker="o")  
+                    y_obst_plot6 = ax10[:plot]([obstacle.axis_y_up[i,1,j,6],obstacle.axis_y_down[i,1,j,6]],[obstacle.axis_y_up[i,2,j,6],obstacle.axis_y_down[i,2,j,6]],color = "red")#plot the y semi axis
+                    s_obst_plot6 = ax10[:plot]([obstacle.axis_s_up[i,1,j,6],obstacle.axis_s_down[i,1,j,6]],[obstacle.axis_s_up[i,2,j,6],obstacle.axis_s_down[i,2,j,6]],color = "red")# plot the s semi axis
                 end
             end
             ##plot a line in the cost function that always show the current s

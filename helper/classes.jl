@@ -35,9 +35,10 @@ type OldTrajectory      # information about previous trajectories
     ssInfOn_sol::Array{Float64}
     eps::Array{Float64}
     cost2Target::Array{Float64}
+    copyInfo::Array{Float64}
     OldTrajectory(n_oldTraj = 0, oldTraj=Float64[],oldTrajXY=Float64[],distance2obst=Float64[],curvature=Float64[],oldInput=Float64[],oldNIter=Float64[],
-        costs=Float64[],lambda_sol=Float64[],z_pred_sol=Float64[],u_pred_sol=Float64[],ssInfOn_sol=Float64[],eps=Float64[],cost2Target= Float64[]) =
-                 new(n_oldTraj, oldTraj,oldTrajXY,distance2obst,curvature,oldInput,oldNIter,costs,lambda_sol,z_pred_sol,u_pred_sol,ssInfOn_sol,eps,cost2Target)
+        costs=Float64[],lambda_sol=Float64[],z_pred_sol=Float64[],u_pred_sol=Float64[],ssInfOn_sol=Float64[],eps=Float64[],cost2Target= Float64[], copyInfo = Float64[]) =
+                 new(n_oldTraj, oldTraj,oldTrajXY,distance2obst,curvature,oldInput,oldNIter,costs,lambda_sol,z_pred_sol,u_pred_sol,ssInfOn_sol,eps,cost2Target,copyInfo)
 end
 
 #old definition to load old results
