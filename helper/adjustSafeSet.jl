@@ -11,6 +11,10 @@ function deleteInfeasibleTrajectories!(m::initLearningModel,oldTraj,distance2obs
         for k =1:oldTraj.n_oldTraj
             index_first[k]  = findfirst(x -> x > posInfo.s, oldTraj.oldTraj[:,1,k])
             index_last[k] = findfirst(y -> y > close_pred_obst[end,1]+obstacle.rs, oldTraj.oldTraj[:,1,k])
+            if index_first[k] ==0 || index_last[k] ==0
+                warn("no s value in old Traj greater than current position.")
+                break
+            end
             for ii = index_first[k]:index_last[k], kk = 1:mpcParams.N-5 #mpcParams.N+1
                 min_obstacle_v = v_obst-a_breakmax*dt*kk #robust control assume maximum break acceleration
                 if min_obstacle_v < 0

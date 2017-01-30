@@ -3,15 +3,15 @@ using PyPlot
 include("classes.jl")
 
 #function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
-    newest2plot = 1
-    n_plot_rounds = 1
+    newest2plot =1
+    n_plot_rounds = 0
 
     interactive_plot = 1
 
     plot_costs = 1
     plot_states_over_t = 0
     plot_xy = 1
-    plot_lambda = 1
+    plot_lambda = 0
     plot_states_over_s = 1
     plot_curvature_approx=0
     plot_inputs = 0
@@ -19,7 +19,7 @@ include("classes.jl")
     plot_copied = 1
     interactive_plot_steps = 5
     n_oldTrajPlots = 2
-    file = "data/2017-01-29-16-18-Data.jld"
+    file = "data/2017-01-24-00-17-Data.jld"
     close("all")
 
     ####load data from file
@@ -150,6 +150,12 @@ include("classes.jl")
                 y_obst_plot6   = ax10[:plot]([obstacle.axis_y_up[1,1,1,6],obstacle.axis_y_down[1,1,1,6]],[obstacle.axis_y_up[1,2,1,6],obstacle.axis_y_down[1,2,1,6]],color = "red")#plot the y semi axis
                 s_obst_plot6   = ax10[:plot]([obstacle.axis_s_up[1,1,1,6],obstacle.axis_s_down[1,1,1,6]],[obstacle.axis_s_up[1,2,1,6],obstacle.axis_s_down[1,2,1,6]],color = "red")# plot the s semi axis
             end
+            if obstacle.n_obstacle >=7
+                #obsttraj_plot6 = ax10[:plot](1,1)  #just for initialization
+                obstacle_plot7 = ax10[:plot](obstacle.xy_vector[1,1,1,7], obstacle.xy_vector[1,2,1,7], color = "red",marker="o", label = "obstacle Traj")
+                y_obst_plot7   = ax10[:plot]([obstacle.axis_y_up[1,1,1,7],obstacle.axis_y_down[1,1,1,7]],[obstacle.axis_y_up[1,2,1,7],obstacle.axis_y_down[1,2,1,7]],color = "red")#plot the y semi axis
+                s_obst_plot7   = ax10[:plot]([obstacle.axis_s_up[1,1,1,7],obstacle.axis_s_down[1,1,1,7]],[obstacle.axis_s_up[1,2,1,7],obstacle.axis_s_down[1,2,1,7]],color = "red")# plot the s semi axis
+            end
             ax10[:grid]() 
         end
     end
@@ -255,6 +261,7 @@ include("classes.jl")
             # f_xy_plot= figure(3)
             # f_xy_plot[:canvas][:set_window_title]("Track and cars in XY plane")
             # ax10 = subplot(1,1,1)
+            # ax10[:clear]()
             ax10[:plot](x_track',y_track', linestyle="--", color = "#FF9900", linewidth = 0.5, label="_nolegend_")#plot the racetrack
             
             #plot older trajectory
@@ -490,6 +497,7 @@ include("classes.jl")
             f_copied_plot= figure(9)
             f_copied_plot[:canvas][:set_window_title]("Copied s over current s")
             axCopied = subplot(1,1,1)
+            axCopied[:clear]()
 
             for i=1:oldTraj.oldNIter[j]-1
                 if oldTraj.copyInfo[i,1,j]>0.0 # if lambda of copied traj is greater 0.1 -> if traj s used for solving.
@@ -593,6 +601,16 @@ include("classes.jl")
                     obstacle_plot6 = ax10[:plot](obstacle.xy_vector[i,1,j,6], obstacle.xy_vector[i,2,j,6], color = "red", marker="o")  
                     y_obst_plot6 = ax10[:plot]([obstacle.axis_y_up[i,1,j,6],obstacle.axis_y_down[i,1,j,6]],[obstacle.axis_y_up[i,2,j,6],obstacle.axis_y_down[i,2,j,6]],color = "red")#plot the y semi axis
                     s_obst_plot6 = ax10[:plot]([obstacle.axis_s_up[i,1,j,6],obstacle.axis_s_down[i,1,j,6]],[obstacle.axis_s_up[i,2,j,6],obstacle.axis_s_down[i,2,j,6]],color = "red")# plot the s semi axis
+                end
+                if obstacle.n_obstacle >=7
+                    # obsttraj_plot7[1][:remove]()
+                    obstacle_plot7[1][:remove]()
+                    y_obst_plot7[1][:remove]()
+                    s_obst_plot7[1][:remove]()
+                    # obsttraj_plot7 = ax10[:plot](obstacle.xy_vector[1:i,1,j,7], obstacle.xy_vector[1:i,2,j,7], color = "red", linestyle= ":")
+                    obstacle_plot7 = ax10[:plot](obstacle.xy_vector[i,1,j,7], obstacle.xy_vector[i,2,j,7], color = "red", marker="o")  
+                    y_obst_plot7 = ax10[:plot]([obstacle.axis_y_up[i,1,j,7],obstacle.axis_y_down[i,1,j,7]],[obstacle.axis_y_up[i,2,j,7],obstacle.axis_y_down[i,2,j,7]],color = "red")#plot the y semi axis
+                    s_obst_plot7 = ax10[:plot]([obstacle.axis_s_up[i,1,j,7],obstacle.axis_s_down[i,1,j,7]],[obstacle.axis_s_up[i,2,j,7],obstacle.axis_s_down[i,2,j,7]],color = "red")# plot the s semi axis
                 end
             end
             ##plot a line in the cost function that always show the current s
