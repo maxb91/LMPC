@@ -55,15 +55,16 @@
 
 
     load_safeset = true#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
-    safeset = "data/2017-01-27-18-44-Data.jld"
-    n_rounds = 10
+    safeset = "data/2017-01-29-14-31-Data.jld"
+    n_rounds = 18
     active_obstacle = true
+    continue_obstacle = false
      
 
     obstacle.n_obstacle = 7
-    s_obst_init= [4, 13, 22, 31, 40, 49, 58] #[4, 10, 16, 22, 28, 34, 42] 
+    s_obst_init=[3, 10, 17, 24, 31, 38, 48] # [4, 13, 22, 31, 40, 49, 58] #
     sy_obst_init = -0.2*ones(obstacle.n_obstacle)
-    v_obst_init = 1.8*ones(obstacle.n_obstacle) #1.8#1.5#1.5##1.8
+    v_obst_init = 1.6*ones(obstacle.n_obstacle) #1.8#1.5#1.5##1.8
 
     
 
@@ -113,9 +114,8 @@
     u_final = zeros(1,2)
 
 
-    obstacle.s_obstacle[1,1,:] = s_obst_init
-    obstacle.sy_obstacle[1,1,:] = sy_obst_init
-    obstacle.v[1,1,:] = v_obst_init
+    
+
 
     for j=1:n_rounds #10
         
@@ -131,6 +131,14 @@
         distance2obst = 1000*ones(length(t), obstacle.n_obstacle)
         curvature_curr = zeros(length(t))
         copyInfo    = zeros(length(t),4)
+        #setup point for vehicle on track in first round. gets overwritten in other rounds
+        zCurr_x[1,1] = z_Init[1] # x = 1.81 for s = 32     14 in curve
+        zCurr_x[1,2] = z_Init[2] # y = 2.505 for s = 32  12.6
+        zCurr_x[1,3] = z_Init[3]
+        zCurr_x[1,4] = z_Init[4]  # compare value to v_pathfollowing
+        zCurr_x[1,5] = z_Init[5]
+        zCurr_x[1,6] = z_Init[6]
+
         
         #T
         for k = oldTraj.n_oldTraj-1:-1:1
@@ -139,13 +147,7 @@
             obstacle.v[:,k+1,:] = obstacle.v[:,k,:]
         end
         
-        #setup point for vehicle on track in first round. gets overwritten in other rounds
-        zCurr_x[1,1] = z_Init[1] # x = 1.81 for s = 32     14 in curve
-        zCurr_x[1,2] = z_Init[2] # y = 2.505 for s = 32  12.6
-        zCurr_x[1,3] = z_Init[3]
-        zCurr_x[1,4] = z_Init[4]  # compare value to v_pathfollowing
-        zCurr_x[1,5] = z_Init[5]
-        zCurr_x[1,6] = z_Init[6]
+        
         
         if j == 1 && load_safeset == true
             zCurr_x[1,1] =oldTraj.oldTrajXY[oldTraj.oldNIter[1],1,1]#+convert(Float64,trackCoeff.ds)*0.5
@@ -158,11 +160,16 @@
         if j>1             #setup point for vehicle after first round                   # if we are in the second or higher lap
             zCurr_x[1,:] = z_final_x
             uCurr[1,:] = u_final
+        end
+        if (continue_obstacle == true && j == 1) || j>1
             obstacle.s_obstacle[1,1,:]  = obstacle.s_obstacle[oldTraj.oldNIter[1],2,:]
             obstacle.sy_obstacle[1,1,:] = obstacle.sy_obstacle[oldTraj.oldNIter[1],2,:]
             obstacle.v[1,1,:]           = obstacle.v[oldTraj.oldNIter[1],2,:]
+        elseif continue_obstacle == false && j == 1
+            obstacle.s_obstacle[1,1,:] = s_obst_init
+            obstacle.sy_obstacle[1,1,:] = sy_obst_init
+            obstacle.v[1,1,:] = v_obst_init
         end
-
 
         ###########iterations learning
         finished    = false

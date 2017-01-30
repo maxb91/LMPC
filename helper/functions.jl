@@ -99,7 +99,7 @@ function InitializeParameters(mpcParams::classes.MpcParams,trackCoeff::classes.T
     mpcParams.Q_term            = 100*[10.0,2.0,1.0]           # weights for terminal constraints (LMPC, for e_y, e_psi, and v)
     mpcParams.Q_cost            = 0.7                           #factor for terminal cost
     mpcParams.Q_obstacle        = 0.3 #
-    mpcParams.Q_obstacleNumer   = 0.002#0.04#0.0025#0.0019
+    mpcParams.Q_obstacleNumer   = 0.004#0.04#0.0025#0.0019
     mpcParams.Q_lane            = 2000.0
     mpcParams.Q_velocity        = 1000.0
     mpcParams.R                 = 0.0*[1.0,1.0]             # put weights on a and d_f

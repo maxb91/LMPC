@@ -4,22 +4,22 @@ include("classes.jl")
 
 #function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
     newest2plot = 1
-    n_plot_rounds =6
+    n_plot_rounds = 1
 
     interactive_plot = 1
 
     plot_costs = 1
     plot_states_over_t = 0
     plot_xy = 1
-    plot_lambda = 0
+    plot_lambda = 1
     plot_states_over_s = 1
     plot_curvature_approx=0
     plot_inputs = 0
     plot_eps = 0
     plot_copied = 1
-    interactive_plot_steps = 4
-    n_oldTrajPlots = 4
-    file = "data/2017-01-27-18-56-Data.jld"
+    interactive_plot_steps = 5
+    n_oldTrajPlots = 2
+    file = "data/2017-01-29-16-18-Data.jld"
     close("all")
 
     ####load data from file
@@ -245,7 +245,7 @@ include("classes.jl")
             ylabel("lane Cost")     
             ax14= subplot(3,2,6,sharex=ax9)
             ax14[:plot](oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.costs[1,1:oldTraj.oldNIter[j]-1,j])  
-            grid()
+            ax14[:grid]()
             xlabel("s in [m]")
             ylabel("z Cost")  
         end
@@ -602,7 +602,7 @@ include("classes.jl")
             end
             if plot_lambda ==1
                 act_lambda_plot[1][:remove]()
-                act_lambda_plot= ax11[:plot]([t[i],t[i]],[0,1],label="_nolegend_", color ="black")  
+                act_lambda_plot= ax11[:plot]([oldTraj.oldTraj[i,1,j],oldTraj.oldTraj[i,1,j]],[0,1],label="_nolegend_", color ="black")  
             end
 
             # #plot inputs and their predictions
