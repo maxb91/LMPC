@@ -8,8 +8,8 @@ include("classes.jl")
 include("plot_functions.jl")
 
 #function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
-    newest2plot =1
-    n_plot_rounds = 2
+    newest2plot =7
+    n_plot_rounds = 5
 
     interactive_plot = 1
 
@@ -21,10 +21,10 @@ include("plot_functions.jl")
     plot_curvature_approx=0
     plot_inputs = 0
     plot_eps = 0
-    plot_copied = 0
+    plot_copied = 1
     interactive_plot_steps = 5
     n_oldTrajPlots = 2
-    file = "data/2017-01-30-11-28-Data.jld"
+    file = "data/2017-01-30-11-21-Data.jld"
     close("all")
 
     ####load data from file
@@ -106,7 +106,7 @@ include("plot_functions.jl")
             boundary_down[:,kkk] = xy_track[:,kkk] - normVec * trackCoeff.width /2
         end
     end
-
+    obstOrientation = zeros(size(obstacle.xy_vector)[1],size(obstacle.xy_vector)[3],size(obstacle.xy_vector)[4])
     if plot_xy == 1
         f_xy_plot= figure(3)
         f_xy_plot[:canvas][:set_window_title]("Track and cars in XY plane")
@@ -191,7 +191,7 @@ include("plot_functions.jl")
         ##calculate predcted position of the car in XY plane
         # ################################
         xy_pred = zeros(mpcParams.N+1,2,size(t)[1],oldTraj.n_oldTraj)
-        obstOrientation = zeros(size(obstacle.xy_vector)[1],size(obstacle.xy_vector)[3],size(obstacle.xy_vector)[4])
+        
         for k = 1:oldTraj.n_oldTraj
             for i = 1:oldTraj.oldNIter[j]
                 # caluclate the predicted XY postion of the car from the s-ey values
