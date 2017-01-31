@@ -1,25 +1,30 @@
 using JLD
 using PyPlot
+using PyCall
+@pyimport matplotlib.patches as patches
+
+
 include("classes.jl")
+include("plot_functions.jl")
 
 #function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
     newest2plot =1
-    n_plot_rounds = 0
+    n_plot_rounds = 2
 
     interactive_plot = 1
 
-    plot_costs = 1
+    plot_costs = 0
     plot_states_over_t = 0
     plot_xy = 1
     plot_lambda = 0
-    plot_states_over_s = 1
+    plot_states_over_s = 0
     plot_curvature_approx=0
     plot_inputs = 0
     plot_eps = 0
-    plot_copied = 1
+    plot_copied = 0
     interactive_plot_steps = 5
     n_oldTrajPlots = 2
-    file = "data/2017-01-24-00-17-Data.jld"
+    file = "data/2017-01-30-11-28-Data.jld"
     close("all")
 
     ####load data from file
@@ -79,7 +84,7 @@ include("classes.jl")
     trackL = size(xy_track,2)
     boundary_up = zeros(2,trackL)
     boundary_down = zeros(2,trackL)
-    trackCoeff.width = trackCoeff.width+0.1
+    trackCoeff.width = trackCoeff.width+0.2
     for kkk = 1:1:trackL
         if 1< kkk < trackL 
             xt_secant = x_track[kkk+1] - x_track[kkk-1]
@@ -102,7 +107,6 @@ include("classes.jl")
         end
     end
 
-
     if plot_xy == 1
         f_xy_plot= figure(3)
         f_xy_plot[:canvas][:set_window_title]("Track and cars in XY plane")
@@ -119,42 +123,63 @@ include("classes.jl")
                 obstacle_plot1 = ax10[:plot](obstacle.xy_vector[1,1,1,1], obstacle.xy_vector[1,2,1,1], color = "red",marker="o", label = "obstacle Traj")
                 y_obst_plot1   = ax10[:plot]([obstacle.axis_y_up[1,1,1,1],obstacle.axis_y_down[1,1,1,1]],[obstacle.axis_y_up[1,2,1,1],obstacle.axis_y_down[1,2,1,1]],color = "red")#plot the y semi axis
                 s_obst_plot1   = ax10[:plot]([obstacle.axis_s_up[1,1,1,1],obstacle.axis_s_down[1,1,1,1]],[obstacle.axis_s_up[1,2,1,1],obstacle.axis_s_down[1,2,1,1]],color = "red")# plot the s semi axis
+
+                obst1 = patches.Ellipse([obstacle.xy_vector[1,1,1,1],obstacle.xy_vector[1,2,1,1]],2*obstacle.rs,2*obstacle.ry,color="red",alpha=1.0,fill=false, angle = obstOrientation[1,1,1]*180/pi)
+                plt_obst1 = ax10[:add_patch](obst1)
             end
             if obstacle.n_obstacle >=2
                 #obsttraj_plot2 = ax10[:plot](1,1)  #just for initialization
                 obstacle_plot2 = ax10[:plot](obstacle.xy_vector[1,1,1,2], obstacle.xy_vector[1,2,1,2], color = "red",marker="o", label = "obstacle Traj")
                 y_obst_plot2   = ax10[:plot]([obstacle.axis_y_up[1,1,1,2],obstacle.axis_y_down[1,1,1,2]],[obstacle.axis_y_up[1,2,1,2],obstacle.axis_y_down[1,2,1,2]],color = "red")#plot the y semi axis
                 s_obst_plot2   = ax10[:plot]([obstacle.axis_s_up[1,1,1,2],obstacle.axis_s_down[1,1,1,2]],[obstacle.axis_s_up[1,2,1,2],obstacle.axis_s_down[1,2,1,2]],color = "red")# plot the s semi axis
+
+                obst2 = patches.Ellipse([obstacle.xy_vector[1,1,1,2],obstacle.xy_vector[1,2,1,2]],2*obstacle.rs,2*obstacle.ry,color="red",alpha=1.0,fill=false, angle = obstOrientation[1,1,2]*180/pi)
+                plt_obst2 = ax10[:add_patch](obst2)
             end
             if obstacle.n_obstacle >=3
                 #obsttraj_plot3 = ax10[:plot](1,1)  #just for initialization
                 obstacle_plot3 = ax10[:plot](obstacle.xy_vector[1,1,1,3], obstacle.xy_vector[1,2,1,3], color = "red",marker="o", label = "obstacle Traj")
                 y_obst_plot3   = ax10[:plot]([obstacle.axis_y_up[1,1,1,3],obstacle.axis_y_down[1,1,1,3]],[obstacle.axis_y_up[1,2,1,3],obstacle.axis_y_down[1,2,1,3]],color = "red")#plot the y semi axis
                 s_obst_plot3   = ax10[:plot]([obstacle.axis_s_up[1,1,1,3],obstacle.axis_s_down[1,1,1,3]],[obstacle.axis_s_up[1,2,1,3],obstacle.axis_s_down[1,2,1,3]],color = "red")# plot the s semi axis
+
+                obst3 = patches.Ellipse([obstacle.xy_vector[1,1,1,3],obstacle.xy_vector[1,2,1,3]],2*obstacle.rs,2*obstacle.ry,color="red",alpha=1.0,fill=false, angle = obstOrientation[1,1,3]*180/pi)
+                plt_obst3 = ax10[:add_patch](obst3)
             end
             if obstacle.n_obstacle >=4
                 #obsttraj_plot4 = ax10[:plot](1,1)  #just for initialization
                 obstacle_plot4 = ax10[:plot](obstacle.xy_vector[1,1,1,4], obstacle.xy_vector[1,2,1,4], color = "red",marker="o", label = "obstacle Traj")
                 y_obst_plot4   = ax10[:plot]([obstacle.axis_y_up[1,1,1,4],obstacle.axis_y_down[1,1,1,4]],[obstacle.axis_y_up[1,2,1,4],obstacle.axis_y_down[1,2,1,4]],color = "red")#plot the y semi axis
                 s_obst_plot4   = ax10[:plot]([obstacle.axis_s_up[1,1,1,4],obstacle.axis_s_down[1,1,1,4]],[obstacle.axis_s_up[1,2,1,4],obstacle.axis_s_down[1,2,1,4]],color = "red")# plot the s semi axis
+
+                obst4 = patches.Ellipse([obstacle.xy_vector[1,1,1,4],obstacle.xy_vector[1,2,1,4]],2*obstacle.rs,2*obstacle.ry,color="red",alpha=1.0,fill=false, angle = obstOrientation[1,1,4]*180/pi)
+                plt_obst4 = ax10[:add_patch](obst4)
             end
             if obstacle.n_obstacle >=5
                 #obsttraj_plot5 = ax10[:plot](1,1)  #just for initialization
                 obstacle_plot5 = ax10[:plot](obstacle.xy_vector[1,1,1,5], obstacle.xy_vector[1,2,1,5], color = "red",marker="o", label = "obstacle Traj")
                 y_obst_plot5   = ax10[:plot]([obstacle.axis_y_up[1,1,1,5],obstacle.axis_y_down[1,1,1,5]],[obstacle.axis_y_up[1,2,1,5],obstacle.axis_y_down[1,2,1,5]],color = "red")#plot the y semi axis
                 s_obst_plot5   = ax10[:plot]([obstacle.axis_s_up[1,1,1,5],obstacle.axis_s_down[1,1,1,5]],[obstacle.axis_s_up[1,2,1,5],obstacle.axis_s_down[1,2,1,5]],color = "red")# plot the s semi axis
+
+                obst5 = patches.Ellipse([obstacle.xy_vector[1,1,1,5],obstacle.xy_vector[1,2,1,5]],2*obstacle.rs,2*obstacle.ry,color="red",alpha=1.0,fill=false, angle = obstOrientation[1,1,5]*180/pi)
+                plt_obst5 = ax10[:add_patch](obst5)
             end
             if obstacle.n_obstacle >=6
                 #obsttraj_plot6 = ax10[:plot](1,1)  #just for initialization
                 obstacle_plot6 = ax10[:plot](obstacle.xy_vector[1,1,1,6], obstacle.xy_vector[1,2,1,6], color = "red",marker="o", label = "obstacle Traj")
                 y_obst_plot6   = ax10[:plot]([obstacle.axis_y_up[1,1,1,6],obstacle.axis_y_down[1,1,1,6]],[obstacle.axis_y_up[1,2,1,6],obstacle.axis_y_down[1,2,1,6]],color = "red")#plot the y semi axis
                 s_obst_plot6   = ax10[:plot]([obstacle.axis_s_up[1,1,1,6],obstacle.axis_s_down[1,1,1,6]],[obstacle.axis_s_up[1,2,1,6],obstacle.axis_s_down[1,2,1,6]],color = "red")# plot the s semi axis
+                
+                obst6 = patches.Ellipse([obstacle.xy_vector[1,1,1,6],obstacle.xy_vector[1,2,1,6]],2*obstacle.rs,2*obstacle.ry,color="red",alpha=1.0,fill=false, angle = obstOrientation[1,1,6]*180/pi)
+                plt_obst6 = ax10[:add_patch](obst6)
             end
             if obstacle.n_obstacle >=7
                 #obsttraj_plot6 = ax10[:plot](1,1)  #just for initialization
                 obstacle_plot7 = ax10[:plot](obstacle.xy_vector[1,1,1,7], obstacle.xy_vector[1,2,1,7], color = "red",marker="o", label = "obstacle Traj")
                 y_obst_plot7   = ax10[:plot]([obstacle.axis_y_up[1,1,1,7],obstacle.axis_y_down[1,1,1,7]],[obstacle.axis_y_up[1,2,1,7],obstacle.axis_y_down[1,2,1,7]],color = "red")#plot the y semi axis
                 s_obst_plot7   = ax10[:plot]([obstacle.axis_s_up[1,1,1,7],obstacle.axis_s_down[1,1,1,7]],[obstacle.axis_s_up[1,2,1,7],obstacle.axis_s_down[1,2,1,7]],color = "red")# plot the s semi axis
+
+                obst7 = patches.Ellipse([obstacle.xy_vector[1,1,1,7],obstacle.xy_vector[1,2,1,7]],2*obstacle.rs,2*obstacle.ry,color="red",alpha=1.0,fill=false, angle = obstOrientation[1,1,7]*180/pi)
+                plt_obst7 = ax10[:add_patch](obst7)
             end
             ax10[:grid]() 
         end
@@ -165,15 +190,17 @@ include("classes.jl")
         ################################
         ##calculate predcted position of the car in XY plane
         # ################################
-        xy_pred = zeros(mpcParams.N+1,2,length(t),oldTraj.n_oldTraj)
+        xy_pred = zeros(mpcParams.N+1,2,size(t)[1],oldTraj.n_oldTraj)
+        obstOrientation = zeros(size(obstacle.xy_vector)[1],size(obstacle.xy_vector)[3],size(obstacle.xy_vector)[4])
         for k = 1:oldTraj.n_oldTraj
             for i = 1:oldTraj.oldNIter[j]
                 # caluclate the predicted XY postion of the car from the s-ey values
                 xy_pred[:,:,i,k] = calculatePredictedXY(oldTraj.z_pred_sol[:,:,:,k], mpcParams, trackCoeff, xy_track, convert(Int64,i),k)
                 #calculate the obstacle postion from the s-ey values
-                calculateObstacleXY!(obstacle, trackCoeff, xy_track,i,k) #this funciton computes values for row i
+                obstOrientation = calculateObstacleXY!(obstacle, trackCoeff, xy_track,i,k,obstOrientation ) #this funciton computes values for row i
             end
         end
+
 
         ################################
         ##calculate interpolated values to check for differences with trajectories
@@ -198,62 +225,13 @@ include("classes.jl")
         #########################################################
         #### plot states and cost
         if plot_states_over_t == 1
-            fig_1 = figure(1)
-            fig_1[:canvas][:set_window_title]("States and Inputs over t")
-            ax1=subplot(211)
-            plot(t[1:oldTraj.oldNIter[j]],oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j],"y",t[1:oldTraj.oldNIter[j]],oldTraj.oldTraj[1:oldTraj.oldNIter[j],2,j],"r",t[1:oldTraj.oldNIter[j]],oldTraj.oldTraj[1:oldTraj.oldNIter[j],3,j],"g",t[1:oldTraj.oldNIter[j]],oldTraj.oldTraj[1:oldTraj.oldNIter[j],4,j],"b")
-            grid(1)
-            legend(["s","eY","ePsi","v"], bbox_to_anchor=(1.001, 1), loc=2, borderaxespad=0.)
-            title("States")
-            ax2=subplot(212,sharex=ax1)
-            plot(t[1:oldTraj.oldNIter[j]-1],oldTraj.oldInput[1:oldTraj.oldNIter[j]-1,1,j],"r",t[1:oldTraj.oldNIter[j]-1],oldTraj.oldInput[1:oldTraj.oldNIter[j]-1,2,j],"g")
-            grid(1)
-            title("Control input")
-            legend(["a","d_f"],bbox_to_anchor=(1.001, 1), loc=2, borderaxespad=0.)
-            # ax3=subplot(313,sharex=ax1)
-            # plot(t[1:oldTraj.oldNIter[j]-1],oldTraj.costs[1:oldTraj.oldNIter[j]-1,1,j],"r",t[1:oldTraj.oldNIter[j]-1],oldTraj.costs[1:oldTraj.oldNIter[j]-1,3,j],"b",t[1:oldTraj.oldNIter[j]-1],oldTraj.costs[1:oldTraj.oldNIter[j]-1,4,j],"y",t[1:oldTraj.oldNIter[j]-1],oldTraj.costs[1:oldTraj.oldNIter[j]-1,5,j],"m",t[1:oldTraj.oldNIter[j]-1],oldTraj.costs[1:oldTraj.oldNIter[j]-1,6,j],"c", t[1:oldTraj.oldNIter[j]-1], oldTraj.costs[1:oldTraj.oldNIter[j]-1,7,j])
-            # grid(1)
-            # title("Cost distribution")
-            # legend(["z","z_Term_const","deriv","control","lane", "Obstacle"], bbox_to_anchor=(1.001, 1), loc=2, borderaxespad=0.)
+           plotfct_states_over_t(oldTraj, t, j)
         end
 
         ####plot of Cost components in seperated axis
         if plot_costs ==1
-            plt_cost = figure(2)
-            plt_cost[:canvas][:set_window_title]("Costs over s")
-            ax9 = subplot(3,2,1)
-            ax9[:plot](oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.costs[2,1:oldTraj.oldNIter[j]-1,j])  
-            grid()
-            xlabel("s in [m]")
-            ylabel("Terminal cost ") 
-
+            ax9 = plotfct_costs(oldTraj, j)
             act_s_plot = ax9[:plot]([oldTraj.oldTraj[oldTraj.oldNIter[j]-1,1,j],oldTraj.oldTraj[oldTraj.oldNIter[j]-1,1,j]],[0,30])  #vertical line to show actual s
-
-            ax7= subplot(3,2,2,sharex=ax9)
-            ax7[:plot](oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.costs[3,1:oldTraj.oldNIter[j]-1,j])  
-            grid()
-            xlabel("s in [m]")
-            ylabel("cost constraint")    
-            ax8= subplot(3,2,3,sharex=ax9)
-            ax8[:plot](oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.costs[8,1:oldTraj.oldNIter[j]-1,j])  
-            grid()
-            xlabel("s in [m]")
-            ylabel("cost Obstacle")     
-            ax12= subplot(3,2,4,sharex=ax9)
-            ax12[:plot](oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.costs[4,1:oldTraj.oldNIter[j]-1,j])  
-            grid()
-            xlabel("s in [m]")
-            ylabel("deriv cost")    
-            ax13= subplot(3,2,5,sharex=ax9)
-            ax13[:plot](oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.costs[6,1:oldTraj.oldNIter[j]-1,j])  
-            grid()
-            xlabel("s in [m]")
-            ylabel("lane Cost")     
-            ax14= subplot(3,2,6,sharex=ax9)
-            ax14[:plot](oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.costs[1,1:oldTraj.oldNIter[j]-1,j])  
-            ax14[:grid]()
-            xlabel("s in [m]")
-            ylabel("z Cost")  
         end
 
         #x-y Plot of the racetrack and obstacle and car
@@ -299,101 +277,10 @@ include("classes.jl")
 
         # plot the values of lambda over t
         if plot_lambda == 1
-            f_lambda =figure(4)
-            f_lambda[:canvas][:set_window_title]("Lambda and ssOn values over t")
-            ax11= subplot(2,2,1)
-            colorObjectLambda = colorModule.ColorManager()
-            for k=1: oldTraj.n_oldTraj//4
-                k = convert(Int64,k)
-                colorLambda = colorModule.getColor(colorObjectLambda)
-                scatter(oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.lambda_sol[k,1:oldTraj.oldNIter[j]-1,j].*oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j], color = colorLambda, marker = "x", label = string(L"\lambda","k"))
-            end
-            act_lambda_plot = ax11[:plot]([],[], label="_nolegend_")
-            xlabel("s in [m]")
-            ylabel("lambda")
-            grid()
-            #ax11[:set_ylim]([-0.1,1.1])
-            legend()
-            #legend([L"\lambda 1",L"\lambda 2",L"\lambda 3",L"\lambda 4",L"\lambda 5", L"\lambda 6",L"\lambda 7",L"\lambda 8",L"\lambda 9",L"\lambda 10"],bbox_to_anchor=(-0.201, 1), loc=2, borderaxespad=0.)
-            
-            axlambda2= subplot(2,2,2,sharex= ax11, sharey =ax11)
-            for k=oldTraj.n_oldTraj//4+1: oldTraj.n_oldTraj//2
-                k = convert(Int64,k)
-                colorLambda = colorModule.getColor(colorObjectLambda)
-                scatter(oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.lambda_sol[k,1:oldTraj.oldNIter[j]-1,j].*oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j], color = colorLambda, marker = "x")
-            end
-            xlabel("s in [m]")
-            ylabel("lambda")
-            grid()
-            legend([L"\lambda /4+1",L"\lambda /4+2",L"\lambda 3",L"\lambda 4",L"\lambda 5", L"\lambda 6"],bbox_to_anchor=(1.001, 1), loc=2, borderaxespad=0.)
 
-            axlambda3= subplot(2,2,3,sharex= ax11, sharey =ax11)
-            for k=oldTraj.n_oldTraj//2+1: oldTraj.n_oldTraj//4*3
-                k = convert(Int64,k)
-                colorLambda = colorModule.getColor(colorObjectLambda)
-                scatter(oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.lambda_sol[k,1:oldTraj.oldNIter[j]-1,j].*oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j], color = colorLambda, marker = "x")
-            end
-            xlabel("s in [m]")
-            ylabel("lambda")
-            grid()
-            legend([L"\lambda /2+1",L"\lambda /2+2",L"\lambda 3",L"\lambda ",L"\lambda 5"],bbox_to_anchor=(-0.201, 1), loc=2, borderaxespad=0.)
-
-            axlambda4= subplot(2,2,4,sharex= ax11, sharey =ax11)
-            for k=oldTraj.n_oldTraj*3//4+1: oldTraj.n_oldTraj
-                k = convert(Int64,k)
-                colorLambda = colorModule.getColor(colorObjectLambda)
-                scatter(oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.lambda_sol[k,1:oldTraj.oldNIter[j]-1,j].*oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j], color = colorLambda, marker = "x")
-            end
-            xlabel("s in [m]")
-            ylabel("lambda")
-            grid()
-            legend([L"\lambda *3/4+1",L"\lambda *3/4+2",L"\lambda 3",L"\lambda 4",L"\lambda 5"],bbox_to_anchor=(1.001, 1), loc=2, borderaxespad=0.)
-            
-        # plot values of ssOn over t    
-            f_ssOn =figure(10)
-            f_ssOn[:canvas][:set_window_title](" ssOn values over t")
-            axssOn = subplot(2,2,1,sharex= ax11)
-            colorObjectSafeSet= colorModule.ColorManager()
-            for k=1: oldTraj.n_oldTraj//4
-                k = convert(Int64,k)
-                colorSafeSet= colorModule.getColor(colorObjectSafeSet)
-                scatter(oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j], color = colorSafeSet, marker = "x")
-            end
-            xlabel("s in [m]")
-            ylabel("ssOn")
-            grid()
-            legend(["ssOn1","ssOn2","ssOn3","ssOn4","ssOn5", "ssOn6","ssOn7","ssOn8","ssOn9","ssOn10"],bbox_to_anchor=(1.001, 1), loc=2, borderaxespad=0.)
-            
-            axssOn2 = subplot(2,2,2,sharex= ax11)
-            for k=oldTraj.n_oldTraj//4+1: oldTraj.n_oldTraj//2
-                k = convert(Int64,k)
-                colorSafeSet= colorModule.getColor(colorObjectSafeSet)
-                scatter(oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j],color = colorSafeSet, marker = "x")
-            end
-            xlabel("s in [m]")
-            ylabel("ssOn")
-            grid()
-            legend(["ssOn/4+1","ssOn/4+2","ssOn3","ssOn4","ssOn5", "ssOn6","ssOn7","ssOn8","ssOn9","ssOn10"],bbox_to_anchor=(1.001, 1), loc=2, borderaxespad=0.)
-            axssOn3 = subplot(2,2,3,sharex= ax11)
-            for k=oldTraj.n_oldTraj//2+1: oldTraj.n_oldTraj*3//4
-                k = convert(Int64,k)
-                colorSafeSet= colorModule.getColor(colorObjectSafeSet)
-                scatter(oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j],color = colorSafeSet, marker = "x")
-            end
-            xlabel("s in [m]")
-            ylabel("ssOn")
-            grid()
-            legend(["ssOn/2+1","ssOn/2+2","ssOn3","ssOn4","ssOn5", "ssOn6","ssOn7","ssOn8","ssOn9","ssOn10"],bbox_to_anchor=(1.001, 1), loc=2, borderaxespad=0.)
-            axssOn4 = subplot(2,2,4,sharex= ax11)
-            for k=oldTraj.n_oldTraj*3//4+1: oldTraj.n_oldTraj
-                k = convert(Int64,k)
-                colorSafeSet= colorModule.getColor(colorObjectSafeSet)
-                scatter(oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.ssInfOn_sol[k,1:oldTraj.oldNIter[j]-1,j],color = colorSafeSet, marker = "x")
-            end
-            xlabel("s in [m]")
-            ylabel("ssOn")
-            grid()
-            legend(["ssOn*3/4+1","ssOn/2+2","ssOn3","ssOn4","ssOn5", "ssOn6","ssOn7","ssOn8","ssOn9","ssOn10"],bbox_to_anchor=(1.001, 1), loc=2, borderaxespad=0.)
+                ax11 = plotfct_lambda(oldTraj,j)
+                plotfct_ssOn(oldTraj,j, ax11)
+                act_lambda_plot = ax11[:plot]([],[], label="_nolegend_")
         end
 
 
@@ -474,48 +361,20 @@ include("classes.jl")
 
         #plot the estimated curvature for debugging
         if plot_curvature_approx==1
-            f_curv_app = figure(7)
-            f_curv_app[:canvas][:set_window_title]("Curvature approximation over s")  
-            plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j],oldTraj.curvature[1:oldTraj.oldNIter[j],j])
-            grid()
+            plotfct_curvature(oldTraj,j)
         end
 
         if plot_eps ==1
-            f_eps = figure(8)
-            f_eps[:canvas][:set_window_title]("values of Eps over s") 
-        
-            plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j],oldTraj.eps[1,1:oldTraj.oldNIter[j],j])
-            plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j],oldTraj.eps[2,1:oldTraj.oldNIter[j],j])
-            plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j],oldTraj.eps[3,1:oldTraj.oldNIter[j],j])
-            xlabel("s in [m]")
-            ylabel("value of epsilons")
-            legend(["epsilon left boundary","epsilon right boundary", "epsilon velocity"])
-            grid()
+            plotfct_epsilon(oldTraj, j)
         end
 
         if plot_copied == 1
-            f_copied_plot= figure(9)
-            f_copied_plot[:canvas][:set_window_title]("Copied s over current s")
-            axCopied = subplot(1,1,1)
-            axCopied[:clear]()
-
-            for i=1:oldTraj.oldNIter[j]-1
-                if oldTraj.copyInfo[i,1,j]>0.0 # if lambda of copied traj is greater 0.1 -> if traj s used for solving.
-                    scatter(oldTraj.copyInfo[i,3,j],oldTraj.copyInfo[i,2,j], color = "#DCDCDC")
-                end
-            end
-            for i=1:oldTraj.oldNIter[j]-1
-                if oldTraj.copyInfo[i,4,j]>0.6 # if lambda of copied traj is greater 0.1 -> if traj s used for solving.
-                    scatter(oldTraj.copyInfo[i,3,j],oldTraj.copyInfo[i,2,j], color = colordefs[convert(Int64,oldTraj.copyInfo[i,1,j])])
-                end
-            end
-            axCopied[:set_aspect]("equal", adjustable="box")
-            axCopied[:set_xlabel]("s in [m]")
-            axCopied[:grid]()
-            ylabel("s in [m]")
+            plotfct_copied(oldTraj,j)
         end
 
-        
+        ################################################################################################
+        #                                                                                              #
+        ################################################################################################
         if interactive_plot == 1
         for i = 1:interactive_plot_steps :oldTraj.oldNIter[j]-1# plot values at different times steps
 
@@ -551,6 +410,11 @@ include("classes.jl")
                     obstacle_plot1 = ax10[:plot](obstacle.xy_vector[i,1,j,1], obstacle.xy_vector[i,2,j,1], color = "red", marker="o")  
                     y_obst_plot1 = ax10[:plot]([obstacle.axis_y_up[i,1,j,1],obstacle.axis_y_down[i,1,j,1]],[obstacle.axis_y_up[i,2,j,1],obstacle.axis_y_down[i,2,j,1]],color = "red")#plot the y semi axis
                     s_obst_plot1 = ax10[:plot]([obstacle.axis_s_up[i,1,j,1],obstacle.axis_s_down[i,1,j,1]],[obstacle.axis_s_up[i,2,j,1],obstacle.axis_s_down[i,2,j,1]],color = "red")# plot the s semi axis
+
+                    plt_obst1[:remove]()
+                    obst1 = patches.Ellipse([obstacle.xy_vector[i,1,j,1],obstacle.xy_vector[i,2,j,1]],2*obstacle.rs,2*obstacle.ry,color="red",alpha=1.0,fill=false, angle = obstOrientation[i,j,1]*180/pi)
+                    plt_obst1 = ax10[:add_patch](obst1)
+
                 end
                 if obstacle.n_obstacle >=2
                     # obsttraj_plot2[1][:remove]()
@@ -561,6 +425,10 @@ include("classes.jl")
                     obstacle_plot2 = ax10[:plot](obstacle.xy_vector[i,1,j,2], obstacle.xy_vector[i,2,j,2], color = "red", marker="o")  
                     y_obst_plot2 = ax10[:plot]([obstacle.axis_y_up[i,1,j,2],obstacle.axis_y_down[i,1,j,2]],[obstacle.axis_y_up[i,2,j,2],obstacle.axis_y_down[i,2,j,2]],color = "red")#plot the y semi axis
                     s_obst_plot2 = ax10[:plot]([obstacle.axis_s_up[i,1,j,2],obstacle.axis_s_down[i,1,j,2]],[obstacle.axis_s_up[i,2,j,2],obstacle.axis_s_down[i,2,j,2]],color = "red")# plot the s semi axis
+
+                    plt_obst2[:remove]()
+                    obst2 = patches.Ellipse([obstacle.xy_vector[i,1,j,2],obstacle.xy_vector[i,2,j,2]],2*obstacle.rs,2*obstacle.ry,color="red",alpha=1.0,fill=false, angle = obstOrientation[i,j,2]*180/pi)
+                    plt_obst2 = ax10[:add_patch](obst2)
                 end
                 if obstacle.n_obstacle >=3
                     # obsttraj_plot3[1][:remove]()
@@ -571,6 +439,10 @@ include("classes.jl")
                     obstacle_plot3 = ax10[:plot](obstacle.xy_vector[i,1,j,3], obstacle.xy_vector[i,2,j,3], color = "red", marker="o")  
                     y_obst_plot3 = ax10[:plot]([obstacle.axis_y_up[i,1,j,3],obstacle.axis_y_down[i,1,j,3]],[obstacle.axis_y_up[i,2,j,3],obstacle.axis_y_down[i,2,j,3]],color = "red")#plot the y semi axis
                     s_obst_plot3 = ax10[:plot]([obstacle.axis_s_up[i,1,j,3],obstacle.axis_s_down[i,1,j,3]],[obstacle.axis_s_up[i,2,j,3],obstacle.axis_s_down[i,2,j,3]],color = "red")# plot the s semi axis
+
+                    plt_obst3[:remove]()
+                    obst3 = patches.Ellipse([obstacle.xy_vector[i,1,j,3],obstacle.xy_vector[i,2,j,3]],2*obstacle.rs,2*obstacle.ry,color="red",alpha=1.0,fill=false, angle = obstOrientation[i,j,3]*180/pi)
+                    plt_obst3 = ax10[:add_patch](obst3)
                 end
                 if obstacle.n_obstacle >=4
                     # obsttraj_plot4[1][:remove]()
@@ -581,6 +453,10 @@ include("classes.jl")
                     obstacle_plot4 = ax10[:plot](obstacle.xy_vector[i,1,j,4], obstacle.xy_vector[i,2,j,4], color = "red", marker="o")  
                     y_obst_plot4 = ax10[:plot]([obstacle.axis_y_up[i,1,j,4],obstacle.axis_y_down[i,1,j,4]],[obstacle.axis_y_up[i,2,j,4],obstacle.axis_y_down[i,2,j,4]],color = "red")#plot the y semi axis
                     s_obst_plot4 = ax10[:plot]([obstacle.axis_s_up[i,1,j,4],obstacle.axis_s_down[i,1,j,4]],[obstacle.axis_s_up[i,2,j,4],obstacle.axis_s_down[i,2,j,4]],color = "red")# plot the s semi axis
+
+                    plt_obst4[:remove]()
+                    obst4 = patches.Ellipse([obstacle.xy_vector[i,1,j,4],obstacle.xy_vector[i,2,j,4]],2*obstacle.rs,2*obstacle.ry,color="red",alpha=1.0,fill=false, angle = obstOrientation[i,j,4]*180/pi)
+                    plt_obst4 = ax10[:add_patch](obst4)
                 end
                 if obstacle.n_obstacle >=5
                     # obsttraj_plot5[1][:remove]()
@@ -591,6 +467,10 @@ include("classes.jl")
                     obstacle_plot5 = ax10[:plot](obstacle.xy_vector[i,1,j,5], obstacle.xy_vector[i,2,j,5], color = "red", marker="o")  
                     y_obst_plot5 = ax10[:plot]([obstacle.axis_y_up[i,1,j,5],obstacle.axis_y_down[i,1,j,5]],[obstacle.axis_y_up[i,2,j,5],obstacle.axis_y_down[i,2,j,5]],color = "red")#plot the y semi axis
                     s_obst_plot5 = ax10[:plot]([obstacle.axis_s_up[i,1,j,5],obstacle.axis_s_down[i,1,j,5]],[obstacle.axis_s_up[i,2,j,5],obstacle.axis_s_down[i,2,j,5]],color = "red")# plot the s semi axis
+
+                    plt_obst5[:remove]()
+                    obst5 = patches.Ellipse([obstacle.xy_vector[i,1,j,5],obstacle.xy_vector[i,2,j,5]],2*obstacle.rs,2*obstacle.ry,color="red",alpha=1.0,fill=false, angle = obstOrientation[i,j,5]*180/pi)
+                    plt_obst5 = ax10[:add_patch](obst5)
                 end
                 if obstacle.n_obstacle >=6
                     # obsttraj_plot6[1][:remove]()
@@ -601,6 +481,10 @@ include("classes.jl")
                     obstacle_plot6 = ax10[:plot](obstacle.xy_vector[i,1,j,6], obstacle.xy_vector[i,2,j,6], color = "red", marker="o")  
                     y_obst_plot6 = ax10[:plot]([obstacle.axis_y_up[i,1,j,6],obstacle.axis_y_down[i,1,j,6]],[obstacle.axis_y_up[i,2,j,6],obstacle.axis_y_down[i,2,j,6]],color = "red")#plot the y semi axis
                     s_obst_plot6 = ax10[:plot]([obstacle.axis_s_up[i,1,j,6],obstacle.axis_s_down[i,1,j,6]],[obstacle.axis_s_up[i,2,j,6],obstacle.axis_s_down[i,2,j,6]],color = "red")# plot the s semi axis
+
+                    plt_obst6[:remove]()
+                    obst6 = patches.Ellipse([obstacle.xy_vector[i,1,j,6],obstacle.xy_vector[i,2,j,6]],2*obstacle.rs,2*obstacle.ry,color="red",alpha=1.0,fill=false, angle = obstOrientation[i,j,6]*180/pi)
+                    plt_obst6 = ax10[:add_patch](obst6)
                 end
                 if obstacle.n_obstacle >=7
                     # obsttraj_plot7[1][:remove]()
@@ -611,6 +495,10 @@ include("classes.jl")
                     obstacle_plot7 = ax10[:plot](obstacle.xy_vector[i,1,j,7], obstacle.xy_vector[i,2,j,7], color = "red", marker="o")  
                     y_obst_plot7 = ax10[:plot]([obstacle.axis_y_up[i,1,j,7],obstacle.axis_y_down[i,1,j,7]],[obstacle.axis_y_up[i,2,j,7],obstacle.axis_y_down[i,2,j,7]],color = "red")#plot the y semi axis
                     s_obst_plot7 = ax10[:plot]([obstacle.axis_s_up[i,1,j,7],obstacle.axis_s_down[i,1,j,7]],[obstacle.axis_s_up[i,2,j,7],obstacle.axis_s_down[i,2,j,7]],color = "red")# plot the s semi axis
+
+                    plt_obst7[:remove]()
+                    obst7 = patches.Ellipse([obstacle.xy_vector[i,1,j,7],obstacle.xy_vector[i,2,j,7]],2*obstacle.rs,2*obstacle.ry,color="red",alpha=1.0,fill=false, angle = obstOrientation[i,j,7]*180/pi)
+                    plt_obst7 = ax10[:add_patch](obst7)
                 end
             end
             ##plot a line in the cost function that always show the current s

@@ -1,6 +1,6 @@
-function calculateObstacleXY!(obstacle, trackCoeff, xy_track::Array{Float64,2}, i::Int64, j::Int64)
+function calculateObstacleXY!(obstacle, trackCoeff, xy_track::Array{Float64,2}, i::Int64, j::Int64,orientation )
 	# all thes values are currently just used for plotting the semi axes of the obstacle
-	#obstacle.index = obstacle.s_obstacle/trackCoeff.ds+1 
+	#obstacle.index = obstacle.s_obstacle/trackCoeff.ds+1
 	for l = 1:obstacle.n_obstacle
 		s_over = ceil(Int64,obstacle.s_obstacle[i,j,l]/trackCoeff.ds)*trackCoeff.ds
 		s_over_ind = convert(Int64,s_over/trackCoeff.ds+1)
@@ -40,8 +40,12 @@ function calculateObstacleXY!(obstacle, trackCoeff, xy_track::Array{Float64,2}, 
 		vector_rs = vec(secant_vec*obstacle.rs)
 		obstacle.axis_s_up[i,:,j,l] = obstacle.xy_vector[i,:,j,l] + vector_rs
 		obstacle.axis_s_down[i,:,j,l] = obstacle.xy_vector[i,:,j,l] - vector_rs
+
+		#current orientation of the obstacle in rad for plotting patches
+		orientation[i,j,l]= atan2((xy_coord_infront[2]-xy_coord_before[2]),(xy_coord_infront[1]-xy_coord_before[1]))
 	end
-	nothing
+	# nothing
+	return orientation
 end
 
 
