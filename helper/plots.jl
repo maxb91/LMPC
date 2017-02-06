@@ -8,23 +8,23 @@ include("classes.jl")
 include("plot_functions.jl")
 
 #function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
-    newest2plot =7
-    n_plot_rounds = 5
+    newest2plot =1
+    n_plot_rounds = 0
 
     interactive_plot = 1
 
     plot_costs = 0
     plot_states_over_t = 0
-    plot_xy = 1
+    plot_xy = 0
     plot_lambda = 0
     plot_states_over_s = 0
-    plot_curvature_approx=0
+    plot_curvature_approx=1
     plot_inputs = 0
     plot_eps = 0
-    plot_copied = 1
+    plot_copied = 0
     interactive_plot_steps = 5
     n_oldTrajPlots = 2
-    file = "data/2017-01-30-11-21-Data.jld"
+    file = "data/2017-02-03-11-23-Data.jld"
     close("all")
 
     ####load data from file

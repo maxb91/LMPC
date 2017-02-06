@@ -206,10 +206,19 @@ end
 
 
 function plotfct_curvature(oldTraj,j)
+    set_fontsize = 30
     f_curv_app = figure(7)
     f_curv_app[:canvas][:set_window_title]("Curvature approximation over s")  
-    plot(oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j],oldTraj.curvature[1:oldTraj.oldNIter[j],j])
-    grid()
+    axCurv = subplot(1,1,1)
+    axCurv[:plot](oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j],oldTraj.curvature[1:oldTraj.oldNIter[j],j])
+    axCurv[:tick_params](axis="both", which="major", labelsize=set_fontsize)
+    axCurv[:set_xlabel](L"s \>\>\>[m] " , fontsize = set_fontsize)
+    axCurv[:set_ylabel](L"\kappa \>\>\> [1/m] ", fontsize = set_fontsize)
+    # axCurv[:set_xticks]([-15, -10 ,-5, 0, 5, 10, 15])
+    # axCurv[:set_yticks]([-0.3, -0.2,-0.1, 0])
+    axCurv[:set_xlim](-0,52.7)
+    # axCurv[:set_ylim](-1.3,1.2)
+    axCurv[:grid]()
 end
 
 

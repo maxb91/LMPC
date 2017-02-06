@@ -9,12 +9,12 @@ function loadTestMap()
 # x = readcsv("C:/Users/Felix/AppData/Local/Julia-0.5.0/LMPC/helper/x_dm.dat")
 # y = readcsv("C:/Users/Felix/AppData/Local/Julia-0.5.0/LMPC/helper/y_dm.dat")
 
-# file = "trackdata.jld"
-# file = "oval.jld"
-# file = "small_oval.jld"
-# file = "adv_track.jld"
-# file = "optm_adv.jld"
-file = "sim_curv.jld"
+# file = "tracks/trackdata.jld"
+# file = "tracks/oval.jld"
+# file = "tracks/small_oval.jld"
+# file = "tracks/adv_track.jld"
+# file = "tracks/optm_adv.jld"
+file = "tracks/sim_curv.jld" #similar curvature in wo curves
 Data = load(file)
 x = Data["x"]'
 y = Data["y"]'

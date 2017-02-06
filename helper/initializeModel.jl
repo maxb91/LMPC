@@ -44,7 +44,7 @@ type initPathFollowingModel
         Q               = mpcParams.Q #Cost of states just for path following
         Q_obstacle      = mpcParams.Q_obstacle
         Q_obstacleNumer = mpcParams.Q_obstacleNumer
-	QderivZ         = mpcParams.QderivZ::Array{Float64,1}
+	    QderivZ         = mpcParams.QderivZ::Array{Float64,1}
         QderivU         = mpcParams.QderivU::Array{Float64,1}        
         Q_velocity      = mpcParams.Q_velocity
         R               = mpcParams.R # cost for control is always used but curently 0

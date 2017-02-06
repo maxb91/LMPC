@@ -227,38 +227,11 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
 
   #compute epsi
 
-    # s_vec = zeros(OrderXY+1,1)
-    # sdot_vec = zeros(OrderXY+1,1)::Array{Float64,2}
-
-    # for i = 1:OrderXY+1
-    #         s_vec[i] =s^(OrderXY+1-i)
-    #         sdot_vec[i] = (OrderXY+1-i)*s^(OrderXY-i)
-    # end
-    # sdot_vec = [6*s^5 5*s^4 4*s^3 3*s^2 2*s 1 0]'
-
-
-    # dX = dot(coeffX,sdot_vec) #[6*s^5 5*s^4 4*s^3 3*s^2 2*s^1 1 0]' comment can be deleted if sdot_vec is verified for all polynomials
-    # # dY = dot(coeffY,sdot_vec) 
-    # xyPathAngle = atan2(dY,dX)
     epsi = mod((psi+pi),(2*pi))-pi-xyPathAngle
     epsi = mod((epsi+pi),(2*pi))-pi
 
 
-  # # Finally compute epsi
-  #   j = s
-  #   dX = dot(coeffX,[6*j^5, 5*j^4, 4*j^3, 3*j^2, 2*j, 1, 0])
-  #   dY = dot(coeffY,[6*j^5, 5*j^4, 4*j^3, 3*j^2, 2*j, 1, 0])
-  #   angle=atan2(dY,dX) # gives a value between -pi < x <= pi
 
-  #   # epsi = psi - angle
-
-
-  #   epsi = mod((psi+pi),(2*pi))-pi-angle
-  #   epsi = mod((epsi+pi),(2*pi))-pi
-
-
-    # XCurve= dot(coeffX,s_vec)
-    # YCurve= dot(coeffY,s_vec)
     #T Calcuate the error due to the conversion in the curvilinear abscissa
     yBack = YCurve + ey*cos(xyPathAngle)
     xBack = XCurve - ey*sin(xyPathAngle)
@@ -273,15 +246,8 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
     b_curvature_vector = zeros(nPoints+1)
 
     Counter = 1
-    # jd_vec = zeros(OrderXY+1,1)::Array{Float64,2}
-    # jdd_vec = zeros(OrderXY+1,1)::Array{Float64,2}
+
     for j = s_interp_start:ds:s_interp_start+nPoints*ds
-       
-        #this generic approach did not work because last elements become NaN
-        #for i = 1:OrderXY+1
-        #   jd_vec[i] =(OrderXY+1-i)*j^(OrderXY-i)
-        #    jdd_vec[i] =(OrderXY+1-i)*(OrderXY-i)*j^(OrderXY-1-i)
-        #end
         dX = dot(coeffX,[6*j^5, 5*j^4, 4*j^3, 3*j^2, 2*j, 1, 0]) 
         dY = dot(coeffY,[6*j^5, 5*j^4, 4*j^3, 3*j^2, 2*j, 1, 0])
         ddX = dot(coeffX,[30*j^4, 20*j^3, 12*j^2, 6*j, 2, 0, 0])
@@ -315,7 +281,7 @@ function localizeVehicleCurvAbs(states_x::Array{Float64},x_track::Array{Float64}
         # plot(s_p,polyt, color = "blue")
         # readline()
 
-
+        #just for plotting purposes
         j = s
         dX = dot(coeffX,[6*j^5, 5*j^4, 4*j^3, 3*j^2, 2*j, 1, 0]) 
         dY = dot(coeffY,[6*j^5, 5*j^4, 4*j^3, 3*j^2, 2*j, 1, 0])
