@@ -4,87 +4,10 @@ using PyPlot
 using JLD
 n_oldTrajPlots = 1
 global j  =7
-include("helper/classes.jl")
-file = "data/2017-02-08-16-24-Data.jld"
-close("all")
-
-    ####load data from file
-    Data = load(file)
 global l  =1
-   
-    x_track = Data["x_track"]
-    y_track = Data["y_track"]
-    trackCoeff = Data["trackCoeff"]
-    obstacle = Data["obstacle"]
-    modelParams = Data["modelParams"]
-    mpcParams = Data["mpcParams"]
-    buffersize = Data["buffersize"]
-    # curv_approx = Data["curv_approx"]
-    oldTraj     = Data["oldTraj"]
-    #include("calculateObstacleXY.jl")
-    #include("colorModule.jl")
-    include("helper/calculateObstacleXY.jl")
-    include("helper/colorModule.jl")
-    #end of data loading
-
-    #####create additional data for plotting
-    dt = modelParams.dt
-    xy_track  = [x_track; y_track]
-    t   = collect(0:dt:(buffersize-1)*dt)
-    xy_pred = zeros(mpcParams.N+1,2,length(t),oldTraj.n_oldTraj)
-
-    println("Number of simulated rounds in data: $(oldTraj.n_oldTraj)")
-    println("Load File located in: $file")
-    obstOrientation = zeros(size(obstacle.xy_vector)[1],size(obstacle.xy_vector)[3],size(obstacle.xy_vector)[4])
-    for k = 1:oldTraj.n_oldTraj
-        for i = 1:oldTraj.oldNIter[j]
-            # caluclate the predicted XY postion of the car from the s-ey values
-            xy_pred[:,:,i,k] = calculatePredictedXY(oldTraj.z_pred_sol[:,:,:,k], mpcParams, trackCoeff, xy_track, convert(Int64,i),k)
-            #calculate the obstacle postion from the s-ey values
-            calculateObstacleXY!(obstacle, trackCoeff, xy_track,i,k,obstOrientation) #this funciton computes values for row i
-        end
-    end
-
-    ##this part is to calculate the tracks boundaries and plot them later
-    convert(Array{Int64},oldTraj.oldNIter)
-    trackL = size(xy_track,2)
-    boundary_up = zeros(2,trackL)
-    boundary_down = zeros(2,trackL)
-    for kkk = 1:1:trackL
-        if 1< kkk < trackL 
-            xt_secant = x_track[kkk+1] - x_track[kkk-1]
-            yt_secant = y_track[kkk+1] - y_track[kkk-1]
-            normVec = [-yt_secant; xt_secant]/norm([-yt_secant; xt_secant])
-            boundary_up[:,kkk] = xy_track[:,kkk] + normVec * trackCoeff.width /2
-            boundary_down[:,kkk] = xy_track[:,kkk] - normVec * trackCoeff.width /2
-        elseif kkk == 1
-            xt_secant = x_track[kkk+1] - x_track[kkk]
-            yt_secant = y_track[kkk+1] - y_track[kkk]
-            normVec = [-yt_secant; xt_secant]/norm([-yt_secant; xt_secant])
-            boundary_up[:,kkk] = xy_track[:,kkk] + normVec * trackCoeff.width /2
-            boundary_down[:,kkk] = xy_track[:,kkk] - normVec * trackCoeff.width /2
-        else
-            xt_secant = x_track[kkk] - x_track[kkk-1]
-            yt_secant = y_track[kkk] - y_track[kkk-1]
-            normVec = [-yt_secant; xt_secant]/norm([-yt_secant; xt_secant])
-            boundary_up[:,kkk] = xy_track[:,kkk] + normVec * trackCoeff.width /2
-            boundary_down[:,kkk] = xy_track[:,kkk] - normVec * trackCoeff.width /2
-        end
-    end
-
-
-
-
-
 
 
 @pyimport matplotlib.animation as animation# First set up the figure, the axis, and the plot element we want to animate
-#@pyimport matplotlib.pyplot as plt
-#plt[:rcParams]["animation.ffmpeg_path"] ="C:/ffmpeg-3.2-win64-static/bin/"
-# create dummy data
-
-
-# define axis limits
 xmin = 0
 xmax = 20
 ymin = 0
@@ -96,7 +19,7 @@ fig = figure(figsize=(15,8))
 # ax1 = fig[:add_subplot](gs[1,1:2])
 # add two subplots to the figure and define axis limits
 #ax1 = fig[:add_subplot](1, 2, 1)
- ax1= subplot2grid([3,2],[0,0], rowspan=3)
+ ax1= subplot2grid([4,2],[0,0], rowspan=2)
 ax1[:set_xlim](xmin, xmax)
 ax1[:set_ylim](ymin, ymax)
 # set labels
@@ -105,7 +28,7 @@ ax1[:set_ylabel](L"y",fontsize=20)
 ax1[:set_aspect]("equal", adjustable="box")
 #ax1[:canvas][:set_window_title]("Track and cars in XY plane")
 grid()
-ax2= subplot2grid([3,2],[0,1])
+ax2= subplot2grid([4,2],[4,1])
 ax2[:set_ylabel](L"v",fontsize=20)
 grid()#
 ax3= subplot2grid([3,2],[1,1], sharex = ax2)
@@ -303,5 +226,5 @@ end
 anim = animation.FuncAnimation(fig, animate, init_func=initPlot,frames=oldTraj.oldNIter[j]+oldTraj.oldNIter[j-1]+start_offset-1, interval=1,repeat=false )
 
 # to save video: you need encoder and writer, for ubuntu it should work if you do: sudo apt-get install ffmpeg
-FFwriter = animation.FFMpegWriter( fps=10, bitrate=1500, extra_args=["-vcodec", "libx264"])   #(fps=10,bitrate=3000,extra_args=["-vcodec", "libx264","-pix_fmt","yuv420p"])
+FFwriter = animation.FFMpegWriter( fps=8, bitrate=1500, extra_args=["-vcodec", "libx264"])   #(fps=10,bitrate=3000,extra_args=["-vcodec", "libx264","-pix_fmt","yuv420p"])
 anim[:save]("basic_animation.mp4", writer = FFwriter)

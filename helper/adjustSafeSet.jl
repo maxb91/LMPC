@@ -21,12 +21,20 @@ function deleteInfeasibleTrajectories!(m::initLearningModel,oldTraj,distance2obs
                     min_obstacle_v = 0
                 end
                 v_diff = v_ego - min_obstacle_v
+                # if v_diff < 0 && distance2obst >0 # if the obstacle is faster than the ego vehicle and the ego vehicle is still behind the obstacle
+                #     println("$distance2obst")
+                #     @show v_diff
+                #     break
+                # end
                 # premeter2collision =  close_pred_obst[1,1] - oldTraj.oldTraj[index_first[k],1,k]
                 # meter2collision = (premeter2collision - (kk-1)*v_ego*dt)
                 # t2collision = (meter2collision/v_diff +(kk-1)*dt)/safety_factor
                 # meter2collision = (premeter2collision - (kk-1)*obstacle.v[i,k]*dt)
 
                 t2collision = (distance2obst/v_diff)/courage_factor
+                if distance2obst < 0 # trajectories should always be excluded if we are currently next to the obstacle if both the distance and v_diff are negativ the time2collision might become a big number
+                    t2collision =0.0
+                end
                 if ((oldTraj.oldTraj[ii,1,k]-close_pred_obst[kk,1])/obstacle.rs )^2 + ( (oldTraj.oldTraj[ii,2,k]-close_pred_obst[kk,2])/obstacle.ry )^2 <= 1 && t2collision<=1.0
                   
                     # @show kk
@@ -86,7 +94,7 @@ function addOldtoNewPos(oldTraj, distance2obst::Float64, obstacle, iter::Int64, 
                      #######end test
 
     if distance2obst < 2.2 && distance2obst > - 2*obstacle.rs
-        for k =1:oldTraj.n_oldTraj-1 #do not search last trajectory as it to be replaced.
+        for k =1:oldTraj.n_oldTraj-2 #do not search last trajectory as it to be replaced. do not search second last as it contains path following round
             for i = 1:oldTraj.oldNIter[k], l = 1:obstacle.n_obstacle
                 if distance2obst <= oldTraj.distance2obst[i,k,l] + eps0 && distance2obst >= oldTraj.distance2obst[i,k,l] - eps0
                         compare_v_ey = 0
@@ -139,7 +147,7 @@ function addOldtoNewPos(oldTraj, distance2obst::Float64, obstacle, iter::Int64, 
         for k = 1:oldTraj.n_oldTraj-1
             costs[k]= oldTraj.cost2Target[index_s[k]-N_points*(k-1),k]
         end
-        curr_min_cost, traj_min = findmin(costs,1)
+        # curr_min_cost, traj_min = findmin(costs,1)
         
         oldTraj.cost2Target[ind_start:ind_start+pLength,end] = oldTraj.cost2Target[ind_start:ind_start+pLength,index_of_traj_2_copy]-(oldTraj.cost2Target[ind_start,index_of_traj_2_copy][1]-oldTraj.cost2Target[index_s[index_of_traj_2_copy]-N_points*(index_of_traj_2_copy-1),index_of_traj_2_copy][1])
         copy_info =[index_of_traj_2_copy,s_start, zCurr_s[iter,1],0]

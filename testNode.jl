@@ -55,8 +55,8 @@
 
 
     load_safeset = false#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
-    safeset = "data/2017-01-30-12-41-Data.jld"
-    n_rounds = 1
+    safeset = "data/2017-02-05-22-45-Data.jld"
+    n_rounds = 8
     active_obstacle = false
     continue_obstacle = false
      
@@ -197,8 +197,7 @@
                     end
                 end
             end
-            distance2obst[i,:] = (obstacle.s_obstacle[i,1,:]-obstacle.rs) - posInfo.s
-            ind_closest_obst = findmin(abs(distance2obst[i,:]))[2]
+            
             
 
             #t_absci =toq()
@@ -222,6 +221,8 @@
 
             ##################
             pred_obst = predictObstaclePos(obstacle, modelParams, mpcParams, i)
+            distance2obst[i,:] = (pred_obst[1,1,:]-obstacle.rs) - posInfo.s
+            ind_closest_obst = findmin(abs(distance2obst[i,:]))[2]
             ##################
             
             if j > 1 || load_safeset == true
