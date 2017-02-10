@@ -230,7 +230,7 @@ end
 
 # anim = animation.FuncAnimation(fig, animate,frames=oldTraj.oldNIter[j]+oldTraj.oldNIter[j-1]+start_offset-1, interval=1,repeat=false )
 # oldTraj.oldNIter[j]
-anim = animation.FuncAnimation(fig, animate,frames=oldTraj.oldNIter[j], interval=1,repeat=false)#, blit=true)
+anim = animation.FuncAnimation(fig, animate,frames=oldTraj.oldNIter[j], interval=100,repeat=false)#, blit=true)
 # to save video: you need encoder and writer, for ubuntu it should work if you do: sudo apt-get install ffmpeg
-FFwriter = animation.FFMpegWriter( fps=8, bitrate=-1, extra_args=["-vcodec", "libx264","-pix_fmt","yuv420p"])   #(fps=10,bitrate=3000,extra_args=["-vcodec", "libx264","-pix_fmt","yuv420p"])
-anim[:save]("basic_animation.mp4", writer = FFwriter)
+# FFwriter = animation.FFMpegWriter( fps=8, bitrate=-1, extra_args=["-vcodec", "libx264","-pix_fmt","yuv420p"])   #(fps=10,bitrate=3000,extra_args=["-vcodec", "libx264","-pix_fmt","yuv420p"])
+# anim[:save]("basic_animation.mp4", writer = FFwriter)
