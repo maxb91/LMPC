@@ -38,14 +38,10 @@
 # end
 
 
-using JLD
+
 using PyCall
 using PyPlot
 
-
-
-@pyimport matplotlib.animation as animation
-@pyimport matplotlib as mpl
 @pyimport matplotlib.patches as patches
 
 function drawCar(fig,pos::Array{Float64},mycolor::String="black")
@@ -83,7 +79,7 @@ function drawCar(fig,pos::Array{Float64},mycolor::String="black")
 
     car_patches = [car,window,tl,tr,bl,br]
     # define a rotation transformation and a transformation from data c.s. to display c.s.
-    t1 = mpl.transforms[:Affine2D]()
+    t1 = matplotlib.transforms[:Affine2D]()
     t1[:rotate_deg_around](pos[1],pos[2], psi)
     t2 = ax[:transData]
     # combine transformations
@@ -139,7 +135,7 @@ function updateCarParts(fig,patches,pos::Array{Float64})
 
     ax = gca()
     # define a rotation transformation and a transformation from data c.s. to display c.s.
-    t1 = mpl.transforms[:Affine2D]()
+    t1 = matplotlib.transforms[:Affine2D]()
     t1[:rotate_deg_around](x,y, psi)
     t2 = ax[:transData]
     # combine transformations

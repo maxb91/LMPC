@@ -54,10 +54,10 @@
     
 
 
-    load_safeset = false#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
-    safeset = "data/2017-02-05-22-45-Data.jld"
-    n_rounds = 8
-    active_obstacle = false
+    load_safeset = true#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
+    safeset = "data/2017-02-08-16-24-Data.jld"
+    n_rounds = 1
+    active_obstacle = true
     continue_obstacle = false
      
 

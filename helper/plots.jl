@@ -9,7 +9,7 @@ include("plot_functions.jl")
 
 #function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
     newest2plot = 1
-    n_plot_rounds = 7
+    n_plot_rounds = 0
 
     interactive_plot = 1
 
@@ -24,8 +24,8 @@ include("plot_functions.jl")
     plot_copied = 0
     interactive_plot_steps = 5
     n_oldTrajPlots = 0
-    obstacle_color = "white"
-    file = "data/2017-02-08-16-24-Data.jld"
+    obstacle_color = "red"
+    file = "data/2017-02-09-15-47-Data.jld"
     close("all")
 
     ####load data from file
@@ -120,68 +120,19 @@ include("plot_functions.jl")
             pred_plot = ax10[:plot](oldTraj.oldTrajXY[1,1,1,1],oldTraj.oldTrajXY[1,2,1,1],color = "yellow", marker="o")
 
        
-            if obstacle.n_obstacle >=1
+            obstacle_plot =Array{PyCall.PyObject}(obstacle.n_obstacle)
+            y_obst_plot =Array{PyCall.PyObject}(obstacle.n_obstacle)
+            s_obst_plot =Array{PyCall.PyObject}(obstacle.n_obstacle)
+            obst_patch =Array{PyCall.PyObject}(obstacle.n_obstacle)
+            plt_obst =Array{PyCall.PyObject}(obstacle.n_obstacle)
+            for ii = 1:obstacle.n_obstacle
                 #obsttraj_plot1 = ax10[:plot](1,1)  #just for initialization
-                obstacle_plot1 = ax10[:plot](obstacle.xy_vector[1,1,1,1], obstacle.xy_vector[1,2,1,1], color = obstacle_color,marker="o", label = "obstacle Traj", markeredgecolor = "none")
-                y_obst_plot1   = ax10[:plot]([obstacle.axis_y_up[1,1,1,1],obstacle.axis_y_down[1,1,1,1]],[obstacle.axis_y_up[1,2,1,1],obstacle.axis_y_down[1,2,1,1]],color = obstacle_color)#plot the y semi axis
-                s_obst_plot1   = ax10[:plot]([obstacle.axis_s_up[1,1,1,1],obstacle.axis_s_down[1,1,1,1]],[obstacle.axis_s_up[1,2,1,1],obstacle.axis_s_down[1,2,1,1]],color = obstacle_color)# plot the s semi axis
+                obstacle_plot[ii] = ax10[:plot](obstacle.xy_vector[1,1,1,ii], obstacle.xy_vector[1,2,1,ii], color = obstacle_color,marker="o", label = "obstacle Traj", markeredgecolor = "none")[1]
+                y_obst_plot[ii]   = ax10[:plot]([obstacle.axis_y_up[1,1,1,ii],obstacle.axis_y_down[1,1,1,ii]],[obstacle.axis_y_up[1,2,1,ii],obstacle.axis_y_down[1,2,1,ii]],color = obstacle_color)[1]#plot the y semi axis
+                s_obst_plot[ii]   = ax10[:plot]([obstacle.axis_s_up[1,1,1,ii],obstacle.axis_s_down[1,1,1,ii]],[obstacle.axis_s_up[1,2,1,ii],obstacle.axis_s_down[1,2,1,ii]],color = obstacle_color)[1]# plot the s semi axis
 
-                obst1 = patches.Ellipse([obstacle.xy_vector[1,1,1,1],obstacle.xy_vector[1,2,1,1]],2*obstacle.rs,2*obstacle.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation[1,1,1]*180/pi)
-                plt_obst1 = ax10[:add_patch](obst1)
-            end
-            if obstacle.n_obstacle >=2
-                #obsttraj_plot2 = ax10[:plot](1,1)  #just for initialization
-                obstacle_plot2 = ax10[:plot](obstacle.xy_vector[1,1,1,2], obstacle.xy_vector[1,2,1,2], color = obstacle_color,marker="o", label = "obstacle Traj", markeredgecolor = "none")
-                y_obst_plot2   = ax10[:plot]([obstacle.axis_y_up[1,1,1,2],obstacle.axis_y_down[1,1,1,2]],[obstacle.axis_y_up[1,2,1,2],obstacle.axis_y_down[1,2,1,2]],color = obstacle_color)#plot the y semi axis
-                s_obst_plot2   = ax10[:plot]([obstacle.axis_s_up[1,1,1,2],obstacle.axis_s_down[1,1,1,2]],[obstacle.axis_s_up[1,2,1,2],obstacle.axis_s_down[1,2,1,2]],color = obstacle_color)# plot the s semi axis
-
-                obst2 = patches.Ellipse([obstacle.xy_vector[1,1,1,2],obstacle.xy_vector[1,2,1,2]],2*obstacle.rs,2*obstacle.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation[1,1,2]*180/pi)
-                plt_obst2 = ax10[:add_patch](obst2)
-            end
-            if obstacle.n_obstacle >=3
-                #obsttraj_plot3 = ax10[:plot](1,1)  #just for initialization
-                obstacle_plot3 = ax10[:plot](obstacle.xy_vector[1,1,1,3], obstacle.xy_vector[1,2,1,3], color = obstacle_color,marker="o", label = "obstacle Traj", markeredgecolor = "none")
-                y_obst_plot3   = ax10[:plot]([obstacle.axis_y_up[1,1,1,3],obstacle.axis_y_down[1,1,1,3]],[obstacle.axis_y_up[1,2,1,3],obstacle.axis_y_down[1,2,1,3]],color = obstacle_color)#plot the y semi axis
-                s_obst_plot3   = ax10[:plot]([obstacle.axis_s_up[1,1,1,3],obstacle.axis_s_down[1,1,1,3]],[obstacle.axis_s_up[1,2,1,3],obstacle.axis_s_down[1,2,1,3]],color = obstacle_color)# plot the s semi axis
-
-                obst3 = patches.Ellipse([obstacle.xy_vector[1,1,1,3],obstacle.xy_vector[1,2,1,3]],2*obstacle.rs,2*obstacle.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation[1,1,3]*180/pi)
-                plt_obst3 = ax10[:add_patch](obst3)
-            end
-            if obstacle.n_obstacle >=4
-                #obsttraj_plot4 = ax10[:plot](1,1)  #just for initialization
-                obstacle_plot4 = ax10[:plot](obstacle.xy_vector[1,1,1,4], obstacle.xy_vector[1,2,1,4], color = obstacle_color,marker="o", label = "obstacle Traj",markeredgecolor = "none")
-                y_obst_plot4   = ax10[:plot]([obstacle.axis_y_up[1,1,1,4],obstacle.axis_y_down[1,1,1,4]],[obstacle.axis_y_up[1,2,1,4],obstacle.axis_y_down[1,2,1,4]],color = obstacle_color)#plot the y semi axis
-                s_obst_plot4   = ax10[:plot]([obstacle.axis_s_up[1,1,1,4],obstacle.axis_s_down[1,1,1,4]],[obstacle.axis_s_up[1,2,1,4],obstacle.axis_s_down[1,2,1,4]],color = obstacle_color)# plot the s semi axis
-
-                obst4 = patches.Ellipse([obstacle.xy_vector[1,1,1,4],obstacle.xy_vector[1,2,1,4]],2*obstacle.rs,2*obstacle.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation[1,1,4]*180/pi)
-                plt_obst4 = ax10[:add_patch](obst4)
-            end
-            if obstacle.n_obstacle >=5
-                #obsttraj_plot5 = ax10[:plot](1,1)  #just for initialization
-                obstacle_plot5 = ax10[:plot](obstacle.xy_vector[1,1,1,5], obstacle.xy_vector[1,2,1,5], color = obstacle_color,marker="o", label = "obstacle Traj", markeredgecolor = "none")
-                y_obst_plot5   = ax10[:plot]([obstacle.axis_y_up[1,1,1,5],obstacle.axis_y_down[1,1,1,5]],[obstacle.axis_y_up[1,2,1,5],obstacle.axis_y_down[1,2,1,5]],color = obstacle_color)#plot the y semi axis
-                s_obst_plot5   = ax10[:plot]([obstacle.axis_s_up[1,1,1,5],obstacle.axis_s_down[1,1,1,5]],[obstacle.axis_s_up[1,2,1,5],obstacle.axis_s_down[1,2,1,5]],color = obstacle_color)# plot the s semi axis
-
-                obst5 = patches.Ellipse([obstacle.xy_vector[1,1,1,5],obstacle.xy_vector[1,2,1,5]],2*obstacle.rs,2*obstacle.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation[1,1,5]*180/pi)
-                plt_obst5 = ax10[:add_patch](obst5)
-            end
-            if obstacle.n_obstacle >=6
-                #obsttraj_plot6 = ax10[:plot](1,1)  #just for initialization
-                obstacle_plot6 = ax10[:plot](obstacle.xy_vector[1,1,1,6], obstacle.xy_vector[1,2,1,6], color = obstacle_color,marker="o", label = "obstacle Traj", markeredgecolor = "none")
-                y_obst_plot6   = ax10[:plot]([obstacle.axis_y_up[1,1,1,6],obstacle.axis_y_down[1,1,1,6]],[obstacle.axis_y_up[1,2,1,6],obstacle.axis_y_down[1,2,1,6]],color = obstacle_color)#plot the y semi axis
-                s_obst_plot6   = ax10[:plot]([obstacle.axis_s_up[1,1,1,6],obstacle.axis_s_down[1,1,1,6]],[obstacle.axis_s_up[1,2,1,6],obstacle.axis_s_down[1,2,1,6]],color = obstacle_color)# plot the s semi axis
-                
-                obst6 = patches.Ellipse([obstacle.xy_vector[1,1,1,6],obstacle.xy_vector[1,2,1,6]],2*obstacle.rs,2*obstacle.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation[1,1,6]*180/pi)
-                plt_obst6 = ax10[:add_patch](obst6)
-            end
-            if obstacle.n_obstacle >=7
-                #obsttraj_plot6 = ax10[:plot](1,1)  #just for initialization
-                obstacle_plot7 = ax10[:plot](obstacle.xy_vector[1,1,1,7], obstacle.xy_vector[1,2,1,7], color = obstacle_color,marker="o", label = "obstacle Traj", markeredgecolor = "none")
-                y_obst_plot7   = ax10[:plot]([obstacle.axis_y_up[1,1,1,7],obstacle.axis_y_down[1,1,1,7]],[obstacle.axis_y_up[1,2,1,7],obstacle.axis_y_down[1,2,1,7]],color = obstacle_color)#plot the y semi axis
-                s_obst_plot7   = ax10[:plot]([obstacle.axis_s_up[1,1,1,7],obstacle.axis_s_down[1,1,1,7]],[obstacle.axis_s_up[1,2,1,7],obstacle.axis_s_down[1,2,1,7]],color = obstacle_color)# plot the s semi axis
-
-                obst7 = patches.Ellipse([obstacle.xy_vector[1,1,1,7],obstacle.xy_vector[1,2,1,7]],2*obstacle.rs,2*obstacle.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation[1,1,7]*180/pi)
-                plt_obst7 = ax10[:add_patch](obst7)
+                obst_patch[ii] = patches.Ellipse([obstacle.xy_vector[1,1,1,ii],obstacle.xy_vector[1,2,1,ii]],2*obstacle.rs,2*obstacle.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation[1,1,ii]*180/pi)
+                plt_obst[ii] = ax10[:add_patch](obst_patch[ii])
             end
             # ax10[:grid]() 
         end
@@ -413,104 +364,20 @@ include("plot_functions.jl")
                 cartraj_plot = ax10[:plot](oldTraj.oldTrajXY[1:i,1,j], oldTraj.oldTrajXY[1:i,2,j], color = ego_color, linewidth = 0.7) # plot trajectory of this round for curent car
                 car_plot = ax10[:plot](oldTraj.oldTrajXY[i,1,j], oldTraj.oldTrajXY[i,2,j], color = ego_color, marker="o") #plot current position of car with a marker
 
-                if obstacle.n_obstacle >=1
+                for ii=1:obstacle.n_obstacle
                     # obsttraj_plot1[1][:remove]()
-                    obstacle_plot1[1][:remove]()
-                    y_obst_plot1[1][:remove]()
-                    s_obst_plot1[1][:remove]()
+
+                    obstacle_plot[ii][:remove]()
+                    y_obst_plot[ii][:remove]()
+                    s_obst_plot[ii][:remove]()
                     # obsttraj_plot1 = ax10[:plot](obstacle.xy_vector[1:i,1,j,1], obstacle.xy_vector[1:i,2,j,1], color = obstacle_color, linestyle= ":")
-                    obstacle_plot1 = ax10[:plot](obstacle.xy_vector[i,1,j,1], obstacle.xy_vector[i,2,j,1], color = obstacle_color, marker="o", markeredgecolor = "none")  
-                    y_obst_plot1 = ax10[:plot]([obstacle.axis_y_up[i,1,j,1],obstacle.axis_y_down[i,1,j,1]],[obstacle.axis_y_up[i,2,j,1],obstacle.axis_y_down[i,2,j,1]],color = obstacle_color)#plot the y semi axis
-                    s_obst_plot1 = ax10[:plot]([obstacle.axis_s_up[i,1,j,1],obstacle.axis_s_down[i,1,j,1]],[obstacle.axis_s_up[i,2,j,1],obstacle.axis_s_down[i,2,j,1]],color = obstacle_color)# plot the s semi axis
+                    obstacle_plot[ii] = ax10[:plot](obstacle.xy_vector[i,1,j,ii], obstacle.xy_vector[i,2,j,ii], color = obstacle_color, marker="o", markeredgecolor = "none")[1]  
+                    y_obst_plot[ii] = ax10[:plot]([obstacle.axis_y_up[i,1,j,ii],obstacle.axis_y_down[i,1,j,ii]],[obstacle.axis_y_up[i,2,j,ii],obstacle.axis_y_down[i,2,j,ii]],color = obstacle_color)[1]#plot the y semi axis
+                    s_obst_plot[ii] = ax10[:plot]([obstacle.axis_s_up[i,1,j,ii],obstacle.axis_s_down[i,1,j,ii]],[obstacle.axis_s_up[i,2,j,ii],obstacle.axis_s_down[i,2,j,ii]],color = obstacle_color)[1]# plot the s semi axis
 
-                    plt_obst1[:remove]()
-                    obst1 = patches.Ellipse([obstacle.xy_vector[i,1,j,1],obstacle.xy_vector[i,2,j,1]],2*obstacle.rs,2*obstacle.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation[i,j,1]*180/pi)
-                    plt_obst1 = ax10[:add_patch](obst1)
-
-                end
-                if obstacle.n_obstacle >=2
-                    # obsttraj_plot2[1][:remove]()
-                    obstacle_plot2[1][:remove]()
-                    y_obst_plot2[1][:remove]()
-                    s_obst_plot2[1][:remove]()
-                    # obsttraj_plot2 = ax10[:plot](obstacle.xy_vector[1:i,1,j,2], obstacle.xy_vector[1:i,2,j,2], color = obstacle_color, linestyle= ":")
-                    obstacle_plot2 = ax10[:plot](obstacle.xy_vector[i,1,j,2], obstacle.xy_vector[i,2,j,2], color = obstacle_color, marker="o", markeredgecolor = "none")  
-                    y_obst_plot2 = ax10[:plot]([obstacle.axis_y_up[i,1,j,2],obstacle.axis_y_down[i,1,j,2]],[obstacle.axis_y_up[i,2,j,2],obstacle.axis_y_down[i,2,j,2]],color = obstacle_color)#plot the y semi axis
-                    s_obst_plot2 = ax10[:plot]([obstacle.axis_s_up[i,1,j,2],obstacle.axis_s_down[i,1,j,2]],[obstacle.axis_s_up[i,2,j,2],obstacle.axis_s_down[i,2,j,2]],color = obstacle_color)# plot the s semi axis
-
-                    plt_obst2[:remove]()
-                    obst2 = patches.Ellipse([obstacle.xy_vector[i,1,j,2],obstacle.xy_vector[i,2,j,2]],2*obstacle.rs,2*obstacle.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation[i,j,2]*180/pi)
-                    plt_obst2 = ax10[:add_patch](obst2)
-                end
-                if obstacle.n_obstacle >=3
-                    # obsttraj_plot3[1][:remove]()
-                    obstacle_plot3[1][:remove]()
-                    y_obst_plot3[1][:remove]()
-                    s_obst_plot3[1][:remove]()
-                    # obsttraj_plot2 = ax10[:plot](obstacle.xy_vector[1:i,1,j,3], obstacle.xy_vector[1:i,2,j,3], color = obstacle_color, linestyle= ":")
-                    obstacle_plot3 = ax10[:plot](obstacle.xy_vector[i,1,j,3], obstacle.xy_vector[i,2,j,3], color = obstacle_color, marker="o", markeredgecolor = "none")  
-                    y_obst_plot3 = ax10[:plot]([obstacle.axis_y_up[i,1,j,3],obstacle.axis_y_down[i,1,j,3]],[obstacle.axis_y_up[i,2,j,3],obstacle.axis_y_down[i,2,j,3]],color = obstacle_color)#plot the y semi axis
-                    s_obst_plot3 = ax10[:plot]([obstacle.axis_s_up[i,1,j,3],obstacle.axis_s_down[i,1,j,3]],[obstacle.axis_s_up[i,2,j,3],obstacle.axis_s_down[i,2,j,3]],color = obstacle_color)# plot the s semi axis
-
-                    plt_obst3[:remove]()
-                    obst3 = patches.Ellipse([obstacle.xy_vector[i,1,j,3],obstacle.xy_vector[i,2,j,3]],2*obstacle.rs,2*obstacle.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation[i,j,3]*180/pi)
-                    plt_obst3 = ax10[:add_patch](obst3)
-                end
-                if obstacle.n_obstacle >=4
-                    # obsttraj_plot4[1][:remove]()
-                    obstacle_plot4[1][:remove]()
-                    y_obst_plot4[1][:remove]()
-                    s_obst_plot4[1][:remove]()
-                    # obsttraj_plot4 = ax10[:plot](obstacle.xy_vector[1:i,1,j,4], obstacle.xy_vector[1:i,2,j,4], color = obstacle_color, linestyle= ":")
-                    obstacle_plot4 = ax10[:plot](obstacle.xy_vector[i,1,j,4], obstacle.xy_vector[i,2,j,4], color = obstacle_color, marker="o", markeredgecolor = "none")  
-                    y_obst_plot4 = ax10[:plot]([obstacle.axis_y_up[i,1,j,4],obstacle.axis_y_down[i,1,j,4]],[obstacle.axis_y_up[i,2,j,4],obstacle.axis_y_down[i,2,j,4]],color = obstacle_color)#plot the y semi axis
-                    s_obst_plot4 = ax10[:plot]([obstacle.axis_s_up[i,1,j,4],obstacle.axis_s_down[i,1,j,4]],[obstacle.axis_s_up[i,2,j,4],obstacle.axis_s_down[i,2,j,4]],color = obstacle_color)# plot the s semi axis
-
-                    plt_obst4[:remove]()
-                    obst4 = patches.Ellipse([obstacle.xy_vector[i,1,j,4],obstacle.xy_vector[i,2,j,4]],2*obstacle.rs,2*obstacle.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation[i,j,4]*180/pi)
-                    plt_obst4 = ax10[:add_patch](obst4)
-                end
-                if obstacle.n_obstacle >=5
-                    # obsttraj_plot5[1][:remove]()
-                    obstacle_plot5[1][:remove]()
-                    y_obst_plot5[1][:remove]()
-                    s_obst_plot5[1][:remove]()
-                    # obsttraj_plot5 = ax10[:plot](obstacle.xy_vector[1:i,1,j,5], obstacle.xy_vector[1:i,2,j,5], color = obstacle_color, linestyle= ":")
-                    obstacle_plot5 = ax10[:plot](obstacle.xy_vector[i,1,j,5], obstacle.xy_vector[i,2,j,5], color = obstacle_color, marker="o", markeredgecolor = "none")  
-                    y_obst_plot5 = ax10[:plot]([obstacle.axis_y_up[i,1,j,5],obstacle.axis_y_down[i,1,j,5]],[obstacle.axis_y_up[i,2,j,5],obstacle.axis_y_down[i,2,j,5]],color = obstacle_color)#plot the y semi axis
-                    s_obst_plot5 = ax10[:plot]([obstacle.axis_s_up[i,1,j,5],obstacle.axis_s_down[i,1,j,5]],[obstacle.axis_s_up[i,2,j,5],obstacle.axis_s_down[i,2,j,5]],color = obstacle_color)# plot the s semi axis
-
-                    plt_obst5[:remove]()
-                    obst5 = patches.Ellipse([obstacle.xy_vector[i,1,j,5],obstacle.xy_vector[i,2,j,5]],2*obstacle.rs,2*obstacle.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation[i,j,5]*180/pi)
-                    plt_obst5 = ax10[:add_patch](obst5)
-                end
-                if obstacle.n_obstacle >=6
-                    # obsttraj_plot6[1][:remove]()
-                    obstacle_plot6[1][:remove]()
-                    y_obst_plot6[1][:remove]()
-                    s_obst_plot6[1][:remove]()
-                    # obsttraj_plot6 = ax10[:plot](obstacle.xy_vector[1:i,1,j,6], obstacle.xy_vector[1:i,2,j,6], color = obstacle_color, linestyle= ":")
-                    obstacle_plot6 = ax10[:plot](obstacle.xy_vector[i,1,j,6], obstacle.xy_vector[i,2,j,6], color = obstacle_color, marker="o", markeredgecolor = "none")  
-                    y_obst_plot6 = ax10[:plot]([obstacle.axis_y_up[i,1,j,6],obstacle.axis_y_down[i,1,j,6]],[obstacle.axis_y_up[i,2,j,6],obstacle.axis_y_down[i,2,j,6]],color = obstacle_color)#plot the y semi axis
-                    s_obst_plot6 = ax10[:plot]([obstacle.axis_s_up[i,1,j,6],obstacle.axis_s_down[i,1,j,6]],[obstacle.axis_s_up[i,2,j,6],obstacle.axis_s_down[i,2,j,6]],color = obstacle_color)# plot the s semi axis
-
-                    plt_obst6[:remove]()
-                    obst6 = patches.Ellipse([obstacle.xy_vector[i,1,j,6],obstacle.xy_vector[i,2,j,6]],2*obstacle.rs,2*obstacle.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation[i,j,6]*180/pi)
-                    plt_obst6 = ax10[:add_patch](obst6)
-                end
-                if obstacle.n_obstacle >=7
-                    # obsttraj_plot7[1][:remove]()
-                    obstacle_plot7[1][:remove]()
-                    y_obst_plot7[1][:remove]()
-                    s_obst_plot7[1][:remove]()
-                    # obsttraj_plot7 = ax10[:plot](obstacle.xy_vector[1:i,1,j,7], obstacle.xy_vector[1:i,2,j,7], color = obstacle_color, linestyle= ":")
-                    obstacle_plot7 = ax10[:plot](obstacle.xy_vector[i,1,j,7], obstacle.xy_vector[i,2,j,7], color = obstacle_color, marker="o", markeredgecolor = "none")  
-                    y_obst_plot7 = ax10[:plot]([obstacle.axis_y_up[i,1,j,7],obstacle.axis_y_down[i,1,j,7]],[obstacle.axis_y_up[i,2,j,7],obstacle.axis_y_down[i,2,j,7]],color = obstacle_color)#plot the y semi axis
-                    s_obst_plot7 = ax10[:plot]([obstacle.axis_s_up[i,1,j,7],obstacle.axis_s_down[i,1,j,7]],[obstacle.axis_s_up[i,2,j,7],obstacle.axis_s_down[i,2,j,7]],color = obstacle_color)# plot the s semi axis
-
-                    plt_obst7[:remove]()
-                    obst7 = patches.Ellipse([obstacle.xy_vector[i,1,j,7],obstacle.xy_vector[i,2,j,7]],2*obstacle.rs,2*obstacle.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation[i,j,7]*180/pi)
-                    plt_obst7 = ax10[:add_patch](obst7)
+                    plt_obst[ii][:remove]()
+                    obst_patch[ii] = patches.Ellipse([obstacle.xy_vector[i,1,j,ii],obstacle.xy_vector[i,2,j,ii]],2*obstacle.rs,2*obstacle.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation[i,j,ii]*180/pi)
+                    plt_obst[ii] = ax10[:add_patch](obst_patch[ii])
                 end
             end
             ##plot a line in the cost function that always show the current s
