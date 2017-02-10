@@ -37,7 +37,7 @@ function drawCar(ax,pos::Array{Float64},mycolor::String="black")
     pos = [x;y]
 
     # define car geometry
-    length = 36 / 100.0
+    length = 40 / 100.0
     width = 18.0 / 100.0
     btmLeft_vortex = pos + [-length/2,-width/2]
 

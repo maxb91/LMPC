@@ -14,7 +14,7 @@ include("helper/calculateObstacleXY.jl")
 include("helper/colorModule.jl")
 
 
-file = "data/2017-02-08-16-24-Data.jld"
+file = "data/2017-01-29-14-24-Data.jld"
 global j  = 1
 global l  = 1
 obstacle_color = "red"
@@ -37,11 +37,14 @@ mpcCoeff = Data["mpcCoeff"]
 println("Number of simulated rounds in data: $(oldTraj.n_oldTraj)")
 println("Load File located in: $file")
 
+obstacle.rs = 0.3
+obstacle.ry = 0.09
+
 ds = trackCoeff.ds
 dt = modelParams.dt
 xy_track  = [x_track; y_track]
 t   = collect(0:dt:(buffersize-1)*dt)
-
+trackLength = (size(x_track)[2]-1)*trackCoeff.ds
 
 
 
@@ -63,13 +66,13 @@ for k = 1:oldTraj.n_oldTraj
 end
 
 
-xmin = -7
-xmax = 12
+xmin = -15
+xmax = 15
 ymin = -10
 ymax = 2
 # create figure to plot
 fig = figure(figsize=(15,8))
-ax1= subplot2grid([4,1],[0,0], rowspan=3)
+ax1= subplot2grid([6,1],[0,0], rowspan=4)
 ax1[:set_xlim](xmin, xmax)
 ax1[:set_ylim](ymin, ymax)
 # set labels
@@ -78,8 +81,12 @@ ax1[:set_ylabel](L"y",fontsize=20)
 ax1[:set_aspect]("equal", adjustable="box")
 #ax1[:canvas][:set_window_title]("Track and cars in XY plane")
 grid()
-ax2= subplot2grid([4,1],[3,0])
-ax2[:set_ylabel](L"v",fontsize=20)
+ax2= subplot2grid([6,1],[4,0],rowspan=2)
+ax2[:set_ylabel](L"s",fontsize=20)
+# ax2[:set_xlim](findmin(oldTraj.copyInfo[:,3,j])[1], findmax(oldTraj.copyInfo[:,3,j])[1])
+# ax2[:set_ylim](findmin(oldTraj.copyInfo[:,2,j])[1], findmax(oldTraj.copyInfo[:,2,j])[1])
+ax2[:set_xlim](0, trackLength)
+ax2[:set_ylim](0, trackLength)
 grid()#
 
 
@@ -97,23 +104,53 @@ for l=1:convert(Int64,trunc(trackL/51))
     ax1[:text](boundary_down[1,l*50+1]+1.85*boundvec[1],boundary_down[2,l*50+1]+1.85*boundvec[2],"$(convert(Int64,l*50*ds))",fontsize=20,clip_on = true)
 end
 
-# obst_patch =Array{PyCall.PyObject}(obstacle.n_obstacle)
-# plt_obst =Array{PyCall.PyObject}(obstacle.n_obstacle)
+obst_patch =Array{PyCall.PyObject}(obstacle.n_obstacle)
+plt_obst =Array{PyCall.PyObject}(obstacle.n_obstacle)
+for ii = 1:obstacle.n_obstacle
+    obst_patch[ii] = patches.Ellipse([obstacle.xy_vector[1,1,1,ii],obstacle.xy_vector[1,2,1,ii]],2*obstacle.rs,2*obstacle.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation[1,1,ii]*180/pi)
+    plt_obst[ii] = ax1[:add_patch](obst_patch[ii])
+end
 
 carParts=drawCar(ax1,[0.0,0.0,0.0], "green")
 for p in carParts
                 ax1[:add_patch](p)
 end
 
-
-# cartraj_plot = ax1[:plot](1,1)  #just for initialization
-# car_plot = ax1[:plot](1,1)#(oldTraj.oldTrajXY[1,1,j], oldTraj.oldTrajXY[1,2,j], color = ego_color) # just dummy to use remove func later
-# pred_plot = ax1[:plot](1,1)#(oldTraj.oldTrajXY[1,1,j],oldTraj.oldTrajXY[1,2,j],color = "yellow", marker="o")
+pred_plot = ax1[:plot]([],[],color = "yellow", marker="o")[1]#(oldTraj.oldTrajXY[1,1,j],oldTraj.oldTrajXY[1,2,j],color = "yellow", marker="o")
 ####################
 #copied-plot
 ####################
 
-
+colordefs=["#3b44ba",
+            "#c8ce24",
+            "#a756de",
+            "#0ac753",
+            "#ff53c4",
+            "#01c3ba",
+            "#f5218a",
+            "#4cd5ff",
+            "#f74b3a",
+            "#016ed6",
+            "#de8500",
+            "#8a1e95",
+            "#6c4d08",
+            "#aca0ff",
+            "#a2172f",
+            "#abaae1",
+            "#ffb38d",
+            "#83317e",
+            "#9c6f4b",
+            "#ff91d1"]
+for i=1:oldTraj.oldNIter[j]-1
+    if oldTraj.copyInfo[i,1,j]>0.0 # if lambda of copied traj is greater 0.1 -> if traj s used for solving.
+        ax2[:scatter](oldTraj.copyInfo[i,3,j],oldTraj.copyInfo[i,2,j], color = "#DCDCDC",edgecolor="black", lw =0.5)
+    end
+end
+for i=1:oldTraj.oldNIter[j]-1
+    if oldTraj.copyInfo[i,4,j]>0.6 # if lambda of copied traj is greater 0.1 -> if traj s used for solving.
+        ax2[:scatter](oldTraj.copyInfo[i,3,j],oldTraj.copyInfo[i,2,j], color = colordefs[convert(Int64,oldTraj.copyInfo[i,1,j])],edgecolor="black",lw =0.5)
+    end
+end
 ####################
 #e_y-plot
 ####################
@@ -125,7 +162,7 @@ end
 #obstacle cost plot
 ####################
 # ax4[:plot](oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.costs[2,1:oldTraj.oldNIter[j]-1,j])  
-# s_cost_plot= ax4[:plot]([],[], color ="black")[1]
+s_curr_copied= ax2[:plot]([],[], color ="black")[1]
 # ax4[:set_ylabel](L"cost_{term}",fontsize=20)
 
 ####################
@@ -161,8 +198,12 @@ function animate(frame)
     #x-y plot
     ##################
     #update the position of the car and the prediction
-
-    #update the obstacle position
+    for ii=1:obstacle.n_obstacle
+        plt_obst[ii][:remove]()
+        obst_patch[ii] = patches.Ellipse([obstacle.xy_vector[k,1,j,ii],obstacle.xy_vector[k,2,j,ii]],2*obstacle.rs,2*obstacle.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation[k,j,ii]*180/pi)
+        plt_obst[ii] = ax1[:add_patch](obst_patch[ii])
+    end
+   #update the obstacle position
 #     obstacle_plot[:set_data](obstacle.xy_vector[1:k,1,j], obstacle.xy_vector[1:k,2,j])
 # cle.axis_s_down[k,1,j]],[obstacle.axis_s_up[k,2,j],obstacle.axis_s_down[k,2,j]])
 #     #update axis of x-y plot every time step
@@ -170,16 +211,17 @@ function animate(frame)
 #     ax1[:set_ylim](xy_pred[6,2,k,j]-2, xy_pred[6,2,k,j]+2)
     pos =[oldTraj.oldTrajXY[k,1,j],oldTraj.oldTrajXY[k,2,j], oldTraj.oldTrajXY[k,5,j]*180/pi]
     updateCarParts(ax1,carParts,pos)
+
+    pred_plot[:set_data](xy_pred[:,1,k,j],xy_pred[:,2,k,j])
     # plot(oldTraj.oldTrajXY[k,1,j],oldTraj.oldTrajXY[k,2,j])
 #     #######################
 #     #copied plot
 #     #######################
-#     v_plot[:set_data](oldTraj.z_pred_sol[:,1,k,j], oldTraj.z_pred_sol[:,4,k,j]) #plot predicted velocity
-
+      s_curr_copied[:set_data]([oldTraj.oldTraj[k,1,j],oldTraj.oldTraj[k,1,j]],[0,trackLength])
 #     #######################
 #     #obstacle cost plot
 #     #######################
-#     s_cost_plot[:set_data]([oldTraj.oldTraj[k,1,j],oldTraj.oldTraj[k,1,j]],[-3,oldTraj.oldNIter[j]])
+   
 # end
     return carParts, nothing
 end
@@ -187,6 +229,7 @@ end
 # frames: defines how often animate function is called and interval how often in milliseconds
 
 # anim = animation.FuncAnimation(fig, animate,frames=oldTraj.oldNIter[j]+oldTraj.oldNIter[j-1]+start_offset-1, interval=1,repeat=false )
+# oldTraj.oldNIter[j]
 anim = animation.FuncAnimation(fig, animate,frames=oldTraj.oldNIter[j], interval=1,repeat=false)#, blit=true)
 # to save video: you need encoder and writer, for ubuntu it should work if you do: sudo apt-get install ffmpeg
 FFwriter = animation.FFMpegWriter( fps=8, bitrate=-1, extra_args=["-vcodec", "libx264","-pix_fmt","yuv420p"])   #(fps=10,bitrate=3000,extra_args=["-vcodec", "libx264","-pix_fmt","yuv420p"])
