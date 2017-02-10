@@ -107,6 +107,11 @@ function addOldtoNewPos(oldTraj, distance2obst::Float64, obstacle, iter::Int64, 
                         end
                     last_considered  = findfirst(x -> x > oldTraj.oldTraj[i,1,k]+s_diff, oldTraj.oldTraj[:,1,k]) #find the index forthe old trajectory whose s values is 2 meters greater than the current s value,where the distance the obstacle is the same
                     curv_points = last_considered-i+1
+
+                    if curv_points<1 # will just be active if something goes wrong. is applied to not lose all data through an error in thath case
+                        warn("something went wrong couldnt find an s position $s_diff m infornt of car")
+                        break
+                    end
                     curvature_curr = zeros(curv_points)
                     s_curv = linspace(zCurr_s[iter,1],zCurr_s[iter,1]+s_diff,curv_points )
                     compare_curv = 0

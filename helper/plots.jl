@@ -2,14 +2,14 @@ using JLD
 using PyPlot
 using PyCall
 @pyimport matplotlib.patches as patches
-
+matplotlib[:style][:use]("classic") # somehow my julia version changed plotting style 
 
 include("classes.jl")
 include("plot_functions.jl")
 
 #function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
     newest2plot = 1
-    n_plot_rounds = 0
+    n_plot_rounds = 7
 
     interactive_plot = 1
 
@@ -25,7 +25,7 @@ include("plot_functions.jl")
     interactive_plot_steps = 5
     n_oldTrajPlots = 0
     obstacle_color = "red"
-    file = "data/2017-02-09-15-47-Data.jld"
+    file = "data/2017-02-09-17-57-Data.jld"
     close("all")
 
     ####load data from file
@@ -59,56 +59,27 @@ include("plot_functions.jl")
 
     boundary_color = "black"
     ego_color = "green"
-    colordefs=["#3b44ba",
-            "#c8ce24",
-            "#a756de",
-            "#0ac753",
-            "#ff53c4",
-            "#01c3ba",
-            "#f5218a",
-            "#4cd5ff",
-            "#f74b3a",
-            "#016ed6",
-            "#de8500",
-            "#8a1e95",
-            "#6c4d08",
-            "#aca0ff",
-            "#a2172f",
-            "#abaae1",
-            "#ffb38d",
-            "#83317e",
-            "#9c6f4b",
-            "#ff91d1"]
+    
 
     ################################
     ##this part is to calculate the tracks boundaries and plot them later
     ################################
-    trackL = size(xy_track,2)
-    boundary_up = zeros(2,trackL)
-    boundary_down = zeros(2,trackL)
-    trackCoeff.width = trackCoeff.width+0.2
-    for kkk = 1:1:trackL
-        if 1< kkk < trackL 
-            xt_secant = x_track[kkk+1] - x_track[kkk-1]
-            yt_secant = y_track[kkk+1] - y_track[kkk-1]
-            normVec = [-yt_secant; xt_secant]/norm([-yt_secant; xt_secant])
-            boundary_up[:,kkk] = xy_track[:,kkk] + normVec * trackCoeff.width /2
-            boundary_down[:,kkk] = xy_track[:,kkk] - normVec * trackCoeff.width /2
-        elseif kkk == 1
-            xt_secant = x_track[kkk+1] - x_track[kkk]
-            yt_secant = y_track[kkk+1] - y_track[kkk]
-            normVec = [-yt_secant; xt_secant]/norm([-yt_secant; xt_secant])
-            boundary_up[:,kkk] = xy_track[:,kkk] + normVec * trackCoeff.width /2
-            boundary_down[:,kkk] = xy_track[:,kkk] - normVec * trackCoeff.width /2
-        else
-            xt_secant = x_track[kkk] - x_track[kkk-1]
-            yt_secant = y_track[kkk] - y_track[kkk-1]
-            normVec = [-yt_secant; xt_secant]/norm([-yt_secant; xt_secant])
-            boundary_up[:,kkk] = xy_track[:,kkk] + normVec * trackCoeff.width /2
-            boundary_down[:,kkk] = xy_track[:,kkk] - normVec * trackCoeff.width /2
+    boundary_up, boundary_down, trackL = calc_track_boundaryXY(xy_track, trackCoeff)
+    
+    
+    ################################
+    ##calculate predcted position of the car in XY plane
+    # ################################
+    xy_pred = zeros(mpcParams.N+1,2,size(t)[1],oldTraj.n_oldTraj)
+    obstOrientation = zeros(size(obstacle.xy_vector)[1],size(obstacle.xy_vector)[3],size(obstacle.xy_vector)[4])
+    for k = 1:oldTraj.n_oldTraj
+        for i = 1:oldTraj.oldNIter[k]
+            # caluclate the predicted XY postion of the car from the s-ey values
+            xy_pred[:,:,i,k] = calculatePredictedXY(oldTraj.z_pred_sol[:,:,:,k], mpcParams, trackCoeff, xy_track, convert(Int64,i),k)
+            #calculate the obstacle postion from the s-ey values
+            obstOrientation = calculateObstacleXY!(obstacle, trackCoeff, xy_track,i,k,obstOrientation ) #this funciton computes values for row i
         end
     end
-    obstOrientation = zeros(size(obstacle.xy_vector)[1],size(obstacle.xy_vector)[3],size(obstacle.xy_vector)[4])
     if plot_xy == 1
         f_xy_plot= figure(3)
         f_xy_plot[:canvas][:set_window_title]("Track and cars in XY plane")
@@ -117,7 +88,7 @@ include("plot_functions.jl")
             cartraj_plot = ax10[:plot](1,1)  #just for initialization
             #obsttraj_plot1 = ax10[:plot](1,1)  #just for initialization
             car_plot = ax10[:plot](oldTraj.oldTrajXY[1,1,1], oldTraj.oldTrajXY[1,2,1], color = ego_color) # just dummy to use remove func later
-            pred_plot = ax10[:plot](oldTraj.oldTrajXY[1,1,1,1],oldTraj.oldTrajXY[1,2,1,1],color = "yellow", marker="o")
+            pred_plot = ax10[:plot](oldTraj.oldTrajXY[1,1,1],oldTraj.oldTrajXY[1,2,1],color = "yellow", marker="o")
 
        
             obstacle_plot =Array{PyCall.PyObject}(obstacle.n_obstacle)
@@ -151,19 +122,7 @@ include("plot_functions.jl")
     stop_interactive = false
     for j=newest2plot+n_plot_rounds:-1:newest2plot
 
-        ################################
-        ##calculate predcted position of the car in XY plane
-        # ################################
-        xy_pred = zeros(mpcParams.N+1,2,size(t)[1],oldTraj.n_oldTraj)
         
-        for k = 1:oldTraj.n_oldTraj
-            for i = 1:oldTraj.oldNIter[j]
-                # caluclate the predicted XY postion of the car from the s-ey values
-                xy_pred[:,:,i,k] = calculatePredictedXY(oldTraj.z_pred_sol[:,:,:,k], mpcParams, trackCoeff, xy_track, convert(Int64,i),k)
-                #calculate the obstacle postion from the s-ey values
-                obstOrientation = calculateObstacleXY!(obstacle, trackCoeff, xy_track,i,k,obstOrientation ) #this funciton computes values for row i
-            end
-        end
 
         if j == newest2plot+n_plot_rounds-1
             lastj_plot = ax10[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[j+1],1,j+1], oldTraj.oldTrajXY[1:oldTraj.oldNIter[j+1],2,j+1], color = ego_color, linewidth = 0.7, linestyle = ":") 

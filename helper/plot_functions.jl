@@ -1,3 +1,139 @@
+function calc_track_boundaryXY(xy_track::Array{Float64}, trackCoeff)
+    trackL = size(xy_track,2)
+    boundary_up = zeros(2,trackL)
+    boundary_down = zeros(2,trackL)
+    trackCoeff.width = trackCoeff.width+0.2 # for plotting add real boundary
+    for kkk = 1:1:trackL
+        if 1< kkk < trackL 
+            xt_secant = x_track[kkk+1] - x_track[kkk-1]
+            yt_secant = y_track[kkk+1] - y_track[kkk-1]
+            normVec = [-yt_secant; xt_secant]/norm([-yt_secant; xt_secant])
+            boundary_up[:,kkk] = xy_track[:,kkk] + normVec * trackCoeff.width /2
+            boundary_down[:,kkk] = xy_track[:,kkk] - normVec * trackCoeff.width /2
+        elseif kkk == 1
+            xt_secant = x_track[kkk+1] - x_track[kkk]
+            yt_secant = y_track[kkk+1] - y_track[kkk]
+            normVec = [-yt_secant; xt_secant]/norm([-yt_secant; xt_secant])
+            boundary_up[:,kkk] = xy_track[:,kkk] + normVec * trackCoeff.width /2
+            boundary_down[:,kkk] = xy_track[:,kkk] - normVec * trackCoeff.width /2
+        else
+            xt_secant = x_track[kkk] - x_track[kkk-1]
+            yt_secant = y_track[kkk] - y_track[kkk-1]
+            normVec = [-yt_secant; xt_secant]/norm([-yt_secant; xt_secant])
+            boundary_up[:,kkk] = xy_track[:,kkk] + normVec * trackCoeff.width /2
+            boundary_down[:,kkk] = xy_track[:,kkk] - normVec * trackCoeff.width /2
+        end
+    end
+    return boundary_up, boundary_down, trackL
+end
+
+
+function drawCar(ax,pos::Array{Float64},mycolor::String="black")
+
+    x = pos[1]
+    y = pos[2]
+    psi = pos[3]
+
+    pos = [x;y]
+
+    # define car geometry
+    length = 36 / 100.0
+    width = 18.0 / 100.0
+    btmLeft_vortex = pos + [-length/2,-width/2]
+
+    # define window geometry
+    window_length = 10.0/100.0
+    window_width = 10.0 / 100.0
+    window_distance = 6.0 / 100.0 #from c.g. 
+    windowLeft_vortex = pos + [window_distance,-window_width/2]
+
+    # define tire geometry
+    tire_width = 1.0/100.0
+    tire_length = 5.0/100.0
+    tire_distance = 8.0/100.0
+
+    # define non-rotated patches that make up the car's top-view
+    car = patches.Rectangle(btmLeft_vortex,length,width,facecolor=mycolor, linewidth=3.0,edgecolor="black",zorder=4)
+    window = patches.Rectangle(windowLeft_vortex,window_length,window_width,fill=false, linewidth=3.0,edgecolor="black",zorder=4)
+    tl = patches.Rectangle(pos + [-tire_distance-tire_length,width/2],tire_length,tire_width,color="black",zorder=4)
+    tr = patches.Rectangle(pos + [tire_distance,width/2],tire_length,tire_width,color="black",zorder=4)
+    bl = patches.Rectangle(pos + [-tire_distance-tire_length,-width/2-tire_width],tire_length,tire_width,color="black",zorder=4)
+    br = patches.Rectangle(pos + [tire_distance,-width/2-tire_width],tire_length,tire_width,color="black",zorder=4)
+
+    car_patches = [car,window,tl,tr,bl,br]
+    # define a rotation transformation and a transformation from data c.s. to display c.s.
+    t1 = mpl.transforms[:Affine2D]()
+    t1[:rotate_deg_around](pos[1],pos[2], psi)
+    t2 = ax[:transData]
+    # combine transformations
+    t3 = t1[:__add__](t2)
+
+    # apply rotation transformation and add rotated patch to axis
+    for p in car_patches
+        p[:set_transform](t3)
+    end
+
+    return car_patches    
+end
+
+function updateCarParts(ax,patches,pos::Array{Float64})
+    # [car,window,tl,tr,bl,br]
+
+    car = patches[1]
+    window = patches[2]
+    tl = patches[3]
+    tr = patches[4]
+    bl = patches[5]
+    br = patches[6]
+
+    x = pos[1]
+    y = pos[2]
+    psi = pos[3]
+    pos = [x;y]
+
+
+    # define car geometry
+    length = 36.5 / 100.0
+    width = 18.0 / 100.0
+    btmLeft_vortex = pos + [-length/2,-width/2]
+
+    # define window geometry
+    window_length = 10.0/100.0
+    window_width = 10.0 / 100.0
+    window_distance = 6.0 / 100.0 #from c.g. 
+    windowLeft_vortex = pos + [window_distance,-window_width/2]
+
+    # define tire geometry
+    tire_width = 1.0/100.0
+    tire_length = 5.0/100.0
+    tire_distance = 8.0/100.0
+
+    # set 
+    car[:set_xy](btmLeft_vortex)
+    window[:set_xy](windowLeft_vortex)
+    tl[:set_xy](pos + [-tire_distance-tire_length,width/2])
+    tr[:set_xy](pos + [tire_distance,width/2])
+    bl[:set_xy](pos + [-tire_distance-tire_length,-width/2-tire_width])
+    br[:set_xy](pos + [tire_distance,-width/2-tire_width])
+    # define a rotation transformation and a transformation from data c.s. to display c.s.
+    t1 = mpl.transforms[:Affine2D]()
+    t1[:rotate_deg_around](x,y, psi)
+    t2 = ax[:transData]
+    # combine transformations
+    t3 = t1[:__add__](t2)
+
+    # apply rotation transformation and add rotated patch to axis
+    for p in patches
+        p[:set_transform](t3)
+    end
+    return patches
+end
+
+
+
+
+
+
 function plotfct_states_over_t(oldTraj, t, j)
     fig_1 = figure(1)
     fig_1[:canvas][:set_window_title]("States and Inputs over t")
@@ -228,6 +364,26 @@ end
 
 
 function plotfct_copied(oldTraj,j)
+    colordefs=["#3b44ba",
+            "#c8ce24",
+            "#a756de",
+            "#0ac753",
+            "#ff53c4",
+            "#01c3ba",
+            "#f5218a",
+            "#4cd5ff",
+            "#f74b3a",
+            "#016ed6",
+            "#de8500",
+            "#8a1e95",
+            "#6c4d08",
+            "#aca0ff",
+            "#a2172f",
+            "#abaae1",
+            "#ffb38d",
+            "#83317e",
+            "#9c6f4b",
+            "#ff91d1"]
     f_copied_plot= figure(9)
     f_copied_plot[:canvas][:set_window_title]("Copied s over current s")
     axCopied = subplot(1,1,1)
