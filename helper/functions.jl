@@ -162,8 +162,8 @@ function InitializeParameters(mpcParams::classes.MpcParams,trackCoeff::classes.T
     obstacle.s_obstacle = zeros(buffersize,oldTraj.n_oldTraj,obstacle.n_obstacle)
     obstacle.sy_obstacle = zeros(buffersize,oldTraj.n_oldTraj,obstacle.n_obstacle)
     obstacle.v = zeros(buffersize, oldTraj.n_oldTraj,obstacle.n_obstacle)
-    obstacle.rs = 0.4
-    obstacle.ry = 0.19
+    obstacle.rs = 0.5
+    obstacle.ry = 0.21
     obstacle.xy_vector   = zeros(buffersize,2,oldTraj.n_oldTraj,obstacle.n_obstacle)
     obstacle.axis_y_up   = zeros(buffersize,2,oldTraj.n_oldTraj,obstacle.n_obstacle)
     obstacle.axis_y_down = zeros(buffersize,2,oldTraj.n_oldTraj,obstacle.n_obstacle)

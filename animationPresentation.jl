@@ -15,8 +15,9 @@ include("helper/colorModule.jl")
 
 
 file = "data/2017-01-29-14-24-Data.jld"
-global j  = 1
-global l  = 1
+# global j  = 1
+j=1
+# global l  = 1
 obstacle_color = "red"
 boundary_color = "black"
 ego_color = "green"
@@ -45,7 +46,6 @@ dt = modelParams.dt
 xy_track  = [x_track; y_track]
 t   = collect(0:dt:(buffersize-1)*dt)
 trackLength = (size(x_track)[2]-1)*trackCoeff.ds
-
 
 
 
@@ -88,8 +88,8 @@ ax2[:set_ylabel](L"s",fontsize=20)
 ax2[:set_xlim](0, trackLength)
 ax2[:set_ylim](0, trackLength)
 grid()#
-
-
+# fig[:subplots_adjust](hspace=.5)
+tight_layout()
 ###########################
 #x-y plot
 ###########################
@@ -111,12 +111,16 @@ for ii = 1:obstacle.n_obstacle
     plt_obst[ii] = ax1[:add_patch](obst_patch[ii])
 end
 
-carParts=drawCar(ax1,[0.0,0.0,0.0], "green")
+carParts=drawCar(ax1,[0.0,0.0,0.0], ego_color)
 for p in carParts
                 ax1[:add_patch](p)
 end
-
+car_plot = ax1[:plot]([],[], color = ego_color)[1]
 pred_plot = ax1[:plot]([],[],color = "yellow", marker="o")[1]#(oldTraj.oldTrajXY[1,1,j],oldTraj.oldTrajXY[1,2,j],color = "yellow", marker="o")
+
+
+
+lastj_plot = ax1[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[j+1],1,j+1], oldTraj.oldTrajXY[1:oldTraj.oldNIter[j+1],2,j+1], color = ego_color, linewidth = 0.7, linestyle = ":")
 ####################
 #copied-plot
 ####################
@@ -148,7 +152,7 @@ for i=1:oldTraj.oldNIter[j]-1
 end
 for i=1:oldTraj.oldNIter[j]-1
     if oldTraj.copyInfo[i,4,j]>0.6 # if lambda of copied traj is greater 0.1 -> if traj s used for solving.
-        ax2[:scatter](oldTraj.copyInfo[i,3,j],oldTraj.copyInfo[i,2,j], color = colordefs[convert(Int64,oldTraj.copyInfo[i,1,j])],edgecolor="black",lw =0.5)
+        ax2[:scatter](oldTraj.copyInfo[i,3,j],oldTraj.copyInfo[i,2,j], color = "blue",edgecolor="black",lw =0.5) #color = colordefs[convert(Int64,oldTraj.copyInfo[i,1,j])]
     end
 end
 ####################
@@ -162,7 +166,7 @@ end
 #obstacle cost plot
 ####################
 # ax4[:plot](oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.costs[2,1:oldTraj.oldNIter[j]-1,j])  
-s_curr_copied= ax2[:plot]([],[], color ="black")[1]
+s_curr_copied = ax2[:plot]([],[], color ="black")[1]
 # ax4[:set_ylabel](L"cost_{term}",fontsize=20)
 
 ####################
@@ -209,6 +213,11 @@ function animate(frame)
 #     #update axis of x-y plot every time step
 #     ax1[:set_xlim](xy_pred[6,1,k,j]-2, xy_pred[6,1,k,j]+2)
 #     ax1[:set_ylim](xy_pred[6,2,k,j]-2, xy_pred[6,2,k,j]+2)
+
+
+    car_plot[:set_data](oldTraj.oldTrajXY[1:k,1,j], oldTraj.oldTrajXY[1:k,2,j])
+
+    #plot patches for current car position
     pos =[oldTraj.oldTrajXY[k,1,j],oldTraj.oldTrajXY[k,2,j], oldTraj.oldTrajXY[k,5,j]*180/pi]
     updateCarParts(ax1,carParts,pos)
 
@@ -230,7 +239,7 @@ end
 
 # anim = animation.FuncAnimation(fig, animate,frames=oldTraj.oldNIter[j]+oldTraj.oldNIter[j-1]+start_offset-1, interval=1,repeat=false )
 # oldTraj.oldNIter[j]
-anim = animation.FuncAnimation(fig, animate,frames=oldTraj.oldNIter[j], interval=100,repeat=false)#, blit=true)
+anim = animation.FuncAnimation(fig, animate,frames=oldTraj.oldNIter[j], interval=10,repeat=false)#, blit=true)
 # to save video: you need encoder and writer, for ubuntu it should work if you do: sudo apt-get install ffmpeg
 # FFwriter = animation.FFMpegWriter( fps=8, bitrate=-1, extra_args=["-vcodec", "libx264","-pix_fmt","yuv420p"])   #(fps=10,bitrate=3000,extra_args=["-vcodec", "libx264","-pix_fmt","yuv420p"])
 # anim[:save]("basic_animation.mp4", writer = FFwriter)

@@ -30,10 +30,17 @@ function deleteInfeasibleTrajectories!(m::initLearningModel,oldTraj,distance2obs
                 # meter2collision = (premeter2collision - (kk-1)*v_ego*dt)
                 # t2collision = (meter2collision/v_diff +(kk-1)*dt)/safety_factor
                 # meter2collision = (premeter2collision - (kk-1)*obstacle.v[i,k]*dt)
+                
 
                 t2collision = (distance2obst/v_diff)/courage_factor
-                if distance2obst < 0 # trajectories should always be excluded if we are currently next to the obstacle if both the distance and v_diff are negativ the time2collision might become a big number
-                    t2collision =0.0
+                if v_diff < 0 && distance2obst > 0.0 # if the obstacle is faster than the ego vehicle and the ego vehicle is still behind the obstacle
+                    t2collision = 100.0
+                    # println("ego vehicle is slower. s =  $(zCurr_s[i,1])")
+                    break
+                end
+                if distance2obst <= 0 # trajectories should always be excluded if we are currently next to the obstacle if both the distance and v_diff are negativ the time2collision might become a big number
+                    # println("ego vehicle is next to obst. s =  $(zCurr_s[i,1])")
+                    t2collision = 0.0
                 end
                 if ((oldTraj.oldTraj[ii,1,k]-close_pred_obst[kk,1])/obstacle.rs )^2 + ( (oldTraj.oldTraj[ii,2,k]-close_pred_obst[kk,2])/obstacle.ry )^2 <= 1 && t2collision<=1.0
                   
