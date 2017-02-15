@@ -1,4 +1,7 @@
 .DS_Stored
 data/
 Test_classes/
+PrintFig.jl
+plotsMA.jl
+plotsTRACK.jl
 *.orig
