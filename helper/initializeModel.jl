@@ -300,7 +300,7 @@ type initLearningModel
         @NLexpression(mdl, costZ, Q_cost*sum(1 for i=1:N+1))
 
         ## Cost to avoid obstacle. increases when car is near obstacle currently implemented as : a *1/(0.1+cost)
-        @NLexpression(mdl, costObstacle, sum(((N+1.2-0.2*i)/(N+1))*(Q_obstacleNumer*1/(0.01+(Q_obstacle* (( (z_Ol[i,1]-sCoord_obst[i,1])/rs )^2 + ( (z_Ol[i,2]-sCoord_obst[i,2])/ry) ^2 - 1))^4)+
+        @NLexpression(mdl, costObstacle, sum(((N+1.0-0.0*i)/(N+1))*(Q_obstacleNumer*1/(0.01+(Q_obstacle* (( (z_Ol[i,1]-sCoord_obst[i,1])/rs )^2 + ( (z_Ol[i,2]-sCoord_obst[i,2])/ry) ^2 - 1))^4)+
                                              Q_obstacleNumer*3/(0.01+0.6*(((z_Ol[i,1]-sCoord_obst[i,1])/rs)^2+((z_Ol[i,2]-sCoord_obst[i,2])/ry)^2))) for i=1:N+1))
        
         @NLobjective(mdl, Min, costZ + costZTerm + constZTerm + derivCost + controlCost + laneCost+ velocityCost + costObstacle)

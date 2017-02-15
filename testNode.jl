@@ -55,16 +55,16 @@
 
 
     load_safeset = true#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
-    safeset = "data/2017-02-10-15-13-Data.jld"
-    n_rounds = 10
+    safeset = "data/2017-02-14-20-42-Data.jld"
+    n_rounds = 18
     active_obstacle = true
     continue_obstacle = false
      
 
     obstacle.n_obstacle = 8
-    s_obst_init=[2.5, 10, 17.5, 25, 32.5, 40, 47.5, 55]#[3, 10, 17, 24, 31, 38, 48]#[4, 11, 18, 25, 32, 39, 49] # [4, 13, 22, 31, 40, 49, 58] #
-    sy_obst_init = -0.0*ones(obstacle.n_obstacle)
-    v_obst_init = 1.6*ones(obstacle.n_obstacle) #1.8#1.5#1.5##1.8
+    s_obst_init=[3, 9, 15, 21, 27, 32, 39, 47]#[3, 9, 15, 21, 25, 32, 39, 45]#[2.5, 10, 17.5, 25, 32.5, 40, 47.5, 55]#[3, 10, 17, 24, 31, 38, 48]#[4, 11, 18, 25, 32, 39, 49] # [4, 13, 22, 31, 40, 49, 58] #
+    sy_obst_init = -0.22*ones(obstacle.n_obstacle)
+    v_obst_init = 1.7*ones(obstacle.n_obstacle) #1.8#1.5#1.5##1.8
 
     
 

@@ -9,23 +9,23 @@ include("plot_functions.jl")
 
 #function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
     newest2plot = 1
-    n_plot_rounds = 1
+    n_plot_rounds = 17
 
     interactive_plot = 1
 
-    plot_costs = 1
+    plot_costs = 0
     plot_states_over_t = 0
     plot_xy = 1
-    plot_lambda = 1
+    plot_lambda = 0
     plot_states_over_s = 1
     plot_curvature_approx=0
     plot_inputs = 0
     plot_eps = 0
     plot_copied = 1
     interactive_plot_steps = 5
-    n_oldTrajPlots = 5
+    n_oldTrajPlots = 0
     obstacle_color = "red"
-    file = "data/2017-02-10-17-55-Data.jld"
+    file = "data/2017-02-14-21-18-Data.jld"#"data/2017-02-12-21-52-Data.jld"
     close("all")
 
     ####load data from file
@@ -115,7 +115,7 @@ include("plot_functions.jl")
         for l=1:convert(Int64,trunc(trackL/51))
             ax10[:plot]([boundary_down[1,l*50+1],boundary_up[1,l*50+1]],[boundary_down[2,l*50+1],boundary_up[2,l*50+1]], color = "black", linestyle = ":", linewidth = 0.5)
             boundvec = [boundary_up[1,l*50+1]-boundary_down[1,l*50+1];boundary_up[2,l*50+1]-boundary_down[2,l*50+1]]
-            ax10[:text](boundary_down[1,l*50+1]+1.85*boundvec[1],boundary_down[2,l*50+1]+1.85*boundvec[2],"s = $(convert(Int64,l*50*ds))",fontsize=8)
+            ax10[:text](boundary_down[1,l*50+1]+1.85*boundvec[1],boundary_down[2,l*50+1]+1.85*boundvec[2],"$(convert(Int64,l*50*ds))",fontsize=8)
         end
     end
     lastj_plot = ax10[:plot](1,1) 

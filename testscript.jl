@@ -1,3 +1,5 @@
+
+# savefig("foo.png", bbox_inches="tight", dpi = 300)
 using PyCall
 using PyPlot
 using JLD

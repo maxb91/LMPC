@@ -71,7 +71,7 @@ function addOldtoNewPos(oldTraj, distance2obst::Float64, obstacle, iter::Int64, 
     v_ego = zCurr_s[iter,4]
     N_points        = size(oldTraj.oldTraj,1) 
 
-    eps0 = 0.1 #tol distance
+    eps0 = 0.05 #tol distance
     eps1 = 0.3 #tol v_obst
     eps2 = 0.01 #tol e_y
     eps3 = 0.1#tol curvature

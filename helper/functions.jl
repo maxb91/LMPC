@@ -69,21 +69,39 @@ function saveOldTraj(oldTraj,zCurr::Array{Float64}, zCurr_x::Array{Float64},uCur
             oldTraj.curvature[:,k+1] = oldTraj.curvature[:,k]
             oldTraj.copyInfo[:,:,k+1] = oldTraj.copyInfo[:,:,k]
         end
-        oldTraj.oldTraj[:,:,1]  = zCurr_export                 # ... and write the new traj in the first
-        oldTraj.oldInput[:,:,1] = uCurr_export
-        oldTraj.oldTrajXY[1:size(zCurr_x)[1],:,1] = zCurr_x
-        oldTraj.oldNIter[1] = costLap
-        
-        oldTraj.costs[:,:,1] = costs
-        oldTraj.lambda_sol[:,:,1] = lambda_log
-        oldTraj.z_pred_sol[:,:,:,1] = z_pred_log
-        oldTraj.u_pred_sol[:,:,:,1] = u_pred_log
-        oldTraj.ssInfOn_sol[:,:,1]= ssInfOn_log
-        oldTraj.eps[:,:,1] = mpcSol.eps
-        oldTraj.cost2Target[:,1] = cost2target
-        oldTraj.distance2obst[:,1,:] = distance2obst
-        oldTraj.curvature[:,1] = curvature_curr
-        oldTraj.copyInfo[:,:,1] = copyInfo
+        if costLap > 40
+            oldTraj.oldTraj[:,:,1]  = zCurr_export                 # ... and write the new traj in the first
+            oldTraj.oldInput[:,:,1] = uCurr_export
+            oldTraj.oldTrajXY[1:size(zCurr_x)[1],:,1] = zCurr_x
+            oldTraj.oldNIter[1] = costLap
+            
+            oldTraj.costs[:,:,1] = costs
+            oldTraj.lambda_sol[:,:,1] = lambda_log
+            oldTraj.z_pred_sol[:,:,:,1] = z_pred_log
+            oldTraj.u_pred_sol[:,:,:,1] = u_pred_log
+            oldTraj.ssInfOn_sol[:,:,1]= ssInfOn_log
+            oldTraj.eps[:,:,1] = mpcSol.eps
+            oldTraj.cost2Target[:,1] = cost2target
+            oldTraj.distance2obst[:,1,:] = distance2obst
+            oldTraj.curvature[:,1] = curvature_curr
+            oldTraj.copyInfo[:,:,1] = copyInfo
+        else # if cost are unrealisticaly low dont copy round
+            warn("trajectory apparently erroneous, copy path folowing instead")
+            oldTraj.oldTraj[:,:,1]  = oldTraj.oldTraj[:,:,18]    # ... copy the first in the second
+            oldTraj.oldInput[:,:,1] = oldTraj.oldInput[:,:,18]   # ... same for the input
+            oldTraj.oldTrajXY[:,:,1]  = oldTraj.oldTrajXY[:,:,18]   
+            oldTraj.oldNIter[1] = oldTraj.oldNIter[18]
+            oldTraj.costs[:,:,1] = oldTraj.costs[:,:,18]
+            oldTraj.lambda_sol[:,:,1] = oldTraj.lambda_sol[:,:,18]
+            oldTraj.z_pred_sol[:,:,:,1] = oldTraj.z_pred_sol[:,:,:,18]
+            oldTraj.u_pred_sol[:,:,:,1] = oldTraj.u_pred_sol[:,:,:,18]
+            oldTraj.ssInfOn_sol[:,:,1]= oldTraj.ssInfOn_sol[:,:,18]
+            oldTraj.eps[:,:,1] = oldTraj.eps[:,:,18]
+            oldTraj.cost2Target[:,1] = oldTraj.cost2Target[:,18]
+            oldTraj.distance2obst[:,1,:] = oldTraj.distance2obst[:,18,:]
+            oldTraj.curvature[:,1] = oldTraj.curvature[:,18]
+            oldTraj.copyInfo[:,:,1] = oldTraj.copyInfo[:,:,18]
+        end
 
     end
     
