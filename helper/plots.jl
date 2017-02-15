@@ -25,7 +25,7 @@ include("plot_functions.jl")
     interactive_plot_steps = 5
     n_oldTrajPlots = 0
     obstacle_color = "red"
-    file = "data/2017-02-14-21-18-Data.jld"#"data/2017-02-12-21-52-Data.jld"
+    file = "data/2017-02-14-21-52-Data.jld"#"data/2017-02-12-21-52-Data.jld"
     close("all")
 
     ####load data from file

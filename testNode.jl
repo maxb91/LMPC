@@ -55,7 +55,7 @@
 
 
     load_safeset = true#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
-    safeset = "data/2017-02-14-20-42-Data.jld"
+    safeset = "data/2017-02-14-22-21-Data.jld"
     n_rounds = 18
     active_obstacle = true
     continue_obstacle = false
@@ -224,16 +224,17 @@
             distance2obst[i,:] = (pred_obst[1,1,:]-obstacle.rs) - posInfo.s
             ind_closest_obst = findmin(abs(distance2obst[i,:]))[2]
             ##################
-            
+            tic()
             if j > 1 || load_safeset == true
-                tic()
+                
                 copyInfo[i,:] = addOldtoNewPos(oldTraj, distance2obst[i,ind_closest_obst],obstacle,i,pred_obst[:,:,ind_closest_obst], mpcParams,zCurr_s,modelParams.dt,mpcCoeff)
                 deleteInfeasibleTrajectories!(mdl_LMPC, oldTraj,distance2obst[i,ind_closest_obst],obstacle, pred_obst[:,:,ind_closest_obst], i, zCurr_s,modelParams.dt)
 		        
-                tt1[i] = toq()
+                
                 #println(" time to add/remove traj $(tt1[i])")
                 coeffConstraintCost!(oldTraj,mpcCoeff,posInfo,mpcParams,i)
             end
+            tt1[i] = toq()
             tic()
 
             #####warm start
@@ -300,7 +301,7 @@
             end
             # if tt[i] >0.08 #if solving takes long
             #     println(" Time: $(tt[i]) s, Solving step $i of $(length(t)) - Status: $(mpcSol.solverStatus)")
-            #     println(" Time: $(tt2) s for the whole step of the loop ")
+            #     println(" Time: $(tt_total[i]) s for the whole step of the loop ")
             #     println("                           ")
             # end
             # @show mpcSol.solverStatus
@@ -335,6 +336,10 @@
         print_with_color(:grey,"Max time to delete/add traj:")
         print_del_time = formatFloat!(maximum(tt1),3)
         print_with_color(:red," $print_del_time\n")
+
+        print_with_color(:grey,"Max time to solve:")
+        print_solve_time= formatFloat!(maximum(tt),3)
+        print_with_color(:red," $print_solve_time\n")
 
         print_with_color(:grey,"Max time for calc of one loop")
         print_max_time = formatFloat!(maximum(tt_total),3)
