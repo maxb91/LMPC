@@ -55,10 +55,10 @@
 
 
     load_safeset = true#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
-    safeset = "data/2017-02-14-22-21-Data.jld"
-    n_rounds = 18
+    safeset = "data/2017-02-10-16-00-Data.jld"
+    n_rounds = 1
     active_obstacle = true
-    continue_obstacle = false
+    continue_obstacle = true
      
 
     obstacle.n_obstacle = 8
@@ -73,7 +73,7 @@
     #########
 
     posInfo.s_start             = 0.0 #does not get changed with the current version
-    posInfo.s_target            = (size(x_track)[2]-1)*trackCoeff.ds#59.5 #has to be fitted to track , current test track form ugo has 113.2 meters
+    @show posInfo.s_target            = (size(x_track)[2]-1)*trackCoeff.ds#59.5 #has to be fitted to track , current test track form ugo has 113.2 meters
     
     #####################################
     println("Initialize Model........")
@@ -226,7 +226,6 @@
             ##################
             tic()
             if j > 1 || load_safeset == true
-                
                 copyInfo[i,:] = addOldtoNewPos(oldTraj, distance2obst[i,ind_closest_obst],obstacle,i,pred_obst[:,:,ind_closest_obst], mpcParams,zCurr_s,modelParams.dt,mpcCoeff)
                 deleteInfeasibleTrajectories!(mdl_LMPC, oldTraj,distance2obst[i,ind_closest_obst],obstacle, pred_obst[:,:,ind_closest_obst], i, zCurr_s,modelParams.dt)
 		        

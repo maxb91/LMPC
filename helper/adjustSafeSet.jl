@@ -7,7 +7,7 @@ function deleteInfeasibleTrajectories!(m::initLearningModel,oldTraj,distance2obs
 
     index_first = Array{Int64}(oldTraj.n_oldTraj)
     index_last = Array{Int64}(oldTraj.n_oldTraj)
-    if (distance2obst < 2.2 && distance2obst > - 2*obstacle.rs)#if our car is closer than one meter to obstacle and not fully after it
+    if (distance2obst < 2.0 && distance2obst > - 2*obstacle.rs)#if our car is closer than one meter to obstacle and not fully after it
         for k =1:oldTraj.n_oldTraj
             index_first[k]  = findfirst(x -> x > posInfo.s, oldTraj.oldTraj[:,1,k])
             index_last[k] = findfirst(y -> y > close_pred_obst[end,1]+obstacle.rs, oldTraj.oldTraj[:,1,k])
@@ -36,7 +36,6 @@ function deleteInfeasibleTrajectories!(m::initLearningModel,oldTraj,distance2obs
                 if v_diff < 0 && distance2obst > 0.0 # if the obstacle is faster than the ego vehicle and the ego vehicle is still behind the obstacle
                     t2collision = 100.0
                     # println("ego vehicle is slower. s =  $(zCurr_s[i,1])")
-                    break
                 end
                 if distance2obst <= 0 # trajectories should always be excluded if we are currently next to the obstacle if both the distance and v_diff are negativ the time2collision might become a big number
                     # println("ego vehicle is next to obst. s =  $(zCurr_s[i,1])")
@@ -100,7 +99,7 @@ function addOldtoNewPos(oldTraj, distance2obst::Float64, obstacle, iter::Int64, 
                     # plot(plot_old_s,plot_old, color = "red")
                      #######end test
 
-    if distance2obst < 2.2 && distance2obst > - 2*obstacle.rs
+    if distance2obst < 2.0 && distance2obst > - 2*obstacle.rs
         for k =1:oldTraj.n_oldTraj-2 #do not search last trajectory as it to be replaced. do not search second last as it contains path following round
             for i = 1:oldTraj.oldNIter[k], l = 1:obstacle.n_obstacle
                 if distance2obst <= oldTraj.distance2obst[i,k,l] + eps0 && distance2obst >= oldTraj.distance2obst[i,k,l] - eps0
