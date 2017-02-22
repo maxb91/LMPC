@@ -44,10 +44,10 @@ obstacle2 = Data2["obstacle"]
 println("Number of simulated rounds in data: $(oldTraj.n_oldTraj)")
 println("Load File located in: $file")
 
-obstacle.rs = 0.2
-obstacle.ry = 0.1
-obstacle2.rs = 0.2
-obstacle2.ry = 0.1
+obstacle.rs = 0.3
+obstacle.ry = 0.11
+obstacle2.rs = 0.3
+obstacle2.ry = 0.11
 
 ds = trackCoeff.ds
 dt = modelParams.dt
@@ -135,7 +135,7 @@ ax1[:plot](x_track',y_track', linestyle = (0, (4.0, 8.0)), color = color=boundar
 ax1[:plot](boundary_up[1,:], boundary_up[2,:],color=boundary_color, linewidth = 0.7)#,linestyle=":")
 ax1[:plot](boundary_down[1,:], boundary_down[2,:],color=boundary_color, linewidth = 0.7)#,linestyle=":")
 for l=1:convert(Int64,trunc(trackL/51))
-    ax1[:plot]([boundary_down[1,l*50+1],boundary_up[1,l*50+1]],[boundary_down[2,l*50+1],boundary_up[2,l*50+1]], color = "black", linestyle = ":", linewidth = 0.5)
+    ax1[:plot]([boundary_down[1,l*50+1],boundary_up[1,l*50+1]],[boundary_down[2,l*50+1],boundary_up[2,l*50+1]], color = "black", linestyle = "--", linewidth = 2.0)
     boundvec = [boundary_up[1,l*50+1]-boundary_down[1,l*50+1];boundary_up[2,l*50+1]-boundary_down[2,l*50+1]]
     ax1[:text](boundary_down[1,l*50+1]+1.85*boundvec[1],boundary_down[2,l*50+1]+1.85*boundvec[2],"$(convert(Int64,l*50*ds))",fontsize=20,clip_on = true)
 end
@@ -145,7 +145,7 @@ end
 obst_patch =Array{PyCall.PyObject}(obstacle.n_obstacle)
 plt_obst =Array{PyCall.PyObject}(obstacle.n_obstacle)
 for ii = 1:obstacle.n_obstacle
-    obst_patch[ii] = patches.Ellipse([obstacle.xy_vector[1,1,j,ii],obstacle.xy_vector[1,2,j,ii]],2*obstacle.rs,2*obstacle.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation[1,j,ii]*180/pi)
+    obst_patch[ii] = patches.Ellipse([obstacle.xy_vector[1,1,j,ii],obstacle.xy_vector[1,2,j,ii]],2*obstacle.rs,2*obstacle.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation[1,j,ii]*180/pi, linewidth =2.0)
     plt_obst[ii] = ax1[:add_patch](obst_patch[ii])
 end
 
@@ -153,8 +153,8 @@ carParts=drawCar(ax1,[oldTraj.oldTrajXY[2,1,j],oldTraj.oldTrajXY[2,2,j],oldTraj.
 for p in carParts
                 ax1[:add_patch](p)
 end
-car_plot = ax1[:plot]([],[], color = ego_color,linestyle = ":")[1]
-pred_plot = ax1[:plot](xy_pred[:,1,2,j],xy_pred[:,2,2,j],color = "yellow", marker="o")[1]#(oldTraj.oldTrajXY[1,1,j],oldTraj.oldTrajXY[1,2,j],color = "yellow", marker="o")
+car_plot = ax1[:plot]([],[], color = ego_color,linewidth =2, linestyle = "--")[1]
+pred_plot = ax1[:plot](xy_pred[:,1,2,j],xy_pred[:,2,2,j],color = "yellow", marker="o", markersize = 8)[1]#(oldTraj.oldTrajXY[1,1,j],oldTraj.oldTrajXY[1,2,j],color = "yellow", marker="o")
 
 
 # last trajectory in xy plot
@@ -193,7 +193,7 @@ pred_plot = ax1[:plot](xy_pred[:,1,2,j],xy_pred[:,2,2,j],color = "yellow", marke
     # end
     for i=1:oldTraj2.oldNIter[j]-1
         if oldTraj2.copyInfo[i,4,j]>0.6 # if lambda of copied traj is greater 0.1 -> if traj s used for solving.
-            ax3[:scatter](oldTraj2.copyInfo[i,3,j],1, color = "blue",edgecolor="black",lw =0.5) #color = colordefs[convert(Int64,oldTraj.copyInfo[i,1,j])]
+            ax3[:scatter](oldTraj2.copyInfo[i,3,j],1, color = "blue",edgecolor="black",lw =0.5, s = 50) #color = colordefs[convert(Int64,oldTraj.copyInfo[i,1,j])]
         end
     end
     s_curr_copied = ax3[:plot]([],[], color ="black")[1]
@@ -214,7 +214,7 @@ ax2[:plot](x_track',y_track', linestyle = (0, (4.0, 8.0)), color = color=boundar
 ax2[:plot](boundary_up[1,:], boundary_up[2,:],color=boundary_color, linewidth = 0.7)#,linestyle=":")
 ax2[:plot](boundary_down[1,:], boundary_down[2,:],color=boundary_color, linewidth = 0.7)#,linestyle=":")
 for l=1:convert(Int64,trunc(trackL/51))
-    ax2[:plot]([boundary_down[1,l*50+1],boundary_up[1,l*50+1]],[boundary_down[2,l*50+1],boundary_up[2,l*50+1]], color = "black", linestyle = ":", linewidth = 0.5)
+    ax2[:plot]([boundary_down[1,l*50+1],boundary_up[1,l*50+1]],[boundary_down[2,l*50+1],boundary_up[2,l*50+1]], color = "black", linestyle = "--", linewidth =2.0)
     boundvec = [boundary_up[1,l*50+1]-boundary_down[1,l*50+1];boundary_up[2,l*50+1]-boundary_down[2,l*50+1]]
     ax2[:text](boundary_down[1,l*50+1]+1.85*boundvec[1],boundary_down[2,l*50+1]+1.85*boundvec[2],"$(convert(Int64,l*50*ds))",fontsize=20,clip_on = true)
 end
@@ -224,7 +224,7 @@ end
 obst_patch2 =Array{PyCall.PyObject}(obstacle2.n_obstacle)
 plt_obst2 =Array{PyCall.PyObject}(obstacle2.n_obstacle)
 for ii = 1:obstacle2.n_obstacle
-    obst_patch2[ii] = patches.Ellipse([obstacle2.xy_vector[1,1,jj,ii],obstacle2.xy_vector[1,2,jj,ii]],2*obstacle2.rs,2*obstacle2.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation2[1,jj,ii]*180/pi)
+    obst_patch2[ii] = patches.Ellipse([obstacle2.xy_vector[1,1,jj,ii],obstacle2.xy_vector[1,2,jj,ii]],2*obstacle2.rs,2*obstacle2.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation2[1,jj,ii]*180/pi, linewidth =2.0)
     plt_obst2[ii] = ax2[:add_patch](obst_patch2[ii])
 end
 
@@ -232,8 +232,8 @@ carParts2=drawCar(ax2,[oldTraj2.oldTrajXY[2,1,jj],oldTraj2.oldTrajXY[2,2,jj],old
 for p in carParts2
                 ax2[:add_patch](p)
 end
-car_plot2 = ax2[:plot]([],[], color = ego_color,linestyle = ":")[1]
-pred_plot2 = ax2[:plot](xy_pred2[:,1,2,jj],xy_pred2[:,2,2,jj],color = "yellow", marker="o")[1]#(oldTraj.oldTrajXY[1,1,j],oldTraj.oldTrajXY[1,2,j],color = "yellow", marker="o")
+car_plot2 = ax2[:plot]([],[], color = ego_color, linewidth =2.0, linestyle = "--")[1]
+pred_plot2 = ax2[:plot](xy_pred2[:,1,2,jj],xy_pred2[:,2,2,jj],color = "yellow", marker="o", markersize = 8)[1]#(oldTraj.oldTrajXY[1,1,j],oldTraj.oldTrajXY[1,2,j],color = "yellow", marker="o")
 
 
 # last trajectory in xy plot
@@ -287,11 +287,11 @@ function animate(frame)
         #update the position of the car and the prediction
         for ii=1:obstacle.n_obstacle
             plt_obst[ii][:remove]()
-            obst_patch[ii] = patches.Ellipse([obstacle.xy_vector[k,1,j,ii],obstacle.xy_vector[k,2,j,ii]],2*obstacle.rs,2*obstacle.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation[k,j,ii]*180/pi)
+            obst_patch[ii] = patches.Ellipse([obstacle.xy_vector[k,1,j,ii],obstacle.xy_vector[k,2,j,ii]],2*obstacle.rs,2*obstacle.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation[k,j,ii]*180/pi, linewidth =2.0)
             plt_obst[ii] = ax1[:add_patch](obst_patch[ii])
 
             plt_obst2[ii][:remove]()
-            obst_patch2[ii] = patches.Ellipse([obstacle2.xy_vector[k,1,jj,ii],obstacle2.xy_vector[k,2,jj,ii]],2*obstacle2.rs,2*obstacle2.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation2[k,jj,ii]*180/pi)
+            obst_patch2[ii] = patches.Ellipse([obstacle2.xy_vector[k,1,jj,ii],obstacle2.xy_vector[k,2,jj,ii]],2*obstacle2.rs,2*obstacle2.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation2[k,jj,ii]*180/pi, linewidth =2.0)
             plt_obst2[ii] = ax2[:add_patch](obst_patch2[ii])
         end
 

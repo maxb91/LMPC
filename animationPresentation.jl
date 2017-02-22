@@ -16,7 +16,7 @@ include("helper/colorModule.jl")
 
 file = "data/2017-02-14-16-06-Data.jld"
 copied_plot = 1
-j=3
+j=4
 
 obstacle_color = "red"
 boundary_color = "black"
@@ -38,8 +38,8 @@ mpcCoeff = Data["mpcCoeff"]
 println("Number of simulated rounds in data: $(oldTraj.n_oldTraj)")
 println("Load File located in: $file")
 
-obstacle.rs = 0.2
-obstacle.ry = 0.1
+obstacle.rs = 0.3
+obstacle.ry = 0.11
 
 ds = trackCoeff.ds
 dt = modelParams.dt
@@ -71,6 +71,7 @@ end
 # ymin = -15
 # ymax = 15
 
+#sim curvature limits
 xmin = -10
 xmax = 13
 ymin = -13
@@ -129,7 +130,7 @@ end
 obst_patch =Array{PyCall.PyObject}(obstacle.n_obstacle)
 plt_obst =Array{PyCall.PyObject}(obstacle.n_obstacle)
 for ii = 1:obstacle.n_obstacle
-    obst_patch[ii] = patches.Ellipse([obstacle.xy_vector[1,1,j,ii],obstacle.xy_vector[1,2,j,ii]],2*obstacle.rs,2*obstacle.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation[1,j,ii]*180/pi)
+    obst_patch[ii] = patches.Ellipse([obstacle.xy_vector[1,1,j,ii],obstacle.xy_vector[1,2,j,ii]],2*obstacle.rs,2*obstacle.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation[1,j,ii]*180/pi,linewidth = 2)
     plt_obst[ii] = ax1[:add_patch](obst_patch[ii])
 end
 
@@ -137,15 +138,15 @@ carParts=drawCar(ax1,[oldTraj.oldTrajXY[2,1,j],oldTraj.oldTrajXY[2,2,j],oldTraj.
 for p in carParts
                 ax1[:add_patch](p)
 end
-car_plot = ax1[:plot]([],[], color = ego_color,linestyle = ":")[1]
-pred_plot = ax1[:plot](xy_pred[:,1,2,j],xy_pred[:,2,2,j],color = "yellow", marker="o")[1]#(oldTraj.oldTrajXY[1,1,j],oldTraj.oldTrajXY[1,2,j],color = "yellow", marker="o")
+car_plot = ax1[:plot]([],[], color = ego_color,linewidth = 2.0, linestyle = "--")[1]
+pred_plot = ax1[:plot](xy_pred[:,1,2,j],xy_pred[:,2,2,j],color = "yellow", marker="o",markersize = 8)[1]#(oldTraj.oldTrajXY[1,1,j],oldTraj.oldTrajXY[1,2,j],color = "yellow", marker="o")
 
 
 # last trajectory in xy plot
-m=4
-oldtj1_plot = ax1[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[m],1,m], oldTraj.oldTrajXY[1:oldTraj.oldNIter[m],2,m], color = "blue", linewidth = 2.0, linestyle = ":")
-m= 5
-oldtj1_plot = ax1[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[m],1,m], oldTraj.oldTrajXY[1:oldTraj.oldNIter[m],2,m], color ="orange", linewidth = 2.0, linestyle = ":")
+m=5
+oldtj1_plot = ax1[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[m],1,m], oldTraj.oldTrajXY[1:oldTraj.oldNIter[m],2,m], color = "blue", linewidth = 2.0, linestyle = "--")
+m= 10
+oldtj1_plot = ax1[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[m],1,m], oldTraj.oldTrajXY[1:oldTraj.oldNIter[m],2,m], color ="orange", linewidth = 2.0, linestyle = "--")
 ####################
 #copied-plot
 ####################
@@ -194,13 +195,13 @@ end
 ####################
 #v-plot
 ####################
-ax2[:plot](oldTraj.oldTraj[1:oldTraj.oldNIter[j],1,j], oldTraj.oldTraj[1:oldTraj.oldNIter[j],4,j], color = ego_color)
-v_plot  = ax2[:plot](oldTraj.z_pred_sol[:,1,1,j], oldTraj.z_pred_sol[:,4,1,j],marker="o", color = "yellow")[1]
+v_curr =ax2[:plot](oldTraj.oldTraj[1,1,j], oldTraj.oldTraj[1,4,j], color = ego_color,linewidth =2, linestyle = "--")[1]
+v_plot  = ax2[:plot](oldTraj.z_pred_sol[:,1,1,j], oldTraj.z_pred_sol[:,4,1,j],marker="o", color = "yellow", markersize = 8)[1]
 # s_curr_v = ax2[:plot]([],[], color ="black")[1]
-m=4
-ax2[:plot](oldTraj.oldTraj[1:oldTraj.oldNIter[m],1,m], oldTraj.oldTraj[1:oldTraj.oldNIter[m],4,m], color = "blue")
-m= 5
-ax2[:plot](oldTraj.oldTraj[1:oldTraj.oldNIter[m],1,m], oldTraj.oldTraj[1:oldTraj.oldNIter[m],4,m], color = "orange")
+m=5
+ax2[:plot](oldTraj.oldTraj[1:oldTraj.oldNIter[m],1,m], oldTraj.oldTraj[1:oldTraj.oldNIter[m],4,m], color = "blue", linewidth =2, linestyle = "--")
+m= 10
+ax2[:plot](oldTraj.oldTraj[1:oldTraj.oldNIter[m],1,m], oldTraj.oldTraj[1:oldTraj.oldNIter[m],4,m], color = "orange",linewidth =2, linestyle = "--")
 
 ####################
 #Init function
@@ -241,7 +242,7 @@ function animate(frame)
         #update the position of the car and the prediction
         for ii=1:obstacle.n_obstacle
             plt_obst[ii][:remove]()
-            obst_patch[ii] = patches.Ellipse([obstacle.xy_vector[k,1,j,ii],obstacle.xy_vector[k,2,j,ii]],2*obstacle.rs,2*obstacle.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation[k,j,ii]*180/pi)
+            obst_patch[ii] = patches.Ellipse([obstacle.xy_vector[k,1,j,ii],obstacle.xy_vector[k,2,j,ii]],2*obstacle.rs,2*obstacle.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation[k,j,ii]*180/pi, linewidth = 2)
             plt_obst[ii] = ax1[:add_patch](obst_patch[ii])
         end
 
@@ -269,6 +270,7 @@ function animate(frame)
     #     #######################
     #     #v plot
     #     #######################
+    v_curr[:set_data](oldTraj.oldTraj[1:k,1,j], oldTraj.oldTraj[1:k,4,j])
         v_plot[:set_data](oldTraj.z_pred_sol[:,1,k,j], oldTraj.z_pred_sol[:,4,k,j])
     end
     return carParts, nothing

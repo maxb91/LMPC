@@ -2,6 +2,7 @@ using JLD
 using PyPlot
 using PyCall
 @pyimport matplotlib.patches as patches
+@pyimport matplotlib as mpl
 matplotlib[:style][:use]("classic") # somehow my julia version changed plotting style 
 
 include("classes.jl")
@@ -9,7 +10,7 @@ include("plot_functions.jl")
 
 #function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
     newest2plot = 1
-    n_plot_rounds = 0
+    n_plot_rounds = 3
 
     interactive_plot = 1
 
@@ -22,10 +23,10 @@ include("plot_functions.jl")
     plot_inputs = 0
     plot_eps = 0
     plot_copied = 0
-    interactive_plot_steps = 5
+    interactive_plot_steps = 4
     n_oldTrajPlots = 0
     obstacle_color = "red"
-    file = "data/2017-02-16-02-21-Data.jld"#"data/2017-02-12-21-52-Data.jld"
+    file = "data/2017-02-14-16-06-Data.jld"#"data/2017-02-12-21-52-Data.jld"
     close("all")
 
     ####load data from file
@@ -55,7 +56,8 @@ include("plot_functions.jl")
     xy_track  = [x_track; y_track]
     t   = collect(0:dt:(buffersize-1)*dt)
 
-
+    obstacle.rs = 0.3
+    obstacle.ry = 0.11
 
     boundary_color = "black"
     ego_color = "green"
@@ -81,15 +83,22 @@ include("plot_functions.jl")
         end
     end
     if plot_xy == 1
-        f_xy_plot= figure(3)
+        f_xy_plot= figure(3,frameon=false)
         f_xy_plot[:canvas][:set_window_title]("Track and cars in XY plane")
         ax10 = subplot(1,1,1)
+        ax10[:tick_params]( axis="x", which="both", bottom="off", top="off", labelbottom="off")
+        ax10[:tick_params]( axis="y", which="both", left="off", right="off", labelleft="off")
         if interactive_plot == 1
-            cartraj_plot = ax10[:plot](1,1)  #just for initialization
+            pred_plot = ax10[:plot](oldTraj.oldTrajXY[1,1,1],oldTraj.oldTrajXY[1,2,1],color = "yellow", marker="o", label= "predicted position")
+            cartraj_plot = ax10[:plot](1,1, linewidth =2,color = ego_color, label ="current trajectory")  #just for initialization
             #obsttraj_plot1 = ax10[:plot](1,1)  #just for initialization
-            car_plot = ax10[:plot](oldTraj.oldTrajXY[1,1,1], oldTraj.oldTrajXY[1,2,1], color = ego_color) # just dummy to use remove func later
-            pred_plot = ax10[:plot](oldTraj.oldTrajXY[1,1,1],oldTraj.oldTrajXY[1,2,1],color = "yellow", marker="o")
 
+            carParts=drawCar(ax10,[oldTraj.oldTrajXY[1,1,1],oldTraj.oldTrajXY[1,2,1],oldTraj.oldTrajXY[2,5,1]*180/pi], ego_color)
+            for p in carParts
+                            ax10[:add_patch](p)
+            end
+            # car_plot = ax10[:plot](oldTraj.oldTrajXY[1,1,1], oldTraj.oldTrajXY[1,2,1], color = ego_color) # just dummy to use remove func later
+            
        
             obstacle_plot =Array{PyCall.PyObject}(obstacle.n_obstacle)
             y_obst_plot =Array{PyCall.PyObject}(obstacle.n_obstacle)
@@ -98,24 +107,24 @@ include("plot_functions.jl")
             plt_obst =Array{PyCall.PyObject}(obstacle.n_obstacle)
             for ii = 1:obstacle.n_obstacle
                 #obsttraj_plot1 = ax10[:plot](1,1)  #just for initialization
-                obstacle_plot[ii] = ax10[:plot](obstacle.xy_vector[1,1,1,ii], obstacle.xy_vector[1,2,1,ii], color = obstacle_color,marker="o", label = "obstacle Traj", markeredgecolor = "none")[1]
-                y_obst_plot[ii]   = ax10[:plot]([obstacle.axis_y_up[1,1,1,ii],obstacle.axis_y_down[1,1,1,ii]],[obstacle.axis_y_up[1,2,1,ii],obstacle.axis_y_down[1,2,1,ii]],color = obstacle_color)[1]#plot the y semi axis
-                s_obst_plot[ii]   = ax10[:plot]([obstacle.axis_s_up[1,1,1,ii],obstacle.axis_s_down[1,1,1,ii]],[obstacle.axis_s_up[1,2,1,ii],obstacle.axis_s_down[1,2,1,ii]],color = obstacle_color)[1]# plot the s semi axis
+                # obstacle_plot[ii] = ax10[:plot](obstacle.xy_vector[1,1,1,ii], obstacle.xy_vector[1,2,1,ii], color = obstacle_color,marker="o", label = "obstacle Traj", markeredgecolor = "none")[1]
+                # y_obst_plot[ii]   = ax10[:plot]([obstacle.axis_y_up[1,1,1,ii],obstacle.axis_y_down[1,1,1,ii]],[obstacle.axis_y_up[1,2,1,ii],obstacle.axis_y_down[1,2,1,ii]],color = obstacle_color)[1]#plot the y semi axis
+                # s_obst_plot[ii]   = ax10[:plot]([obstacle.axis_s_up[1,1,1,ii],obstacle.axis_s_down[1,1,1,ii]],[obstacle.axis_s_up[1,2,1,ii],obstacle.axis_s_down[1,2,1,ii]],color = obstacle_color)[1]# plot the s semi axis
 
-                obst_patch[ii] = patches.Ellipse([obstacle.xy_vector[1,1,1,ii],obstacle.xy_vector[1,2,1,ii]],2*obstacle.rs,2*obstacle.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation[1,1,ii]*180/pi)
+                obst_patch[ii] = patches.Ellipse([obstacle.xy_vector[1,1,1,ii],obstacle.xy_vector[1,2,1,ii]],2*obstacle.rs,2*obstacle.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation[1,1,ii]*180/pi, linewidth=2.0)
                 plt_obst[ii] = ax10[:add_patch](obst_patch[ii])
             end
             # ax10[:grid]() 
         end
         #plot the boundary lines
-        ax10[:plot](x_track',y_track', linestyle = (0, (4.0, 8.0)), color = color=boundary_color, linewidth = 0.4, label="_nolegend_")#plot the racetrack
+        ax10[:plot](x_track',y_track', linestyle = (0, (4.0, 8.0)), color =boundary_color, linewidth = 0.4, label="_nolegend_")#plot the racetrack
         ax10[:plot](boundary_up[1,:], boundary_up[2,:],color=boundary_color, linewidth = 0.7)#,linestyle=":")
         ax10[:plot](boundary_down[1,:], boundary_down[2,:],color=boundary_color, linewidth = 0.7)#,linestyle=":")
         
         for l=1:convert(Int64,trunc(trackL/51))
             ax10[:plot]([boundary_down[1,l*50+1],boundary_up[1,l*50+1]],[boundary_down[2,l*50+1],boundary_up[2,l*50+1]], color = "black", linestyle = ":", linewidth = 0.5)
             boundvec = [boundary_up[1,l*50+1]-boundary_down[1,l*50+1];boundary_up[2,l*50+1]-boundary_down[2,l*50+1]]
-            ax10[:text](boundary_down[1,l*50+1]+1.85*boundvec[1],boundary_down[2,l*50+1]+1.85*boundvec[2],"$(convert(Int64,l*50*ds))",fontsize=8)
+            # ax10[:text](boundary_down[1,l*50+1]+1.85*boundvec[1],boundary_down[2,l*50+1]+1.85*boundvec[2],"$(convert(Int64,l*50*ds))",fontsize=22,clip_on = true)
         end
     end
     lastj_plot = ax10[:plot](1,1) 
@@ -124,13 +133,13 @@ include("plot_functions.jl")
 
         
 
-        if j == newest2plot+n_plot_rounds-1
-            lastj_plot = ax10[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[j+1],1,j+1], oldTraj.oldTrajXY[1:oldTraj.oldNIter[j+1],2,j+1], color = ego_color, linewidth = 0.7, linestyle = ":") 
-        end
-        if j < newest2plot+n_plot_rounds-1
-            lastj_plot[1][:remove]()
-            lastj_plot = ax10[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[j+1],1,j+1], oldTraj.oldTrajXY[1:oldTraj.oldNIter[j+1],2,j+1], color = ego_color, linewidth = 0.7, linestyle = ":") 
-        end
+        # if j == newest2plot+n_plot_rounds-1
+        #     lastj_plot = ax10[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[j+1],1,j+1], oldTraj.oldTrajXY[1:oldTraj.oldNIter[j+1],2,j+1], color = ego_color, linewidth = 0.7, linestyle = ":") 
+        # end
+        # if j < newest2plot+n_plot_rounds-1
+        #     lastj_plot[1][:remove]()
+        #     lastj_plot = ax10[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[j+1],1,j+1], oldTraj.oldTrajXY[1:oldTraj.oldNIter[j+1],2,j+1], color = ego_color, linewidth = 0.7, linestyle = ":") 
+        # end
         ################################
         ##calculate interpolated values to check for differences with trajectories
         # ################################
@@ -146,9 +155,8 @@ include("plot_functions.jl")
         #         end
         #     end
         # end
-            
 
-          # Print results
+        # Print results
                 # --------------------------------
         #########################################################
         #########################################################
@@ -177,7 +185,12 @@ include("plot_functions.jl")
                 colorXYold = colorModule.getColor(colorObjectXY)
                 ax10[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[j+k],1,j+k], oldTraj.oldTrajXY[1:oldTraj.oldNIter[j+k],2,j+k],linestyle="--", color = colorXYold, label= "$k old Traj")
             end
-            
+
+            m=5
+            oldtj1_plot = ax10[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[m],1,m], oldTraj.oldTrajXY[1:oldTraj.oldNIter[m],2,m], color = "blue", linewidth = 2.0, linestyle = ":", label = "\"fast\" trajectory")
+            m= 10
+            oldtj1_plot = ax10[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[m],1,m], oldTraj.oldTrajXY[1:oldTraj.oldNIter[m],2,m], color ="orange", linewidth = 2.0, label = "path-following trajectory")
+####################
             if interactive_plot == 1
 
                 # ax10[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[j],1,j], oldTraj.oldTrajXY[1:oldTraj.oldNIter[j],2,j], color = ego_color ,linestyle=":", label="current Traj")# plot trajectory less visible to overwrite it with interactiv simulation
@@ -195,6 +208,7 @@ include("plot_functions.jl")
             # ax10[:set_ylim]([-5.1,5.1])
 
             # ax10[:legend](bbox_to_anchor=(1.001, 1), loc=2, borderaxespad=0.)
+            ax10[:legend](loc=4, fontsize =18)
         end    
 
         # plot the values of lambda over t
@@ -314,28 +328,32 @@ include("plot_functions.jl")
            
            #x-y plot
            if plot_xy == 1 
-                car_plot[1][:remove]()
+                # car_plot[1][:remove]()
                 pred_plot[1][:remove]()
                 cartraj_plot[1][:remove]()
                 
 
-                pred_plot = ax10[:plot](xy_pred[:,1,i,j],xy_pred[:,2,i,j], color = "yellow", marker="o") # plot predicted states
-                cartraj_plot = ax10[:plot](oldTraj.oldTrajXY[1:i,1,j], oldTraj.oldTrajXY[1:i,2,j], color = ego_color, linewidth = 0.7) # plot trajectory of this round for curent car
-                car_plot = ax10[:plot](oldTraj.oldTrajXY[i,1,j], oldTraj.oldTrajXY[i,2,j], color = ego_color, marker="o") #plot current position of car with a marker
+                pred_plot = ax10[:plot](xy_pred[:,1,i,j],xy_pred[:,2,i,j], color = "yellow", marker="o",markersize = 12) # plot predicted states
+                cartraj_plot = ax10[:plot](oldTraj.oldTrajXY[1:i,1,j], oldTraj.oldTrajXY[1:i,2,j], color = ego_color, linewidth = 2.0) # plot trajectory of this round for curent car
+                # car_plot = ax10[:plot](oldTraj.oldTrajXY[i,1,j], oldTraj.oldTrajXY[i,2,j], color = ego_color, marker="o") #plot current position of car with a marker
+
+
+                pos =[oldTraj.oldTrajXY[i,1,j],oldTraj.oldTrajXY[i,2,j], oldTraj.oldTrajXY[i,5,j]*180/pi]
+                updateCarParts(ax10,carParts,pos)
 
                 for ii=1:obstacle.n_obstacle
                     # obsttraj_plot1[1][:remove]()
 
-                    obstacle_plot[ii][:remove]()
-                    y_obst_plot[ii][:remove]()
-                    s_obst_plot[ii][:remove]()
+                    # obstacle_plot[ii][:remove]()
+                    # y_obst_plot[ii][:remove]()
+                    # s_obst_plot[ii][:remove]()
                     # obsttraj_plot1 = ax10[:plot](obstacle.xy_vector[1:i,1,j,1], obstacle.xy_vector[1:i,2,j,1], color = obstacle_color, linestyle= ":")
-                    obstacle_plot[ii] = ax10[:plot](obstacle.xy_vector[i,1,j,ii], obstacle.xy_vector[i,2,j,ii], color = obstacle_color, marker="o", markeredgecolor = "none")[1]  
-                    y_obst_plot[ii] = ax10[:plot]([obstacle.axis_y_up[i,1,j,ii],obstacle.axis_y_down[i,1,j,ii]],[obstacle.axis_y_up[i,2,j,ii],obstacle.axis_y_down[i,2,j,ii]],color = obstacle_color)[1]#plot the y semi axis
-                    s_obst_plot[ii] = ax10[:plot]([obstacle.axis_s_up[i,1,j,ii],obstacle.axis_s_down[i,1,j,ii]],[obstacle.axis_s_up[i,2,j,ii],obstacle.axis_s_down[i,2,j,ii]],color = obstacle_color)[1]# plot the s semi axis
+                    # obstacle_plot[ii] = ax10[:plot](obstacle.xy_vector[i,1,j,ii], obstacle.xy_vector[i,2,j,ii], color = obstacle_color, marker="o", markeredgecolor = "none")[1]  
+                    # y_obst_plot[ii] = ax10[:plot]([obstacle.axis_y_up[i,1,j,ii],obstacle.axis_y_down[i,1,j,ii]],[obstacle.axis_y_up[i,2,j,ii],obstacle.axis_y_down[i,2,j,ii]],color = obstacle_color)[1]#plot the y semi axis
+                    # s_obst_plot[ii] = ax10[:plot]([obstacle.axis_s_up[i,1,j,ii],obstacle.axis_s_down[i,1,j,ii]],[obstacle.axis_s_up[i,2,j,ii],obstacle.axis_s_down[i,2,j,ii]],color = obstacle_color)[1]# plot the s semi axis
 
                     plt_obst[ii][:remove]()
-                    obst_patch[ii] = patches.Ellipse([obstacle.xy_vector[i,1,j,ii],obstacle.xy_vector[i,2,j,ii]],2*obstacle.rs,2*obstacle.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation[i,j,ii]*180/pi)
+                    obst_patch[ii] = patches.Ellipse([obstacle.xy_vector[i,1,j,ii],obstacle.xy_vector[i,2,j,ii]],2*obstacle.rs,2*obstacle.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation[i,j,ii]*180/pi, linewidth =2)
                     plt_obst[ii] = ax10[:add_patch](obst_patch[ii])
                 end
             end
