@@ -391,16 +391,20 @@ function plotfct_copied(oldTraj,j)
 
     for i=1:oldTraj.oldNIter[j]-1
         if oldTraj.copyInfo[i,1,j]>0.0 # if lambda of copied traj is greater 0.1 -> if traj s used for solving.
-            scatter(oldTraj.copyInfo[i,3,j],oldTraj.copyInfo[i,2,j], color = "#DCDCDC")
+            scatter(oldTraj.copyInfo[i,3,j],oldTraj.copyInfo[i,2,j], color = "#DCDCDC",s=100)
         end
     end
     for i=1:oldTraj.oldNIter[j]-1
         if oldTraj.copyInfo[i,4,j]>0.6 # if lambda of copied traj is greater 0.1 -> if traj s used for solving.
-            scatter(oldTraj.copyInfo[i,3,j],oldTraj.copyInfo[i,2,j], color = colordefs[convert(Int64,oldTraj.copyInfo[i,1,j])])
+            # scatter(oldTraj.copyInfo[i,3,j],oldTraj.copyInfo[i,2,j], color = colordefs[convert(Int64,oldTraj.copyInfo[i,1,j])])
+            scatter(oldTraj.copyInfo[i,3,j],oldTraj.copyInfo[i,2,j], color = "blue", s=100)
         end
     end
     axCopied[:set_aspect]("equal", adjustable="box")
-    axCopied[:set_xlabel]("s in [m]")
+    axCopied[:set_ylim](0,20)
+    axCopied[:set_xlim](22,48)
+    axCopied[:set_xlabel](L"s \> [m]", fontsize =30)
     axCopied[:grid]()
-    ylabel("s in [m]")
+    axCopied[:set_ylabel](L"s \> [m]", fontsize =30)
+    axCopied[:tick_params]( axis="both", which="major", labelsize=30)
 end

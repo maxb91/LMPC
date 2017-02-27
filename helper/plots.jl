@@ -10,23 +10,24 @@ include("plot_functions.jl")
 
 #function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
     newest2plot = 1
-    n_plot_rounds = 3
+    n_plot_rounds = 0
 
     interactive_plot = 1
 
-    plot_costs = 0
-    plot_states_over_t = 0
-    plot_xy = 1
-    plot_lambda = 0
-    plot_states_over_s = 1
-    plot_curvature_approx=0
-    plot_inputs = 0
-    plot_eps = 0
-    plot_copied = 0
-    interactive_plot_steps = 4
+    plot_costs              = 0
+    plot_states_over_t      = 0
+    plot_xy                 = 1
+    plot_lambda             = 0
+    plot_states_over_s      = 1
+    plot_curvature_approx   = 0
+    plot_inputs             = 0
+    plot_eps                = 0
+    plot_copied             = 0
+
+    interactive_plot_steps  = 1
     n_oldTrajPlots = 0
     obstacle_color = "red"
-    file = "data/2017-02-14-16-06-Data.jld"#"data/2017-02-12-21-52-Data.jld"
+    file = "data/2017-02-14-21-52-Data.jld" #"data/2017-02-12-21-52-Data.jld"
     close("all")
 
     ####load data from file
@@ -63,6 +64,7 @@ include("plot_functions.jl")
     ego_color = "green"
     
 
+
     ################################
     ##this part is to calculate the tracks boundaries and plot them later
     ################################
@@ -86,6 +88,14 @@ include("plot_functions.jl")
         f_xy_plot= figure(3,frameon=false)
         f_xy_plot[:canvas][:set_window_title]("Track and cars in XY plane")
         ax10 = subplot(1,1,1)
+        
+        # ax10[:set_xlim]([0,5])
+        # ax10[:set_ylim]([-10.6,-4])
+        # ax10[:set_xlim]([4,13.5])
+        ax10[:set_xlim]([-13.3,-4.3])
+        ax10[:set_ylim]([-9.4,0.6])
+        # ax10[:set_ylim]([-9.4,-7])
+        
         ax10[:tick_params]( axis="x", which="both", bottom="off", top="off", labelbottom="off")
         ax10[:tick_params]( axis="y", which="both", left="off", right="off", labelleft="off")
         if interactive_plot == 1
@@ -186,10 +196,10 @@ include("plot_functions.jl")
                 ax10[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[j+k],1,j+k], oldTraj.oldTrajXY[1:oldTraj.oldNIter[j+k],2,j+k],linestyle="--", color = colorXYold, label= "$k old Traj")
             end
 
-            m=5
-            oldtj1_plot = ax10[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[m],1,m], oldTraj.oldTrajXY[1:oldTraj.oldNIter[m],2,m], color = "blue", linewidth = 2.0, linestyle = ":", label = "\"fast\" trajectory")
-            m= 10
-            oldtj1_plot = ax10[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[m],1,m], oldTraj.oldTrajXY[1:oldTraj.oldNIter[m],2,m], color ="orange", linewidth = 2.0, label = "path-following trajectory")
+            # m=5
+            # oldtj1_plot = ax10[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[m],1,m], oldTraj.oldTrajXY[1:oldTraj.oldNIter[m],2,m], color = "blue", linewidth = 2.0, linestyle = ":", label = "\"fast\" trajectory")
+            # m= 10
+            # oldtj1_plot = ax10[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[m],1,m], oldTraj.oldTrajXY[1:oldTraj.oldNIter[m],2,m], color ="orange", linewidth = 2.0, label = "path-following trajectory")
 ####################
             if interactive_plot == 1
 
@@ -208,7 +218,7 @@ include("plot_functions.jl")
             # ax10[:set_ylim]([-5.1,5.1])
 
             # ax10[:legend](bbox_to_anchor=(1.001, 1), loc=2, borderaxespad=0.)
-            ax10[:legend](loc=4, fontsize =18)
+            # ax10[:legend](loc=4, fontsize =18)
         end    
 
         # plot the values of lambda over t
@@ -333,7 +343,7 @@ include("plot_functions.jl")
                 cartraj_plot[1][:remove]()
                 
 
-                pred_plot = ax10[:plot](xy_pred[:,1,i,j],xy_pred[:,2,i,j], color = "yellow", marker="o",markersize = 12) # plot predicted states
+                pred_plot = ax10[:plot](xy_pred[:,1,i,j],xy_pred[:,2,i,j], color = "yellow", marker="o",markersize = 10) # plot predicted states
                 cartraj_plot = ax10[:plot](oldTraj.oldTrajXY[1:i,1,j], oldTraj.oldTrajXY[1:i,2,j], color = ego_color, linewidth = 2.0) # plot trajectory of this round for curent car
                 # car_plot = ax10[:plot](oldTraj.oldTrajXY[i,1,j], oldTraj.oldTrajXY[i,2,j], color = ego_color, marker="o") #plot current position of car with a marker
 
@@ -382,6 +392,10 @@ include("plot_functions.jl")
             if a == "c\r\n"
             stop_interactive = true 
                  break
+            end
+            if a == "s\r\n"
+                savefig("saved.pdf", bbox_inches="tight", pad_inches=0.0)
+                println("Saved plot to \"saved.pdf\"")
             end
         end # end for loop interactive plots
         end #end if statement interactive plots
