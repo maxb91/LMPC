@@ -12,22 +12,22 @@ include("plot_functions.jl")
     newest2plot = 1
     n_plot_rounds = 0
 
-    interactive_plot = 1
+    interactive_plot = 0
 
     plot_costs              = 0
     plot_states_over_t      = 0
     plot_xy                 = 1
     plot_lambda             = 0
-    plot_states_over_s      = 1
+    plot_states_over_s      = 0
     plot_curvature_approx   = 0
     plot_inputs             = 0
     plot_eps                = 0
-    plot_copied             = 0
+    plot_copied             = 1
 
     interactive_plot_steps  = 1
     n_oldTrajPlots = 0
     obstacle_color = "red"
-    file = "data/2017-02-14-21-52-Data.jld" #"data/2017-02-12-21-52-Data.jld"
+    file = "data/2017-02-10-16-02-Data.jld" #"data/2017-02-12-21-52-Data.jld"
     close("all")
 
     ####load data from file
