@@ -1,7 +1,7 @@
 using JLD
 using PyPlot
 include("classes.jl")
-
+matplotlib[:style][:use]("classic")
 #function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
     j = 1
     interactive_plot = 1
@@ -16,7 +16,7 @@ include("classes.jl")
     plot_eps = 0
     interactive_plot_steps = 4
     n_oldTrajPlots = 5
-    file = "data/2017-01-25-18-36-Data.jld"
+    file = "data/2017-02-27-17-17-Data.jld"
     close("all")
 
     ####load data from file

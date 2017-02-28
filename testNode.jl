@@ -58,7 +58,7 @@
 
     load_safeset = false#currently the safe set has to contain the same number of trajectories as the oldTraj class we initialize
     safeset = "data/2017-01-24-18-18-Data.jld"
-    n_rounds = 3
+    n_rounds = 8
      
     s_obst_init = 85#9.56 
     sy_obst_init = -0.2

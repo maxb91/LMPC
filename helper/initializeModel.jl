@@ -111,8 +111,8 @@ type initPathFollowingModel
         # @NLexpression(mdl, F_yr[i = 1:N], -FMax * sin(C*atan(B*atan( (z_Ol[i,2]-l_B*z_Ol[i,3]) / z_Ol[i,1]))))
         # @NLexpression(mdl, F_yf[i = 1:N], -FMax * sin(C*atan(B*( (z_Ol[i,2]+l_A*z_Ol[i,3]) / z_Ol[i,1] ) - u_Ol[i,2])))
         # @NLexpression(mdl, F_yr[i = 1:N], -FMax * sin(C*atan(B*( (z_Ol[i,2]-l_B*z_Ol[i,3]) / z_Ol[i,1]))))
-        @NLexpression(mdl, F_yf[i = 1:N], -1*FMax * (((z_Ol[i,2]+l_A*z_Ol[i,3]) / z_Ol[i,1] ) - u_Ol[i,2]))
-        @NLexpression(mdl, F_yr[i = 1:N], -1*FMax *  ((z_Ol[i,2]-l_B*z_Ol[i,3]) / z_Ol[i,1]) )
+        @NLexpression(mdl, F_yf[i = 1:N], -2*FMax * (((z_Ol[i,2]+l_A*z_Ol[i,3]) / z_Ol[i,1] ) - u_Ol[i,2]))
+        @NLexpression(mdl, F_yr[i = 1:N], -2*FMax *  ((z_Ol[i,2]-l_B*z_Ol[i,3]) / z_Ol[i,1]) )
 
         
 
@@ -322,8 +322,8 @@ type initLearningModel
         # @NLexpression(mdl, F_yr[i = 1:N], -FMax * sin(C*atan(B*atan( (z_Ol[i,2]-l_B*z_Ol[i,3]) / z_Ol[i,1]))))
         # @NLexpression(mdl, F_yf[i = 1:N], -FMax * sin(C*atan(B*( (z_Ol[i,2]+l_A*z_Ol[i,3]) / z_Ol[i,1] ) - u_Ol[i,2])))
         # @NLexpression(mdl, F_yr[i = 1:N], -FMax * sin(C*atan(B*( (z_Ol[i,2]-l_B*z_Ol[i,3]) / z_Ol[i,1]))))
-        @NLexpression(mdl, F_yf[i = 1:N], -1*FMax * (((z_Ol[i,2]+l_A*z_Ol[i,3]) / z_Ol[i,1] ) - u_Ol[i,2]))
-        @NLexpression(mdl, F_yr[i = 1:N], -1*FMax *  ((z_Ol[i,2]-l_B*z_Ol[i,3]) / z_Ol[i,1]) )
+        @NLexpression(mdl, F_yf[i = 1:N], -2*FMax * (((z_Ol[i,2]+l_A*z_Ol[i,3]) / z_Ol[i,1] ) - u_Ol[i,2]))
+        @NLexpression(mdl, F_yr[i = 1:N], -2*FMax *  ((z_Ol[i,2]-l_B*z_Ol[i,3]) / z_Ol[i,1]) )
 
 
         # @NLconstraint(mdl, [i=1:N], atan( (z_Ol[i,2]-l_B*z_Ol[i,3]) / z_Ol[i,1]) <=  max_alpha/180*pi)

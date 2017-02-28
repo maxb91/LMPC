@@ -58,8 +58,8 @@ function simModel_dyn_x(z::Array{Float64},u::Array{Float64},dt::Float64,modelPar
     mu  = 0.85
     g = 9.81 # m/s^2
     I_z = 0.03 # kg * m^2
-    B = 1.0#1.0
-    C = 1.25
+    B = 6.0#1.0
+    C = 1.6
 
 
 
