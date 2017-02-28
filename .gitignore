@@ -3,6 +3,5 @@ data/
 Test_classes/
 *.orig
 plotsMA.jl
-plotsTRACK.jl
 PrintFig.jl
 basic_animation.mp4
