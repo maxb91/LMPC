@@ -1,7 +1,3 @@
 .DS_Stored
 data/
-Test_classes/
 *.orig
-plotsMA.jl
-PrintFig.jl
-basic_animation.mp4

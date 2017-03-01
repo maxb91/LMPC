@@ -5,10 +5,10 @@ using PyCall
 @pyimport matplotlib as mpl
 @pyimport matplotlib.patches as patches
 matplotlib[:style][:use]("classic")
-include("helper/classes.jl")
-include("helper/plot_functions.jl")
-include("helper/calculateObstacleXY.jl")
-include("helper/colorModule.jl")
+include("../helper/classes.jl")
+include("plot_functions.jl")
+include("calculateObstacleXY.jl")
+include("colorModule.jl")
 
 close("all")
 # file = "LMPC/trackdata.jld"
@@ -17,7 +17,7 @@ close("all")
 # file = "LMPC/adv_track.jld"
 # file = "LMPC/optm_adv.jld"
 # file = "LMPC/sim_curv.jld"
-file = "data/2017-02-15-15-56-Data.jld"
+file = "data/2017-02-10-16-00-Data.jld"
 
 Data = load(file)
 x_track = Data["x_track"]

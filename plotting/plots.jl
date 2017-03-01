@@ -5,14 +5,14 @@ using PyCall
 @pyimport matplotlib as mpl
 matplotlib[:style][:use]("classic") # somehow my julia version changed plotting style 
 
-include("classes.jl")
+include("../helper/classes.jl")
 include("plot_functions.jl")
 
 #function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
     newest2plot = 1
-    n_plot_rounds = 0
+    n_plot_rounds = 2
 
-    interactive_plot = 0
+    interactive_plot = 1
 
     plot_costs              = 0
     plot_states_over_t      = 0
@@ -45,9 +45,8 @@ include("plot_functions.jl")
     mpcCoeff = Data["mpcCoeff"]
     include("calculateObstacleXY.jl")
     include("colorModule.jl")
-    # include("helper/calculateObstacleXY.jl")
-    # include("helper/colorModule.jl")
     #end of data loading
+
     println("Number of simulated rounds in data: $(oldTraj.n_oldTraj)")
     println("Load File located in: $file")
 
@@ -92,8 +91,8 @@ include("plot_functions.jl")
         # ax10[:set_xlim]([0,5])
         # ax10[:set_ylim]([-10.6,-4])
         # ax10[:set_xlim]([4,13.5])
-        ax10[:set_xlim]([-13.3,-4.3])
-        ax10[:set_ylim]([-9.4,0.6])
+        # ax10[:set_xlim]([-13.3,-4.3])
+        # ax10[:set_ylim]([-9.4,0.6])
         # ax10[:set_ylim]([-9.4,-7])
         
         ax10[:tick_params]( axis="x", which="both", bottom="off", top="off", labelbottom="off")
@@ -116,11 +115,7 @@ include("plot_functions.jl")
             obst_patch =Array{PyCall.PyObject}(obstacle.n_obstacle)
             plt_obst =Array{PyCall.PyObject}(obstacle.n_obstacle)
             for ii = 1:obstacle.n_obstacle
-                #obsttraj_plot1 = ax10[:plot](1,1)  #just for initialization
-                # obstacle_plot[ii] = ax10[:plot](obstacle.xy_vector[1,1,1,ii], obstacle.xy_vector[1,2,1,ii], color = obstacle_color,marker="o", label = "obstacle Traj", markeredgecolor = "none")[1]
-                # y_obst_plot[ii]   = ax10[:plot]([obstacle.axis_y_up[1,1,1,ii],obstacle.axis_y_down[1,1,1,ii]],[obstacle.axis_y_up[1,2,1,ii],obstacle.axis_y_down[1,2,1,ii]],color = obstacle_color)[1]#plot the y semi axis
-                # s_obst_plot[ii]   = ax10[:plot]([obstacle.axis_s_up[1,1,1,ii],obstacle.axis_s_down[1,1,1,ii]],[obstacle.axis_s_up[1,2,1,ii],obstacle.axis_s_down[1,2,1,ii]],color = obstacle_color)[1]# plot the s semi axis
-
+                
                 obst_patch[ii] = patches.Ellipse([obstacle.xy_vector[1,1,1,ii],obstacle.xy_vector[1,2,1,ii]],2*obstacle.rs,2*obstacle.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation[1,1,ii]*180/pi, linewidth=2.0)
                 plt_obst[ii] = ax10[:add_patch](obst_patch[ii])
             end
@@ -150,22 +145,7 @@ include("plot_functions.jl")
         #     lastj_plot[1][:remove]()
         #     lastj_plot = ax10[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[j+1],1,j+1], oldTraj.oldTrajXY[1:oldTraj.oldNIter[j+1],2,j+1], color = ego_color, linewidth = 0.7, linestyle = ":") 
         # end
-        ################################
-        ##calculate interpolated values to check for differences with trajectories
-        # ################################
-        # state_approx =zeros(buffersize,oldTraj.n_oldTraj,3)
-        # s_vec = zeros(mpcCoeff.order+1)
-        # for k = 2:oldTraj.n_oldTraj
-        #     for i = 1:oldTraj.oldNIter[k]-1
-        #         for l = 1:mpcCoeff.order+1
-        #             s_vec[l] = oldTraj.z_pred_sol[11,1,i,k]^(mpcCoeff.order+1-l)
-        #         end
-        #         for m = 1:3
-        #                state_approx[i,k,m] = dot(mpcCoeff.coeffConst[i,:,k-1,m],  s_vec) 
-        #         end
-        #     end
-        # end
-
+     
         # Print results
                 # --------------------------------
         #########################################################
@@ -352,16 +332,7 @@ include("plot_functions.jl")
                 updateCarParts(ax10,carParts,pos)
 
                 for ii=1:obstacle.n_obstacle
-                    # obsttraj_plot1[1][:remove]()
-
-                    # obstacle_plot[ii][:remove]()
-                    # y_obst_plot[ii][:remove]()
-                    # s_obst_plot[ii][:remove]()
-                    # obsttraj_plot1 = ax10[:plot](obstacle.xy_vector[1:i,1,j,1], obstacle.xy_vector[1:i,2,j,1], color = obstacle_color, linestyle= ":")
-                    # obstacle_plot[ii] = ax10[:plot](obstacle.xy_vector[i,1,j,ii], obstacle.xy_vector[i,2,j,ii], color = obstacle_color, marker="o", markeredgecolor = "none")[1]  
-                    # y_obst_plot[ii] = ax10[:plot]([obstacle.axis_y_up[i,1,j,ii],obstacle.axis_y_down[i,1,j,ii]],[obstacle.axis_y_up[i,2,j,ii],obstacle.axis_y_down[i,2,j,ii]],color = obstacle_color)[1]#plot the y semi axis
-                    # s_obst_plot[ii] = ax10[:plot]([obstacle.axis_s_up[i,1,j,ii],obstacle.axis_s_down[i,1,j,ii]],[obstacle.axis_s_up[i,2,j,ii],obstacle.axis_s_down[i,2,j,ii]],color = obstacle_color)[1]# plot the s semi axis
-
+                   
                     plt_obst[ii][:remove]()
                     obst_patch[ii] = patches.Ellipse([obstacle.xy_vector[i,1,j,ii],obstacle.xy_vector[i,2,j,ii]],2*obstacle.rs,2*obstacle.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation[i,j,ii]*180/pi, linewidth =2)
                     plt_obst[ii] = ax10[:add_patch](obst_patch[ii])

@@ -4,8 +4,8 @@ using PyPlot
 using JLD
 n_oldTrajPlots = 1
 global j  =7
-include("helper/classes.jl")
-file = "data/2017-02-08-16-24-Data.jld"
+include("../helper/classes.jl")
+file = "data/2017-02-16-02-21-Data.jld"
 close("all")
 
     ####load data from file
@@ -23,8 +23,8 @@ global l  =1
     oldTraj     = Data["oldTraj"]
     #include("calculateObstacleXY.jl")
     #include("colorModule.jl")
-    include("helper/calculateObstacleXY.jl")
-    include("helper/colorModule.jl")
+    include("calculateObstacleXY.jl")
+    include("colorModule.jl")
     #end of data loading
 
     #####create additional data for plotting

@@ -12,7 +12,6 @@
     include("helper/localizeVehicleCurvAbs.jl")
     include("helper/computeObstaclePos.jl")
     include("helper/adjustSafeSet.jl")
-    include("helper/colorModule.jl")
 
     #just loads one specified track with distances betwwen points =1 m and returnx x and y coordinatates
     println("loadMap.......")

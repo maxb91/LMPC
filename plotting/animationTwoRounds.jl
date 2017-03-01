@@ -8,15 +8,16 @@ close("all")
 @pyimport matplotlib.animation as animation# First set up the figure, the axis, and the plot element we want to animate
 matplotlib[:style][:use]("classic") # somehow my julia version changed plotting style 
 
-include("helper/classes.jl")
-include("helper/plot_functions.jl")
-include("helper/calculateObstacleXY.jl")
-include("helper/colorModule.jl")
+include("../helper/classes.jl")
+include("plot_functions.jl")
+include("calculateObstacleXY.jl")
+include("colorModule.jl")
 
 
-file = "data/2017-02-14-16-06-Data.jld"
+file = "data/2017-02-12-21-52-Data.jld"
 copied_plot = 1
-j=4
+j=9
+jj =1
 
 obstacle_color = "red"
 boundary_color = "black"
@@ -71,48 +72,36 @@ end
 # ymin = -15
 # ymax = 15
 
-#sim curvature limits
 xmin = -10
 xmax = 13
 ymin = -13
 ymax = 10
 # create figure to plot
 fig = figure(figsize=(15,8))
-ax1= subplot2grid([2,3],[0,0], colspan =2, rowspan=2)
+ax1= subplot2grid([1,2],[0,0])
 ax1[:set_xlim](xmin, xmax)
 ax1[:set_ylim](ymin, ymax)
 # set labels
-ax1[:set_xlabel](L"x",fontsize=20)
-ax1[:set_ylabel](L"y",fontsize=20)
+# ax1[:set_xlabel](L"x",fontsize=20)
+# ax1[:set_ylabel](L"y",fontsize=20)
 ax1[:tick_params]( axis="x", which="both", bottom="off", top="off", labelbottom="off")
 ax1[:tick_params]( axis="y", which="both", left="off", right="off", labelleft="off")
 ax1[:set_aspect]("equal", adjustable="box")
 #ax1[:canvas][:set_window_title]("Track and cars in XY plane")
 # grid()
-ax2= subplot2grid([2,3],[0,2])
-ax2[:set_ylabel](L"v \> [m/s]",fontsize=20)
-# ax2[:set_xlim](findmin(oldTraj.copyInfo[:,3,j])[1], findmax(oldTraj.copyInfo[:,3,j])[1])
-# ax2[:set_ylim](findmin(oldTraj.copyInfo[:,2,j])[1], findmax(oldTraj.copyInfo[:,2,j])[1])
-ax2[:set_xlim](0, trackLength)
-ax2[:set_ylim](0, modelParams.v_max+0.1)
-grid()#
+ax2= subplot2grid([1,2],[0,1])
+ax2[:set_xlim](xmin, xmax)
+ax2[:set_ylim](ymin, ymax)
+# set labels
+# ax2[:set_xlabel](L"x",fontsize=20)
+# ax2[:set_ylabel](L"y",fontsize=20)
+ax2[:tick_params]( axis="x", which="both", bottom="off", top="off", labelbottom="off")
+ax2[:tick_params]( axis="y", which="both", left="off", right="off", labelleft="off")
+ax2[:set_aspect]("equal", adjustable="box")
 
-
-ax3= subplot2grid([2,3],[1,2])
-ax3[:set_xlabel](L"s \> [m]",fontsize=20)
-ax3[:set_xlim](0, trackLength)
-if copied_plot ==1
-ax3[:set_ylabel](L"s \> [m]",fontsize=20)
-ax3[:set_ylim](0, trackLength)
-else 
-    ax3[:set_ylabel](L"obstacle \> cost",fontsize=20)
-end
-# ax3[:set_ylim](0, 35)
-grid()
-# fig[:subplots_adjust](hspace=.5)
 
 ###########################
-#x-y plot
+#x-y plot1
 ###########################
 
 # plot the boundary lines
@@ -120,7 +109,7 @@ ax1[:plot](x_track',y_track', linestyle = (0, (4.0, 8.0)), color = color=boundar
 ax1[:plot](boundary_up[1,:], boundary_up[2,:],color=boundary_color, linewidth = 0.7)#,linestyle=":")
 ax1[:plot](boundary_down[1,:], boundary_down[2,:],color=boundary_color, linewidth = 0.7)#,linestyle=":")
 for l=1:convert(Int64,trunc(trackL/51))
-    ax1[:plot]([boundary_down[1,l*50+1],boundary_up[1,l*50+1]],[boundary_down[2,l*50+1],boundary_up[2,l*50+1]], color = "black", linestyle = ":", linewidth = 0.5)
+    ax1[:plot]([boundary_down[1,l*50+1],boundary_up[1,l*50+1]],[boundary_down[2,l*50+1],boundary_up[2,l*50+1]], color = "black", linestyle = "--", linewidth = 2.0)
     boundvec = [boundary_up[1,l*50+1]-boundary_down[1,l*50+1];boundary_up[2,l*50+1]-boundary_down[2,l*50+1]]
     ax1[:text](boundary_down[1,l*50+1]+1.85*boundvec[1],boundary_down[2,l*50+1]+1.85*boundvec[2],"$(convert(Int64,l*50*ds))",fontsize=20,clip_on = true)
 end
@@ -130,7 +119,7 @@ end
 obst_patch =Array{PyCall.PyObject}(obstacle.n_obstacle)
 plt_obst =Array{PyCall.PyObject}(obstacle.n_obstacle)
 for ii = 1:obstacle.n_obstacle
-    obst_patch[ii] = patches.Ellipse([obstacle.xy_vector[1,1,j,ii],obstacle.xy_vector[1,2,j,ii]],2*obstacle.rs,2*obstacle.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation[1,j,ii]*180/pi,linewidth = 2)
+    obst_patch[ii] = patches.Ellipse([obstacle.xy_vector[1,1,j,ii],obstacle.xy_vector[1,2,j,ii]],2*obstacle.rs,2*obstacle.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation[1,j,ii]*180/pi, linewidth = 2)
     plt_obst[ii] = ax1[:add_patch](obst_patch[ii])
 end
 
@@ -138,70 +127,94 @@ carParts=drawCar(ax1,[oldTraj.oldTrajXY[2,1,j],oldTraj.oldTrajXY[2,2,j],oldTraj.
 for p in carParts
                 ax1[:add_patch](p)
 end
-car_plot = ax1[:plot]([],[], color = ego_color,linewidth = 2.0, linestyle = "--")[1]
+car_plot = ax1[:plot]([],[], color = ego_color, linewidth = 2, linestyle = "--")[1]
 pred_plot = ax1[:plot](xy_pred[:,1,2,j],xy_pred[:,2,2,j],color = "yellow", marker="o",markersize = 8)[1]#(oldTraj.oldTrajXY[1,1,j],oldTraj.oldTrajXY[1,2,j],color = "yellow", marker="o")
 
 
 # last trajectory in xy plot
-m=5
-oldtj1_plot = ax1[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[m],1,m], oldTraj.oldTrajXY[1:oldTraj.oldNIter[m],2,m], color = "blue", linewidth = 2.0, linestyle = "--")
-m= 10
-oldtj1_plot = ax1[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[m],1,m], oldTraj.oldTrajXY[1:oldTraj.oldNIter[m],2,m], color ="orange", linewidth = 2.0, linestyle = "--")
+# m=4
+# oldtj1_plot = ax1[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[m],1,m], oldTraj.oldTrajXY[1:oldTraj.oldNIter[m],2,m], color = "blue", linewidth = 2.0, linestyle = ":")
+# m= 5
+# oldtj1_plot = ax1[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[m],1,m], oldTraj.oldTrajXY[1:oldTraj.oldNIter[m],2,m], color ="orange", linewidth = 2.0, linestyle = ":")
 ####################
 #copied-plot
 ####################
-if copied_plot == 1
-    colordefs=["#3b44ba",
-                "#c8ce24",
-                "#a756de",
-                "#0ac753",
-                "#ff53c4",
-                "#01c3ba",
-                "#f5218a",
-                "#4cd5ff",
-                "#f74b3a",
-                "#016ed6",
-                "#de8500",
-                "#8a1e95",
-                "#6c4d08",
-                "#aca0ff",
-                "#a2172f",
-                "#abaae1",
-                "#ffb38d",
-                "#83317e",
-                "#9c6f4b",
-                "#ff91d1"]
-    for i=1:oldTraj.oldNIter[j]-1
-        if oldTraj.copyInfo[i,1,j]>0.0 # if lambda of copied traj is greater 0.1 -> if traj s used for solving.
-            ax3[:scatter](oldTraj.copyInfo[i,3,j],oldTraj.copyInfo[i,2,j], color = "#DCDCDC",edgecolor="black", lw =0.5)
-        end
-    end
-    for i=1:oldTraj.oldNIter[j]-1
-        if oldTraj.copyInfo[i,4,j]>0.6 # if lambda of copied traj is greater 0.1 -> if traj s used for solving.
-            ax3[:scatter](oldTraj.copyInfo[i,3,j],oldTraj.copyInfo[i,2,j], color = "blue",edgecolor="black",lw =0.5) #color = colordefs[convert(Int64,oldTraj.copyInfo[i,1,j])]
-        end
-    end
-    s_curr_copied = ax3[:plot]([],[], color ="black")[1]
-else
+# if copied_plot == 1
+#     colordefs=["#3b44ba",
+#                 "#c8ce24",
+#                 "#a756de",
+#                 "#0ac753",
+#                 "#ff53c4",
+#                 "#01c3ba",
+#                 "#f5218a",
+#                 "#4cd5ff",
+#                 "#f74b3a",
+#                 "#016ed6",
+#                 "#de8500",
+#                 "#8a1e95",
+#                 "#6c4d08",
+#                 "#aca0ff",
+#                 "#a2172f",
+#                 "#abaae1",
+#                 "#ffb38d",
+#                 "#83317e",
+#                 "#9c6f4b",
+#                 "#ff91d1"]
+#     for i=1:oldTraj.oldNIter[j]-1
+#         if oldTraj.copyInfo[i,1,j]>0.0 # if lambda of copied traj is greater 0.1 -> if traj s used for solving.
+#             ax3[:scatter](oldTraj.copyInfo[i,3,j],oldTraj.copyInfo[i,2,j], color = "#DCDCDC",edgecolor="black", lw =0.5)
+#         end
+#     end
+#     for i=1:oldTraj.oldNIter[j]-1
+#         if oldTraj.copyInfo[i,4,j]>0.6 # if lambda of copied traj is greater 0.1 -> if traj s used for solving.
+#             ax3[:scatter](oldTraj.copyInfo[i,3,j],oldTraj.copyInfo[i,2,j], color = "blue",edgecolor="black",lw =0.5) #color = colordefs[convert(Int64,oldTraj.copyInfo[i,1,j])]
+#         end
+#     end
+#     s_curr_copied = ax3[:plot]([],[], color ="black")[1]
+# else
 ####################
 #cost plot
 ####################
-    ax3[:plot](oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.costs[8,1:oldTraj.oldNIter[j]-1,j])
-    s_curr_copied = ax3[:plot]([],[], color ="black")[1]
-    max_cost = findmax(oldTraj.costs[8,1:oldTraj.oldNIter[j]-1,j])[1]
+#     ax3[:plot](oldTraj.oldTraj[1:oldTraj.oldNIter[j]-1,1,j],oldTraj.costs[8,1:oldTraj.oldNIter[j]-1,j])
+#     s_curr_copied = ax3[:plot]([],[], color ="black")[1]
+#     max_cost = findmax(oldTraj.costs[8,1:oldTraj.oldNIter[j]-1,j])[1]
+# end
+
+
+####################
+#xy2plot
+####################
+ax2[:plot](x_track',y_track', linestyle = (0, (4.0, 8.0)), color = color=boundary_color, linewidth = 0.4, label="_nolegend_")#plot the racetrack
+ax2[:plot](boundary_up[1,:], boundary_up[2,:],color=boundary_color, linewidth = 0.7)#,linestyle=":")
+ax2[:plot](boundary_down[1,:], boundary_down[2,:],color=boundary_color, linewidth = 0.7)#,linestyle=":")
+for l=1:convert(Int64,trunc(trackL/51))
+    ax2[:plot]([boundary_down[1,l*50+1],boundary_up[1,l*50+1]],[boundary_down[2,l*50+1],boundary_up[2,l*50+1]], color = "black", linestyle = "--", linewidth = 2)
+    boundvec = [boundary_up[1,l*50+1]-boundary_down[1,l*50+1];boundary_up[2,l*50+1]-boundary_down[2,l*50+1]]
+    ax2[:text](boundary_down[1,l*50+1]+1.85*boundvec[1],boundary_down[2,l*50+1]+1.85*boundvec[2],"$(convert(Int64,l*50*ds))",fontsize=20,clip_on = true)
 end
 
 
-####################
-#v-plot
-####################
-v_curr =ax2[:plot](oldTraj.oldTraj[1,1,j], oldTraj.oldTraj[1,4,j], color = ego_color,linewidth =2, linestyle = "--")[1]
-v_plot  = ax2[:plot](oldTraj.z_pred_sol[:,1,1,j], oldTraj.z_pred_sol[:,4,1,j],marker="o", color = "yellow", markersize = 8)[1]
-# s_curr_v = ax2[:plot]([],[], color ="black")[1]
-m=5
-ax2[:plot](oldTraj.oldTraj[1:oldTraj.oldNIter[m],1,m], oldTraj.oldTraj[1:oldTraj.oldNIter[m],4,m], color = "blue", linewidth =2, linestyle = "--")
-m= 10
-ax2[:plot](oldTraj.oldTraj[1:oldTraj.oldNIter[m],1,m], oldTraj.oldTraj[1:oldTraj.oldNIter[m],4,m], color = "orange",linewidth =2, linestyle = "--")
+#obstacle and car
+obst_patch2 =Array{PyCall.PyObject}(obstacle.n_obstacle)
+plt_obst2 =Array{PyCall.PyObject}(obstacle.n_obstacle)
+for ii = 1:obstacle.n_obstacle
+    obst_patch2[ii] = patches.Ellipse([obstacle.xy_vector[1,1,jj,ii],obstacle.xy_vector[1,2,jj,ii]],2*obstacle.rs,2*obstacle.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation[1,jj,ii]*180/pi, linewidth = 2)
+    plt_obst2[ii] = ax2[:add_patch](obst_patch2[ii])
+end
+
+carParts2=drawCar(ax2,[oldTraj.oldTrajXY[2,1,jj],oldTraj.oldTrajXY[2,2,jj],oldTraj.oldTrajXY[2,5,jj]*180/pi], ego_color)
+for p in carParts2
+                ax2[:add_patch](p)
+end
+car_plot2 = ax2[:plot]([],[], color = ego_color, linewidth = 2, linestyle = "--")[1]
+pred_plot2 = ax2[:plot](xy_pred[:,1,2,jj],xy_pred[:,2,2,jj],color = "yellow", marker="o",markersize = 8)[1]#(oldTraj.oldTrajXY[1,1,j],oldTraj.oldTrajXY[1,2,j],color = "yellow", marker="o")
+
+
+# last trajectory in xy plot
+# m=4
+# oldtj2_plot = ax2[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[m],1,m], oldTraj.oldTrajXY[1:oldTraj.oldNIter[m],2,m], color = "blue", linewidth = 2.0, linestyle = ":")
+# m= 5
+# oldtj2_plot = ax2[:plot](oldTraj.oldTrajXY[1:oldTraj.oldNIter[m],1,m], oldTraj.oldTrajXY[1:oldTraj.oldNIter[m],2,m], color ="orange", linewidth = 2.0, linestyle = ":")
 
 ####################
 #Init function
@@ -228,6 +241,9 @@ function animate(frame)
     if frame <= 10
         ax1[:set_xlim](xmin, xmax)
         ax1[:set_ylim](ymin, ymax)
+
+        ax2[:set_xlim](xmin, xmax)
+        ax2[:set_ylim](ymin, ymax)
     elseif frame>=11 && frame <= 51
         #oval
         # ax1[:set_xlim](xmin+13/40*l, xmax-11/40*l)
@@ -235,6 +251,9 @@ function animate(frame)
 
         ax1[:set_xlim](xmin+8/40*l, xmax-9/40*l)
         ax1[:set_ylim](ymin+10/40*l, ymax-7/40*l)
+
+         ax2[:set_xlim](xmin+8/40*l, xmax-9/40*l)
+        ax2[:set_ylim](ymin+10/40*l, ymax-7/40*l)
     else
         ##################
         #x-y plot
@@ -244,34 +263,46 @@ function animate(frame)
             plt_obst[ii][:remove]()
             obst_patch[ii] = patches.Ellipse([obstacle.xy_vector[k,1,j,ii],obstacle.xy_vector[k,2,j,ii]],2*obstacle.rs,2*obstacle.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation[k,j,ii]*180/pi, linewidth = 2)
             plt_obst[ii] = ax1[:add_patch](obst_patch[ii])
+
+            plt_obst2[ii][:remove]()
+            obst_patch2[ii] = patches.Ellipse([obstacle.xy_vector[k,1,jj,ii],obstacle.xy_vector[k,2,jj,ii]],2*obstacle.rs,2*obstacle.ry,color=obstacle_color,alpha=1.0,fill=false, angle = obstOrientation[k,jj,ii]*180/pi, linewidth = 2)
+            plt_obst2[ii] = ax2[:add_patch](obst_patch2[ii])
         end
 
     #     #update axis of x-y plot every time step
         ax1[:set_xlim](xy_pred[6,1,k,j]-3, xy_pred[6,1,k,j]+3)
         ax1[:set_ylim](xy_pred[6,2,k,j]-3, xy_pred[6,2,k,j]+3)
 
+        ax2[:set_xlim](xy_pred[6,1,k,jj]-3, xy_pred[6,1,k,jj]+3)
+        ax2[:set_ylim](xy_pred[6,2,k,jj]-3, xy_pred[6,2,k,jj]+3)
 
         car_plot[:set_data](oldTraj.oldTrajXY[1:k,1,j], oldTraj.oldTrajXY[1:k,2,j])
+
+        car_plot2[:set_data](oldTraj.oldTrajXY[1:k,1,jj], oldTraj.oldTrajXY[1:k,2,jj])
 
         #plot patches for current car position
         pos =[oldTraj.oldTrajXY[k,1,j],oldTraj.oldTrajXY[k,2,j], oldTraj.oldTrajXY[k,5,j]*180/pi]
         updateCarParts(ax1,carParts,pos)
 
         pred_plot[:set_data](xy_pred[:,1,k,j],xy_pred[:,2,k,j])
+
+        pos =[oldTraj.oldTrajXY[k,1,jj],oldTraj.oldTrajXY[k,2,jj], oldTraj.oldTrajXY[k,5,jj]*180/pi]
+        updateCarParts(ax2,carParts2,pos)
+
+        pred_plot2[:set_data](xy_pred[:,1,k,jj],xy_pred[:,2,k,jj])
         # plot(oldTraj.oldTrajXY[k,1,j],oldTraj.oldTrajXY[k,2,j])
-        if copied_plot ==1
-    #     #######################
-    #     #copied plot
-    #     #######################
-            s_curr_copied[:set_data]([oldTraj.oldTraj[k,1,j],oldTraj.oldTraj[k,1,j]],[0,trackLength])
-        else
-            s_curr_copied[:set_data]([oldTraj.oldTraj[k,1,j],oldTraj.oldTraj[k,1,j]],[0,max_cost])
-        end
+    #     if copied_plot ==1
+    # #     #######################
+    # #     #copied plot
+    # #     #######################
+    #         s_curr_copied[:set_data]([oldTraj.oldTraj[k,1,j],oldTraj.oldTraj[k,1,j]],[0,trackLength])
+    #     else
+    #         s_curr_copied[:set_data]([oldTraj.oldTraj[k,1,j],oldTraj.oldTraj[k,1,j]],[0,max_cost])
+    #     end
     #     #######################
     #     #v plot
     #     #######################
-    v_curr[:set_data](oldTraj.oldTraj[1:k,1,j], oldTraj.oldTraj[1:k,4,j])
-        v_plot[:set_data](oldTraj.z_pred_sol[:,1,k,j], oldTraj.z_pred_sol[:,4,k,j])
+        # v_plot[:set_data](oldTraj.z_pred_sol[:,1,k,j], oldTraj.z_pred_sol[:,4,k,j])
     end
     return carParts, nothing
 end

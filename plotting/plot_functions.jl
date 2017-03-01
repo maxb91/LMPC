@@ -401,8 +401,8 @@ function plotfct_copied(oldTraj,j)
         end
     end
     axCopied[:set_aspect]("equal", adjustable="box")
-    axCopied[:set_ylim](0,20)
-    axCopied[:set_xlim](22,48)
+    # axCopied[:set_ylim](0,20)
+    # axCopied[:set_xlim](22,48)
     axCopied[:set_xlabel](L"current \> s \> [m]", fontsize =30)
     axCopied[:grid]()
     axCopied[:set_ylabel](L"old \> s \>  [m]", fontsize =30)

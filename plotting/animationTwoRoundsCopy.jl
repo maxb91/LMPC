@@ -8,10 +8,10 @@ close("all")
 @pyimport matplotlib.animation as animation# First set up the figure, the axis, and the plot element we want to animate
 matplotlib[:style][:use]("classic") # somehow my julia version changed plotting style 
 
-include("helper/classes.jl")
-include("helper/plot_functions.jl")
-include("helper/calculateObstacleXY.jl")
-include("helper/colorModule.jl")
+include("../helper/classes.jl")
+include("plot_functions.jl")
+include("calculateObstacleXY.jl")
+include("colorModule.jl")
 
 
 file = "data/2017-02-16-02-21-Data.jld"
