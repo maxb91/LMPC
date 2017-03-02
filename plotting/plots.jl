@@ -10,14 +10,14 @@ include("plot_functions.jl")
 
 #function plots(j::Int64 = 1, interactive_plot::Int64 = 1)
     newest2plot = 1
-    n_plot_rounds = 2
+    n_plot_rounds = 0
 
     interactive_plot = 1
 
     plot_costs              = 0
     plot_states_over_t      = 0
     plot_xy                 = 1
-    plot_lambda             = 0
+    plot_lambda             = 1
     plot_states_over_s      = 0
     plot_curvature_approx   = 0
     plot_inputs             = 0
@@ -27,7 +27,7 @@ include("plot_functions.jl")
     interactive_plot_steps  = 1
     n_oldTrajPlots = 0
     obstacle_color = "red"
-    file = "data/2017-02-10-16-02-Data.jld" #"data/2017-02-12-21-52-Data.jld"
+    file = "data/2017-03-01-18-13-Data.jld" #"data/2017-02-12-21-52-Data.jld"
     close("all")
 
     ####load data from file

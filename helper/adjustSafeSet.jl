@@ -146,9 +146,9 @@ function addOldtoNewPos(oldTraj, distance2obst::Float64, obstacle, iter::Int64, 
         #########################################
         #######adjust the cost to curent position
         #the cost on the old trajectory at the first index that gets copied
-        costCopiedBeginCopying             = oldTraj.cost2Target[ind_start,index_of_traj_2_copy][1]
+        costCopiedBeginCopying         = oldTraj.cost2Target[ind_start,index_of_traj_2_copy][1]
         #the cost on the old trajectory at the position closest to the current vehicle position.
-        costCopiedTrajCloseCurrentPosition = oldTraj.cost2Target[index_s[index_of_traj_2_copy]-N_points*(index_of_traj_2_copy-1),index_of_traj_2_copy][1] #the term N_points*(index_of_traj_2_copy-1) is used because of the array indexing in julia that comes form the find function
+        costCopiedCloseCurrentPosition = oldTraj.cost2Target[index_s[index_of_traj_2_copy]-N_points*(index_of_traj_2_copy-1),index_of_traj_2_copy][1] #the term N_points*(index_of_traj_2_copy-1) is used because of the array indexing in julia that comes form the find function
         #we adjust the cost along the trajectory to start at the absolute value that the copied trajectry has at the current ego vehicle position
         oldTraj.cost2Target[ind_start:ind_start+pLength,end] = oldTraj.cost2Target[ind_start:ind_start+pLength,index_of_traj_2_copy]-(costCopiedBeginCopying-costCopiedCloseCurrentPosition)
         #########################################

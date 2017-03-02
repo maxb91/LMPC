@@ -265,7 +265,9 @@ for j=1:n_rounds #loop over all rounds
         z_pred_log[:,:,i,j] = mpcSol.z
         u_pred_log[:,:,i,j] = mpcSol.u
         ssInfOn_log[:,i,j]  = mpcSol.ssInfOn
-        copyInfo[i,4] = mpcSol.lambda[end]#the last traj for the solver is the copied trajectory.
+        if copyInfo[i,1] >0 #only save the lambda value if a trajectory has been copied. not if the lambda value was used for the for the pathfollowing traj
+            copyInfo[i,4] = mpcSol.lambda[end]#the last traj for the solver is the copied trajectory.
+        end
         tt_total[i]= toq()
 
 
@@ -338,7 +340,7 @@ for j=1:n_rounds #loop over all rounds
     print_with_color(:yellow,"$(length(find(f->f!=0,copyInfo[:,1])))\n")
 
     print_with_color(:grey,"Number of used copied Trajectories: ") 
-    print_with_color(:yellow,"$(length(find(f->f!=0,copyInfo[:,4])))\n")
+    print_with_color(:yellow,"$(length(find(f->f>0.6,copyInfo[:,4])))\n")
 
     println(" Time to save and overwrite trajectories: $(tt3) s")
     ###############
