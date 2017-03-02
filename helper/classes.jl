@@ -41,24 +41,6 @@ type OldTrajectory      # information about previous trajectories
                  new(n_oldTraj, oldTraj,oldTrajXY,distance2obst,curvature,oldInput,oldNIter,costs,lambda_sol,z_pred_sol,u_pred_sol,ssInfOn_sol,eps,cost2Target,copyInfo)
 end
 
-#old definition to load old results
-# type OldTrajectory      # information about previous trajectories
-#     n_oldTraj::Int64
-#     oldTraj::Array{Float64}
-#     oldTrajXY::Array{Float64}
-#     oldInput::Array{Float64}
-#     oldNIter
-#     costs::Array{Float64}
-#     lambda_sol::Array{Float64}
-#     z_pred_sol::Array{Float64}
-#     u_pred_sol::Array{Float64}
-#     ssInfOn_sol::Array{Float64}
-#     eps::Array{Float64}
-#     cost2Target::Array{Float64}
-#     OldTrajectory(n_oldTraj = 0, oldTraj=Float64[],oldTrajXY=Float64[],oldInput=Float64[],oldNIter=Float64[],
-#         costs=Float64[],lambda_sol=Float64[],z_pred_sol=Float64[],u_pred_sol=Float64[],ssInfOn_sol=Float64[],eps=Float64[],cost2Target= Float64[]) =
-#                  new(n_oldTraj, oldTraj,oldTrajXY,oldInput,oldNIter,costs,lambda_sol,z_pred_sol,u_pred_sol,ssInfOn_sol,eps,cost2Target)
-# end
 
 type MpcParams          # parameters for MPC solver
     N::Int64
@@ -113,21 +95,6 @@ type Obstacle
     Obstacle(s_obstacle = Float64[], sy_obstacle = Float64[], rs = 0.0, ry = 0.0,v= Float64[],n_obstacle=1, xy_vector=Float64[], axis_y_up=Float64[], axis_y_down=Float64[], axis_s_up=Float64[], axis_s_down=Float64[])= new(s_obstacle,sy_obstacle,rs,ry,v,n_obstacle, xy_vector,axis_y_up, axis_y_down, axis_s_up, axis_s_down)
 end
 
-##########old definition o load old results
-# type Obstacle
-#     s_obstacle::Array{Float64}
-#     sy_obstacle::Array{Float64}
-#     rs::Float64
-#     ry::Float64
-#     v::Float64
-#     index::Array{Int64,1} #!!currently not used , if that stay like this delete it
-#     xy_vector::Array{Float64}
-#     axis_y_up::Array{Float64}
-#     axis_y_down::Array{Float64}
-#     axis_s_up::Array{Float64}
-#     axis_s_down::Array{Float64}
-#     Obstacle(s_obstacle = Float64[], sy_obstacle = Float64[], rs = 0.0, ry = 0.0,v= 0.4, index=Int64[], xy_vector=Float64[], axis_y_up=Float64[], axis_y_down=Float64[], axis_s_up=Float64[], axis_s_down=Float64[])= new(s_obstacle,sy_obstacle,rs,ry,v,index, xy_vector,axis_y_up, axis_y_down, axis_s_up, axis_s_down)
-# end
 
 type TrackCoeff         # coefficients of track
     coeffAngle::Array{Float64,1}

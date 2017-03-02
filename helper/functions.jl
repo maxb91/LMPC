@@ -20,14 +20,10 @@ function saveOldTraj(oldTraj,zCurr::Array{Float64}, zCurr_x::Array{Float64},uCur
     currCostObst = zeros(buffersize)
     derivInpCost = zeros(buffersize)
     cost2target = zeros(buffersize)
-    #fill up the arrays for the additional costs with measured values, the additional cost are zeros for all i after the finish line
-    # for l = 1:4
-    #     derivStateCost[1:i-1] += flipdim(mpcParams.QderivZ[l]*cumsum(flipdim((zCurr_export[1:i-1,l]-zCurr_export[2:i,l]).^2,1),1),1)
-    # end
-    # derivInpCost[1:i-2] = flipdim(mpcParams.QderivU[1]*cumsum(flipdim((uCurr_export[1:i-2,1]-uCurr_export[2:i-1,1]).^2,1),1)+mpcParams.QderivU[2]*cumsum(flipdim((uCurr_export[1:i-2,2]-uCurr_export[2:i-1,2]).^2,1),1),1)
-    # inpCost[1:i-1] = flipdim(mpcParams.R[1]*cumsum(flipdim(uCurr_export[1:i-1,1].^2,1),1)+mpcParams.R[2]*cumsum(flipdim(uCurr_export[1:i-1,2].^2,1),1),1)
+    
+    #save the terminal cost
     for j = 1:buffersize
-        cost2target[j] = mpcParams.Q_cost*(costLap-j+1)#+derivStateCost[j]+derivInpCost[j]+inpCost[j]#+currCostObst[j]
+        cost2target[j] = mpcParams.Q_cost*(costLap-j+1)
     end
 
     # Save all data in oldTrajectory:
