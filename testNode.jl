@@ -52,7 +52,7 @@ function run_sim()
     log_ParInt                  = zeros(length(t),laps_max)       # log ParInt data
 
     # Logging parameters
-    posInfo.s_target            = 50.87#52.48
+    posInfo.s_target            = 18.9#50.87#52.48
 
     z_final         = zeros(6)
 
@@ -72,22 +72,38 @@ function run_sim()
     # c_track[3701:4100] = createCurve(400,ds,-pi/2)
     # c_track[4261:4860] = createCurve(600,ds,-pi/2)
 
-    s_track = 0.01:.01:50.87
-    c_track = zeros(5087)
-    c_track[201:400] = linspace(0,-pi/4,200)
-    c_track[401:600] = linspace(-pi/4,0,200)
-    c_track[701:900] = linspace(0,-pi/4,200)
-    c_track[901:1100] = linspace(-pi/4,0,200)
-    c_track[1101:1200] = linspace(0,-pi/4,100)
-    c_track[1201:1300] = linspace(-pi/4,0,100)
-    c_track[1601:2100] = linspace(0,10*pi/4/10,500)
-    c_track[2101:2600] = linspace(10*pi/4/10,0,500)
-    c_track[2601:2900] = linspace(0,-pi/3,300)
-    c_track[2901:3200] = linspace(-pi/3,0,300)
-    c_track[3501:3700] = linspace(0,-2*pi/2/4,200)
-    c_track[3701:3900] = linspace(-2*pi/2/4,0,200)
-    c_track[4041:4340] = linspace(0,-2*pi/2/6,300)
-    c_track[4341:4640] = linspace(-2*pi/2/6,0,300)
+    # s_track = 0.01:.01:50.87
+    # c_track = zeros(5087)
+    # c_track[201:400] = linspace(0,-pi/4,200)
+    # c_track[401:600] = linspace(-pi/4,0,200)
+    # c_track[701:900] = linspace(0,-pi/4,200)
+    # c_track[901:1100] = linspace(-pi/4,0,200)
+    # c_track[1101:1200] = linspace(0,-pi/4,100)
+    # c_track[1201:1300] = linspace(-pi/4,0,100)
+    # c_track[1601:2100] = linspace(0,10*pi/4/10,500)
+    # c_track[2101:2600] = linspace(10*pi/4/10,0,500)
+    # c_track[2601:2900] = linspace(0,-pi/3,300)
+    # c_track[2901:3200] = linspace(-pi/3,0,300)
+    # c_track[3501:3700] = linspace(0,-2*pi/2/4,200)
+    # c_track[3701:3900] = linspace(-2*pi/2/4,0,200)
+    # c_track[4041:4340] = linspace(0,-2*pi/2/6,300)
+    # c_track[4341:4640] = linspace(-2*pi/2/6,0,300)
+
+    ang = [0,-pi/2,0,-pi/2,pi/10,-pi/5,pi/10,-pi/2,0,-pi/2,0]
+    #l = [30,40,10,40,20,30,20,40,10,40,35]*6
+    l = [1,40,10,40,20,30,20,40,10,40,64]*6 
+
+    # Create Track
+    s_track = 0.01:.01:18.9
+    c_track = zeros(size(s_track,1))
+    j = 1
+    for i=1:length(ang)
+        if ang[i] != 0
+            c_track[j:j+l[i]/2-1] = linspace(0,2*ang[i]/l[i]/0.01,l[i]/2)
+            c_track[j+l[i]/2:j+l[i]-1] = linspace(2*ang[i]/l[i]/0.01,0,l[i]/2)
+        end
+        j += l[i]
+    end
 
     s_track_p, c_track_p = prepareTrack(s_track, c_track)
 
@@ -168,13 +184,16 @@ function run_sim()
             #zCurr[i+1,:]        = simKinModel(zCurr[i,:],uCurr[i,:],modelParams.dt,trackCoeff.coeffCurvature,modelParams)
             zCurr[i+1,:]        = simDynModel(zCurr[i,:],uCurr[i,:],modelParams.dt,modelParams,trackCoeff)
 
-            println("Solving step $i of $(length(t)) - Status: $(mpcSol.solverStatus)")
+            println("Solving step ",i," of ",(length(t)),", - Status: ",(mpcSol.solverStatus))
             # println("Prediction error = ",zCurr[i+1,:]-mpcSol.z[2,:])
             # Check if we're crossing the finish line
             if zCurr[i+1,6] >= posInfo.s_target
-                oldTraj.idx_end[lapStatus.currentLap] = oldTraj.count[lapStatus.currentLap]
-                oldTraj.oldCost[lapStatus.currentLap] = oldTraj.idx_end[lapStatus.currentLap] - oldTraj.idx_start[lapStatus.currentLap]
-                println("Reaching finish line at step $(i+1), cost = $(oldTraj.oldCost[lapStatus.currentLap])")
+                if lapStatus.currentLap > 1
+                    oldTraj.idx_end[lapStatus.currentLap-1] = oldTraj.count[lapStatus.currentLap-1]
+                    oldTraj.oldCost[lapStatus.currentLap-1] = oldTraj.idx_end[lapStatus.currentLap-1] - oldTraj.idx_start[lapStatus.currentLap-1]
+                println("Cost of previous lap: ",(oldTraj.oldCost[lapStatus.currentLap-1]))
+                end
+                println("Reaching finish line at step ",(i+1))#,", cost = ",(oldTraj.oldCost[lapStatus.currentLap]))
                 finished = true
                 setvalue(mdl.z_Ol[:,6],mpcSol.z[:,6]-posInfo.s_target)
             end
@@ -185,8 +204,8 @@ function run_sim()
             oldTraj.oldInput[oldTraj.count[lapStatus.currentLap],:,lapStatus.currentLap] = uCurr[i,:]
             oldTraj.count[lapStatus.currentLap] += 1
 
-            # if necessary: append to end of previous lap
-            if lapStatus.currentLap > 1 && zCurr[i,6] < 15.0
+            # append to end of previous lap
+            if lapStatus.currentLap > 1# && zCurr[i,6] < 15.0
                 oldTraj.oldTraj[oldTraj.count[lapStatus.currentLap-1],:,lapStatus.currentLap-1] = zCurr[i,:]
                 oldTraj.oldTraj[oldTraj.count[lapStatus.currentLap-1],6,lapStatus.currentLap-1] += posInfo.s_target
                 oldTraj.oldInput[oldTraj.count[lapStatus.currentLap-1],:,lapStatus.currentLap-1] = uCurr[i,:]
@@ -297,7 +316,7 @@ function prepareTrack(s_track,c_track)
 end
 function find_curvature(s_track,c_track,s,trackCoeff,v_curr,dt,N)
     sz = size(s_track,1)
-    ahea = Int64(round(3.0*v_curr*dt*N/0.01))                  # 300*0.01 = 3 meter ahead
+    ahea = Int64(round(2.0*v_curr*dt*N/0.01))                  # 300*0.01 = 3 meter ahead
     prev = Int64(round(1.0*v_curr*dt*N/0.01))                  # 100*0.01 = 1 meter back
     #ahea = 200                  # 300*0.01 = 3 meter ahead
     #prev = 50                  # 100*0.01 = 1 meter back

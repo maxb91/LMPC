@@ -171,4 +171,20 @@ tight_layout()
 path_to_file = "/Users/Maximilian/Documents/ETH/Master/Master thesis/6. Final report/Figures/Simulation/Dyn_v_over_xy.pgf"
 savefig(path_to_file)
 
+it_cost = zeros(40)
+for i=1:40
+    it_cost[i] = size(z[z[:,6,i].>0,:,i],1)
+end
+figure()
+plot(it_cost/50,"-x")
+plot(cost/50/2,"-")
+legend(["Single","Double"])
+grid("on")
+xlabel("Iteration")
+ylabel("Iteration cost")
+xlim([0,20])
+ylim([4,10])
+tight_layout()
+path_to_file = "/Users/Maximilian/Documents/ETH/Master/Master thesis/6. Final report/Figures/Simulation/Dyn_double_it_cost.pgf"
+savefig(path_to_file)
 
