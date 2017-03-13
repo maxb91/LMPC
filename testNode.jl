@@ -49,7 +49,7 @@ function run_sim()
     log_ParInt                  = zeros(length(t),30)       # log ParInt data
 
     # Logging parameters
-    posInfo.s_target            = 50.87
+    posInfo.s_target            = 36.01#50.87
 
     z_final         = zeros(4)
 
@@ -57,27 +57,43 @@ function run_sim()
 
     n_pf            = 1             # number of path-following laps
 
-    s_track = 0.01:.01:50.87
-    c_track = zeros(5087)
+    # s_track = 0.01:.01:50.87
+    # c_track = zeros(5087)
+    # c_track[1:200] = 0
+    # c_track[201:400] = linspace(0,-pi/4,200)
+    # c_track[401:600] = linspace(-pi/4,0,200)
+    # c_track[601:700] = 0
+    # c_track[701:900] = linspace(0,-pi/4,200)
+    # c_track[901:1100] = linspace(-pi/4,0,200)
+    # c_track[1101:1200] = linspace(0,-pi/4,100)
+    # c_track[1201:1300] = linspace(-pi/4,0,100)
+    # c_track[1301:1600] = 0
+    # c_track[1601:2100] = linspace(0,10*pi/4/10,500)
+    # c_track[2101:2600] = linspace(10*pi/4/10,0,500)
+    # c_track[2601:2900] = linspace(0,-pi/3,300)
+    # c_track[2901:3200] = linspace(-pi/3,0,300)
+    # c_track[3201:3500] = 0
+    # c_track[3501:3700] = linspace(0,-2*pi/2/4,200)
+    # c_track[3701:3900] = linspace(-2*pi/2/4,0,200)
+    # c_track[3901:3902] = 0
+    # c_track[4041:4340] = linspace(0,-2*pi/2/6,300)
+    # c_track[4341:4640] = linspace(-2*pi/2/6,0,300)
+
+    # Symmetric track:
+    s_track = 0.01:.01:24.01
+    c_track = zeros(2401)
     c_track[1:200] = 0
     c_track[201:400] = linspace(0,-pi/4,200)
     c_track[401:600] = linspace(-pi/4,0,200)
     c_track[601:700] = 0
     c_track[701:900] = linspace(0,-pi/4,200)
     c_track[901:1100] = linspace(-pi/4,0,200)
-    c_track[1101:1200] = linspace(0,-pi/4,100)
-    c_track[1201:1300] = linspace(-pi/4,0,100)
-    c_track[1301:1600] = 0
-    c_track[1601:2100] = linspace(0,10*pi/4/10,500)
-    c_track[2101:2600] = linspace(10*pi/4/10,0,500)
-    c_track[2601:2900] = linspace(0,-pi/3,300)
-    c_track[2901:3200] = linspace(-pi/3,0,300)
-    c_track[3201:3500] = 0
-    c_track[3501:3700] = linspace(0,-2*pi/2/4,200)
-    c_track[3701:3900] = linspace(-2*pi/2/4,0,200)
-    c_track[3901:3902] = 0
-    c_track[4041:4340] = linspace(0,-2*pi/2/6,300)
-    c_track[4341:4640] = linspace(-2*pi/2/6,0,300)
+    c_track[1101:1400] = 0
+    c_track[1401:1600] = linspace(0,-pi/4,200)
+    c_track[1601:1800] = linspace(-pi/4,0,200)
+    c_track[1801:1900] = 0
+    c_track[1901:2100] = linspace(0,-pi/4,200)
+    c_track[2101:2300] = linspace(-pi/4,0,200)
 
     s_track_p, c_track_p = prepareTrack(s_track, c_track)
 

@@ -62,7 +62,24 @@ c_track[3901:3902] = 0
 c_track[4041:4340] = linspace(0,-2*pi/2/6,300)
 c_track[4341:4640] = linspace(-2*pi/2/6,0,300)
 
+# Symmetric track:
+s_track = 0.01:.01:24.01
+c_track = zeros(2401)
+c_track[1:200] = 0
+c_track[201:400] = linspace(0,-pi/4,200)
+c_track[401:600] = linspace(-pi/4,0,200)
+c_track[601:700] = 0
+c_track[701:900] = linspace(0,-pi/4,200)
+c_track[901:1100] = linspace(-pi/4,0,200)
+c_track[1101:1400] = 0
+c_track[1401:1600] = linspace(0,-pi/4,200)
+c_track[1601:1800] = linspace(-pi/4,0,200)
+c_track[1801:1900] = 0
+c_track[1901:2100] = linspace(0,-pi/4,200)
+c_track[2101:2300] = linspace(-pi/4,0,200)
+
 path_x,xl,xr = s_to_x(s_track,c_track)
+
 #xl[end,:] = xl[1,:]
 #xr[end,:] = xr[1,:]
 # Plot and save e_Y
