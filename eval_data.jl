@@ -89,6 +89,8 @@ savefig(path_to_file, bbox_extra_artists=(lgd0,), bbox_inches="tight")
 figure(2)
 plot(path_x[:,1],path_x[:,2],"b--",xl[:,1],xl[:,2],"b-",xr[:,1],xr[:,2],"b-")
 axis("equal")
+arrow(0.3,-0.7,1,0,head_width=0.1)
+
 for i=1:size(lapn,1)
     plot(x[:,1,lapn[i]],x[:,2,lapn[i]],label="Lap $(lapn[i])")
 end
